@@ -2,6 +2,8 @@ const c = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
+const vec = @import("vec.zig");
+
 pub const INIT_VIDEO = c.SDL_INIT_VIDEO;
 
 pub const Init = c.SDL_Init;
@@ -33,13 +35,25 @@ pub const DestroyRenderer = c.SDL_DestroyRenderer;
 pub const SetRenderDrawColor = c.SDL_SetRenderDrawColor;
 pub const RenderClear = c.SDL_RenderClear;
 pub const RenderDrawLine = c.SDL_RenderDrawLine;
-pub const RenderFillRect = c.SDL_RenderFillRect;
+
+pub fn RenderFillRect(renderer: Renderer, rect: ?vec.Rect) c_int
+{
+    const sdl_rect: ?Rect = if(rect) |r| r.to_sdl() else null;
+    return c.SDL_RenderFillRect(renderer, @ptrCast(?[*]const Rect, &sdl_rect));
+}
+
 pub const RenderPresent = c.SDL_RenderPresent;
 
 // Events
 pub const Event = c.union_SDL_Event;
+pub const MouseMotionEvent = c.struct_SDL_MouseMotionEvent;
+pub const MouseButtonEvent = c.struct_SDL_MouseButtonEvent;
 
+//      Event types
 pub const QUIT = c.SDL_QUIT;
+pub const MOUSEBUTTONUP = c.SDL_MOUSEBUTTONUP;
+pub const MOUSEBUTTONDOWN = c.SDL_MOUSEBUTTONDOWN;
+pub const MOUSEMOTION = c.SDL_MOUSEMOTION;
 
 pub fn PollEvent(event: *Event) c_int
 {
@@ -47,6 +61,8 @@ pub fn PollEvent(event: *Event) c_int
 }
 
 // Misc
+pub const Rect = c.struct_SDL_Rect;
+
 pub const GetTicks = c.SDL_GetTicks;
 pub const MapRGB = c.SDL_MapRGB;
 pub const FillRect = c.SDL_FillRect;

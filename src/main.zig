@@ -1,6 +1,11 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
+
 const sdl = @import("sdl.zig");
 const display = @import("display.zig");
+const GUI_Element = display.GUI_Element;
+const GUI_Button = display.GUI_Button;
 const State = @import("state.zig").State;
 
 var window: sdl.Window = undefined;
@@ -59,6 +64,12 @@ pub fn main() anyerror!void
     init_sdl();
     defer deinit_sdl();
 
+    var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
+    display.g_gui = @ptrCast(
+        *GUI_Element,
+        try gui_allocator.allocator.createOne(GUI_Button));
+    @ptrCast(*GUI_Button, display.g_gui).* = display.GUI_Button.new();
+
     var state: State = State.new(std.debug.global_allocator);
     defer state.destroy();
 
@@ -71,6 +82,31 @@ pub fn main() anyerror!void
         {
             switch (event.type)
             {
+                sdl.MOUSEMOTION =>
+                {
+                    const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
+                    display.on_mouse_motion(
+                        mouse_event.x,
+                        mouse_event.y,
+                        mouse_event.xrel,
+                        mouse_event.yrel);
+                },
+                sdl.MOUSEBUTTONUP =>
+                {
+                    const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
+                    display.on_mouse_button_up(
+                        mouse_event.button,
+                        mouse_event.x,
+                        mouse_event.y);
+                },
+                sdl.MOUSEBUTTONDOWN =>
+                {
+                    const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
+                    display.on_mouse_button_down(
+                        mouse_event.button,
+                        mouse_event.x,
+                        mouse_event.y);
+                },
                 sdl.QUIT =>
                 {
                     std.debug.warn("Quit Event!\n");

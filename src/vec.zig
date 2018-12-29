@@ -1,3 +1,5 @@
+const sdl = @import("sdl.zig");
+
 fn Vec2(comptime ValType: type) type
 {
     return struct
@@ -9,8 +11,11 @@ fn Vec2(comptime ValType: type) type
 
         pub fn new(_x: ValType, _y: ValType) Self
         {
-            x = _x;
-            y = _y;
+            return Self
+            {
+                .x = _x,
+                .y = _y,
+            };
         }
 
         pub fn equals(a: Self, b: Self) bool
@@ -47,9 +52,20 @@ pub const Rect = struct
 
     pub fn contains(self: *Rect, point: Vec2i) bool
     {
-        return point.x >= rect.pos.x
-            and point.x < (rect.pos.x + rect.size.x)
-            and point.y >= rect.pos.y
-            and point.y < (rect.pos.y + rect.size.y);
+        return point.x >= self.pos.x
+            and point.x < (self.pos.x + self.size.x)
+            and point.y >= self.pos.y
+            and point.y < (self.pos.y + self.size.y);
+    }
+
+    pub fn to_sdl(self: Rect) sdl.Rect
+    {
+        return sdl.Rect
+        {
+            .x = self.pos.x,
+            .y = self.pos.y,
+            .w = self.size.x,
+            .h = self.size.y,
+        };
     }
 };

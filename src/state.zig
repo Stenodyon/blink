@@ -3,26 +3,28 @@ const Allocator = std.mem.Allocator;
 
 const Vec2i = @import("vec.zig").Vec2i;
 
-const Prism = union(enum)
+const Entity = union(enum)
 {
     Block,
 };
 
-const PrismMap = std.HashMap(Vec2i, Prism, Vec2i.hash, Vec2i.equals);
+const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
 
 pub const State = struct
 {
-    prisms: PrismMap,
+    viewpos: Vec2i,
+    entities: EntityMap,
 
     pub fn new(allocator: *Allocator) State
     {
         return State {
-            .prisms = PrismMap.init(allocator),
+            .viewpos = Vec2i.new(0, 0),
+            .entities = EntityMap.init(allocator),
         };
     }
 
     pub fn destroy(self: *State) void
     {
-        self.prisms.deinit();
+        self.entities.deinit();
     }
 };
