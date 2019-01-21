@@ -7,6 +7,7 @@ const display = @import("display.zig");
 const GUI_Element = display.GUI_Element;
 const GUI_Button = display.GUI_Button;
 const State = @import("state.zig").State;
+const Segment = @import("state.zig").Segment;
 
 var window: sdl.Window = undefined;
 var renderer: sdl.Renderer = undefined;
