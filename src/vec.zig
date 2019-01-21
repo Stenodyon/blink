@@ -23,11 +23,11 @@ fn Vec2(comptime ValType: type) type
             return Self.new(a.x + b.x, a.y + b.y);
         }
 
-        pub fn addi(a: Self, b: Self) Self
+        pub fn addi(a: *Self, b: Self) Self
         {
             a.x += b.x;
             a.y += b.y;
-            return a;
+            return a.*;
         }
 
         pub fn sub(a: Self, b: Self) Self

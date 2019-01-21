@@ -8,11 +8,12 @@ const Vec2i = vec.Vec2i;
 const Rect  = vec.Rect;
 const utils = @import("utils.zig");
 const SegmentDirection = @import("state.zig").SegmentDirection;
+const Entity = @import("entities.zig").Entity;
 
 pub const SCREEN_WIDTH  = 1280;
 pub const SCREEN_HEIGHT = 720;
 
-const GRID_SIZE = 64;
+pub const GRID_SIZE = 64;
 
 pub const GUI_Element = struct
 {
@@ -78,6 +79,7 @@ pub fn render(renderer: sdl.Renderer, state: *const State) void
 
     _ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     render_grid(renderer, state);
+    render_entities(renderer, state);
     render_grid_sel(renderer, state);
     render_segments(renderer, state);
 
@@ -92,6 +94,10 @@ fn render_grid_sel(renderer: sdl.Renderer, state: *const State) void
     const grid_pos = world_pos.div(GRID_SIZE)
             .muli(GRID_SIZE)
             .subi(state.viewpos);
+
+    _ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
+    render_entity(state.current_entity, renderer, grid_pos);
+
     const current_cell_area = Rect
     {
         .pos = grid_pos,
@@ -164,7 +170,32 @@ fn render_segments(renderer: sdl.Renderer, state: *const State) void
     }
 }
 
+fn render_entities(renderer: sdl.Renderer, state: *const State) void
+{
+    var entity_it = state.entities.iterator();
+    while (entity_it.next()) |entry| {
+        const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
+        render_entity(entry.value, renderer, pos);
+    }
+}
+
+// pos in screen coordinates
+fn render_entity(
+        entity: Entity,
+        renderer: sdl.Renderer,
+        pos: Vec2i) void
+{
+    switch (entity)
+    {
+        Entity.Block => {
+            const rect = Rect.new(pos, Vec2i.new(GRID_SIZE, GRID_SIZE));
+            _ = sdl.RenderFillRect(renderer, rect);
+        },
+    }
+}
+
 var lmb_down = false;
+var rmb_down = false;
 var placing = false;
 
 pub fn on_mouse_motion(
@@ -180,23 +211,42 @@ pub fn on_mouse_motion(
     }
 }
 
-pub fn on_mouse_button_up(button: u8, x: i32, y: i32) void
+pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) void
 {
-    if (button == sdl.BUTTON_LEFT)
+    switch (button)
     {
-        lmb_down = false;
-        if (placing)
-        {
-            std.debug.warn("Placing!\n");
-        }
+        sdl.BUTTON_LEFT => {
+            lmb_down = false;
+            if (placing)
+            {
+                const mouse_pos = Vec2i.new(x, y).addi(state.viewpos);
+                const grid_pos = mouse_pos.div(GRID_SIZE);
+
+                if (state.place_entity(grid_pos) catch false) {
+                    std.debug.warn("Placing!\n");
+                } else {
+                    std.debug.warn("Blocked!\n");
+                }
+            }
+        },
+        sdl.BUTTON_RIGHT => {
+            rmb_down = false;
+        },
+        else => {},
     }
 }
 
 pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void
 {
-    if (button == sdl.BUTTON_LEFT)
+    switch (button)
     {
-        lmb_down = true;
-        placing = true;
+        sdl.BUTTON_LEFT => {
+            lmb_down = true;
+            placing = true;
+        },
+        sdl.BUTTON_RIGHT => {
+            rmb_down = true;
+        },
+        else => {},
     }
 }

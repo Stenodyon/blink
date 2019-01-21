@@ -97,6 +97,7 @@ pub fn main() anyerror!void
                 {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
                     display.on_mouse_button_up(
+                        &state,
                         mouse_event.button,
                         mouse_event.x,
                         mouse_event.y);

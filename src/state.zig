@@ -5,13 +5,7 @@ const vec   = @import("vec.zig");
 const Vec2i = vec.Vec2i;
 const Rect  = vec.Rect;
 const utils = @import("utils.zig");
-
-pub const Entity = union(enum)
-{
-    Block,
-};
-
-const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
+const Entity = @import("entities.zig").Entity;
 
 pub const SegmentDirection = enum
 {
@@ -81,10 +75,12 @@ pub const Segment = struct
     }
 };
 
+const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
 const SegmentList = std.ArrayList(Segment);
 
 pub const State = struct
 {
+    current_entity: Entity,
     viewpos: Vec2i,
     entities: EntityMap,
     lightrays: SegmentList,
@@ -92,6 +88,7 @@ pub const State = struct
     pub fn new(allocator: *Allocator) State
     {
         return State {
+            .current_entity = Entity.Block,
             .viewpos = Vec2i.new(0, 0),
             .entities = EntityMap.init(allocator),
             .lightrays = SegmentList.init(allocator),
@@ -102,5 +99,19 @@ pub const State = struct
     {
         self.entities.deinit();
         self.lightrays.deinit();
+    }
+
+    pub fn place_entity(self: *State, pos: Vec2i) !bool
+    {
+        return self.add_entity(self.current_entity, pos);
+    }
+
+    pub fn add_entity(self: *State, entity: Entity, pos: Vec2i) !bool
+    {
+        if (self.entities.contains(pos))
+            return false;
+
+        _ = try self.entities.put(pos, entity);
+        return true;
     }
 };
