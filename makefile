@@ -1,9 +1,12 @@
-SRC=$(shell find src/ -type f -name '*.zig')
+SRC:=$(shell find src/ -type f -name '*.zig')
+
+#LIB_PATH:=/usr/lib/x86_64-linux-gnu
+LIB_PATH:=/usr/lib
 
 default: blink
 
 blink: $(SRC)
-	zig build-exe src/main.zig --output blink -L/usr/lib/x86_64-linux-gnu --library SDL2
+	zig build-exe src/main.zig --output blink -L$(LIB_PATH) --library SDL2
 
 clean:
 	rm -f blink

@@ -42,6 +42,12 @@ pub fn RenderFillRect(renderer: Renderer, rect: ?vec.Rect) c_int
     return c.SDL_RenderFillRect(renderer, @ptrCast(?[*]const Rect, &sdl_rect));
 }
 
+pub fn RenderDrawRect(renderer: Renderer, rect: ?vec.Rect) c_int
+{
+    const sdl_rect: ?Rect = if(rect) |r| r.to_sdl() else null;
+    return c.SDL_RenderDrawRect(renderer, @ptrCast(?[*]const Rect, &sdl_rect));
+}
+
 pub const RenderPresent = c.SDL_RenderPresent;
 
 // Events
@@ -55,6 +61,13 @@ pub const MOUSEBUTTONUP = c.SDL_MOUSEBUTTONUP;
 pub const MOUSEBUTTONDOWN = c.SDL_MOUSEBUTTONDOWN;
 pub const MOUSEMOTION = c.SDL_MOUSEMOTION;
 
+//      Button types
+pub const BUTTON_LEFT = c.SDL_BUTTON_LEFT;
+pub const BUTTON_MIDDLE = c.SDL_BUTTON_MIDDLE;
+pub const BUTTON_RIGHT = c.SDL_BUTTON_RIGHT;
+pub const BUTTON_X1 = c.SDL_BUTTON_X1;
+pub const BUTTON_X2 = c.SDL_BUTTON_X2;
+
 pub fn PollEvent(event: *Event) c_int
 {
     return c.SDL_PollEvent(@ptrCast(?[*]c.union_SDL_Event, event));
@@ -66,3 +79,10 @@ pub const Rect = c.struct_SDL_Rect;
 pub const GetTicks = c.SDL_GetTicks;
 pub const MapRGB = c.SDL_MapRGB;
 pub const FillRect = c.SDL_FillRect;
+
+pub fn GetMouseState(x: *i32, y: *i32) u32
+{
+    return c.SDL_GetMouseState(
+            @ptrCast(?[*]c_int, x),
+            @ptrCast(?[*]c_int, y));
+}

@@ -1,0 +1,3 @@
+[submodule "src/lazy"]
+	path = src/lazy
+	url = git@github.com:BraedonWooding/Lazy-Zig.git

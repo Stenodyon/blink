@@ -86,10 +86,11 @@ pub fn main() anyerror!void
                 {
                     const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
                     display.on_mouse_motion(
-                        mouse_event.x,
-                        mouse_event.y,
-                        mouse_event.xrel,
-                        mouse_event.yrel);
+                            &state,
+                            mouse_event.x,
+                            mouse_event.y,
+                            mouse_event.xrel,
+                            mouse_event.yrel);
                 },
                 sdl.MOUSEBUTTONUP =>
                 {
