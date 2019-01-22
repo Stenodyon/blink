@@ -54,12 +54,14 @@ pub const RenderPresent = c.SDL_RenderPresent;
 pub const Event = c.union_SDL_Event;
 pub const MouseMotionEvent = c.struct_SDL_MouseMotionEvent;
 pub const MouseButtonEvent = c.struct_SDL_MouseButtonEvent;
+pub const MouseWheelEvent  = c.struct_SDL_MouseWheelEvent;
 
 //      Event types
 pub const QUIT = c.SDL_QUIT;
 pub const MOUSEBUTTONUP = c.SDL_MOUSEBUTTONUP;
 pub const MOUSEBUTTONDOWN = c.SDL_MOUSEBUTTONDOWN;
 pub const MOUSEMOTION = c.SDL_MOUSEMOTION;
+pub const MOUSEWHEEL = c.SDL_MOUSEWHEEL;
 
 //      Button types
 pub const BUTTON_LEFT = c.SDL_BUTTON_LEFT;

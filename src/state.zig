@@ -5,7 +5,10 @@ const vec   = @import("vec.zig");
 const Vec2i = vec.Vec2i;
 const Rect  = vec.Rect;
 const utils = @import("utils.zig");
-const Entity = @import("entities.zig").Entity;
+
+const entities = @import("entities.zig");
+const Entity = entities.Entity;
+const Direction = entities.Direction;
 
 pub const SegmentDirection = enum
 {
@@ -80,18 +83,25 @@ const SegmentList = std.ArrayList(Segment);
 
 pub const State = struct
 {
-    current_entity: Entity,
     viewpos: Vec2i,
     entities: EntityMap,
     lightrays: SegmentList,
 
+    current_entity: u32,
+    entity_wheel: [2]Entity,
+
     pub fn new(allocator: *Allocator) State
     {
         return State {
-            .current_entity = Entity.Block,
             .viewpos = Vec2i.new(0, 0),
             .entities = EntityMap.init(allocator),
             .lightrays = SegmentList.init(allocator),
+
+            .current_entity = 0,
+            .entity_wheel = []Entity {
+                Entity.Block,
+                Entity{.Laser = Direction.UP},
+            },
         };
     }
 
@@ -101,9 +111,14 @@ pub const State = struct
         self.lightrays.deinit();
     }
 
+    pub fn get_current_entity(self: *const State) Entity
+    {
+        return self.entity_wheel[self.current_entity];
+    }
+
     pub fn place_entity(self: *State, pos: Vec2i) !bool
     {
-        return self.add_entity(self.current_entity, pos);
+        return self.add_entity(self.get_current_entity(), pos);
     }
 
     pub fn add_entity(self: *State, entity: Entity, pos: Vec2i) !bool
@@ -113,5 +128,19 @@ pub const State = struct
 
         _ = try self.entities.put(pos, entity);
         return true;
+    }
+
+    pub fn on_wheel_down(self: *State, amount: u32) void
+    {
+        self.current_entity = @mod(
+                self.current_entity + amount,
+                @intCast(u32, self.entity_wheel.len));
+    }
+
+    pub fn on_wheel_up(self: *State, amount: u32) void
+    {
+        self.current_entity = @mod(
+                self.current_entity -% amount,
+                @intCast(u32, self.entity_wheel.len));
     }
 };

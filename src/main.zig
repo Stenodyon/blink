@@ -3,6 +3,7 @@ const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
 const sdl = @import("sdl.zig");
+const img = @import("img.zig");
 const display = @import("display.zig");
 const GUI_Element = display.GUI_Element;
 const GUI_Button = display.GUI_Button;
@@ -45,6 +46,14 @@ fn init_sdl() void
     }
 
     std.debug.warn("SDL Initialized\n");
+
+    const img_flags = img.INIT_PNG;
+    if ((img.Init(img_flags) & img_flags) == 0)
+    {
+        std.debug.warn("Could not initialize SDL_image: {}\n", img.GetError());
+        deinit_sdl();
+        std.os.exit(1);
+    }
 }
 
 // ============================================================================
@@ -109,6 +118,17 @@ pub fn main() anyerror!void
                         mouse_event.button,
                         mouse_event.x,
                         mouse_event.y);
+                },
+                sdl.MOUSEWHEEL =>
+                {
+                    const wheel_event = @ptrCast(*sdl.MouseWheelEvent, &event);
+                    if (wheel_event.y < 0) {
+                        state.on_wheel_down(
+                                @intCast(u32, -wheel_event.y));
+                    } else {
+                        state.on_wheel_up(
+                                @intCast(u32, wheel_event.y));
+                    }
                 },
                 sdl.QUIT =>
                 {

@@ -96,7 +96,7 @@ fn render_grid_sel(renderer: sdl.Renderer, state: *const State) void
             .subi(state.viewpos);
 
     _ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
-    render_entity(state.current_entity, renderer, grid_pos);
+    render_entity(state.get_current_entity(), renderer, grid_pos);
 
     const current_cell_area = Rect
     {
@@ -190,6 +190,22 @@ fn render_entity(
         Entity.Block => {
             const rect = Rect.new(pos, Vec2i.new(GRID_SIZE, GRID_SIZE));
             _ = sdl.RenderFillRect(renderer, rect);
+        },
+        Entity.Laser => |direction| {
+            const rect = Rect.new(
+                    pos.add(Vec2i.new(GRID_SIZE / 8, GRID_SIZE / 4)),
+                    Vec2i.new(
+                        GRID_SIZE - 2 * GRID_SIZE / 4,
+                        GRID_SIZE - 2 * GRID_SIZE / 4));
+            _ = sdl.RenderFillRect(renderer, rect);
+            const bottom = Rect.new(
+                    pos.add(Vec2i.new(
+                            GRID_SIZE * 3 / 4,
+                            GRID_SIZE / 4 + GRID_SIZE / 8)),
+                    Vec2i.new(
+                        GRID_SIZE / 8,
+                        GRID_SIZE * 3 / 4 - GRID_SIZE / 8));
+            _ = sdl.RenderFillRect(renderer, bottom);
         },
     }
 }

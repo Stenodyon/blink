@@ -6,7 +6,8 @@ LIB_PATH:=/usr/lib
 default: blink
 
 blink: $(SRC)
-	zig build-exe src/main.zig --output blink -L$(LIB_PATH) --library SDL2
+	zig build-exe src/main.zig --output blink -L$(LIB_PATH) \
+	    --library SDL2 --library SDL2_image
 
 clean:
 	rm -f blink
