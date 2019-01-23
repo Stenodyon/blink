@@ -13,9 +13,15 @@ pub const Delay = c.SDL_Delay;
 
 // Windows
 pub const Window = ?*c.struct_SDL_Window;
+pub const Surface = ?*c.struct_SDL_Surface;
 
 pub const WINDOWPOS_UNDEFINED = c.SDL_WINDOWPOS_UNDEFINED_MASK | 0;
 pub const WINDOW_SHOWN = c.SDL_WINDOW_SHOWN;
+
+pub fn FreeSurface(surface: Surface) void
+{
+    c.SDL_FreeSurface(@ptrCast(?[*]c.struct_SDL_Surface, surface));
+}
 
 pub const CreateWindow = c.SDL_CreateWindow;
 pub const DestroyWindow = c.SDL_DestroyWindow;
