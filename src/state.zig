@@ -82,16 +82,9 @@ pub const Segment = struct
 
 const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
 const SegmentList = std.ArrayList(Segment);
-const ResourceMap = std.AutoHashMap([]const u8, sdl.Surface);
-
-const resources = [][]const u8{
-    "data/entity_block.png"[0..],
-};
 
 pub const State = struct
 {
-    resources: ResourceMap,
-
     viewpos: Vec2i,
 
     entities: EntityMap,
@@ -103,7 +96,6 @@ pub const State = struct
     pub fn new(allocator: *Allocator) State
     {
         var new_state = State {
-            .resources = ResourceMap.init(allocator),
             .viewpos = Vec2i.new(0, 0),
 
             .entities = EntityMap.init(allocator),
@@ -115,19 +107,6 @@ pub const State = struct
 
             .lightrays = SegmentList.init(allocator),
         };
-
-        for (resources) |file| {
-            const surface = img.Load(file);
-            if (surface == null)
-            {
-                std.debug.warn("Could not load \"{}\": {}\n",
-                        file,
-                        img.GetError());
-                std.os.exit(1);
-            }
-            _ = new_state.resources.put(file, surface);
-        }
-
         return new_state;
     }
 
@@ -135,16 +114,16 @@ pub const State = struct
     {
         self.entities.deinit();
         self.lightrays.deinit();
-
-        var resource_it = self.resources.iterator();
-        while (resource_it.next()) |pair| {
-            sdl.FreeSurface(pair.value);
-        }
     }
 
     pub fn get_current_entity(self: *const State) Entity
     {
         return self.entity_wheel[self.current_entity];
+    }
+
+    fn get_entity_ptr(self: *State) *Entity
+    {
+        return &self.entity_wheel[self.current_entity];
     }
 
     pub fn place_entity(self: *State, pos: Vec2i) !bool
@@ -173,5 +152,32 @@ pub const State = struct
         self.current_entity = @mod(
                 self.current_entity -% amount,
                 @intCast(u32, self.entity_wheel.len));
+    }
+
+    fn rotate_current_entity(self: *State, amount: i32) void
+    {
+        var entity = self.get_entity_ptr();
+        var direction: *Direction = undefined;
+        switch (entity.*)
+        {
+            Entity.Laser => {
+                direction = &entity.Laser;
+            },
+            else => return,
+        }
+        const intval = @intCast(i32, @enumToInt(direction.*));
+        const newintval = @rem(intval + amount, 4);
+        direction.* = @intToEnum(Direction, @intCast(u2, newintval));
+    }
+
+    pub fn on_key_up(self: *State, keysym: sdl.Keysym) void
+    {
+        switch (keysym.sym)
+        {
+            sdl.K_q => {
+                self.rotate_current_entity(1);
+            },
+            else => {},
+        }
     }
 };

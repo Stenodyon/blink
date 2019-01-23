@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
+const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
 const display = @import("display.zig");
@@ -11,7 +12,6 @@ const State = @import("state.zig").State;
 const Segment = @import("state.zig").Segment;
 
 var window: sdl.Window = undefined;
-var renderer: sdl.Renderer = undefined;
 
 var quit = false;
 
@@ -38,8 +38,8 @@ fn init_sdl() void
         std.os.exit(1);
     }
 
-    renderer = sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED);
-    if (renderer == null)
+    display.renderer = sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED);
+    if (display.renderer == null)
     {
         std.debug.warn("Could not create a renderer: {}\n", sdl.GetError());
         std.os.exit(1);
@@ -60,7 +60,7 @@ fn init_sdl() void
 
 fn deinit_sdl() void
 {
-    sdl.DestroyRenderer(renderer);
+    sdl.DestroyRenderer(display.renderer);
     sdl.DestroyWindow(window);
     sdl.Quit();
 
@@ -74,11 +74,17 @@ pub fn main() anyerror!void
     init_sdl();
     defer deinit_sdl();
 
-    var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
-    display.g_gui = @ptrCast(
-        *GUI_Element,
-        try gui_allocator.allocator.createOne(GUI_Button));
-    @ptrCast(*GUI_Button, display.g_gui).* = display.GUI_Button.new();
+    var resource_allocator = ArenaAllocator.init(std.debug.global_allocator);
+    ResourceManager.init(&resource_allocator.allocator);
+    defer ResourceManager.deinit();
+
+    display.init();
+
+    //var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
+    //display.g_gui = @ptrCast(
+    //    *GUI_Element,
+    //    try gui_allocator.allocator.createOne(GUI_Button));
+    //@ptrCast(*GUI_Button, display.g_gui).* = display.GUI_Button.new();
 
     var state: State = State.new(std.debug.global_allocator);
     defer state.destroy();
@@ -130,6 +136,11 @@ pub fn main() anyerror!void
                                 @intCast(u32, wheel_event.y));
                     }
                 },
+                sdl.KEYUP =>
+                {
+                    const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
+                    state.on_key_up(keyboard_event.keysym);
+                },
                 sdl.QUIT =>
                 {
                     std.debug.warn("Quit Event!\n");
@@ -139,7 +150,7 @@ pub fn main() anyerror!void
             }
         }
 
-        display.render(renderer, &state);
+        display.render(&state);
 
         const end_time = sdl.GetTicks();
         const delta = end_time - start_time;

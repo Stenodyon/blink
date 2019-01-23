@@ -106,6 +106,11 @@ fn Vec2(comptime ValType: type) type
             seed ^= @bitCast(u32, vec.y) +% 0x9e3779b9 +% (seed << 6) +% (seed >> 2);
             return seed;
         }
+
+        pub fn to_sdl(self: Self) sdl.Point
+        {
+            return sdl.Point{.x = self.x, .y = self.y};
+        }
     };
 }
 

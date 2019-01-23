@@ -2,6 +2,7 @@ const std   = @import("std");
 const sdl   = @import("sdl.zig");
 const lazy  = @import("lazy/index.zig");
 
+const ResourceManager = @import("res.zig");
 const State = @import("state.zig").State;
 const vec   = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -9,6 +10,9 @@ const Rect  = vec.Rect;
 const utils = @import("utils.zig");
 const SegmentDirection = @import("state.zig").SegmentDirection;
 const Entity = @import("entities.zig").Entity;
+const dir_angle = @import("entities.zig").dir_angle;
+
+pub var renderer: sdl.Renderer = undefined;
 
 pub const SCREEN_WIDTH  = 1280;
 pub const SCREEN_HEIGHT = 720;
@@ -70,7 +74,29 @@ pub var g_gui: *GUI_Element = undefined;
 
 pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 
-pub fn render(renderer: sdl.Renderer, state: *const State) void
+var block_img: sdl.Texture = undefined;
+var laser_img: sdl.Texture = undefined;
+
+fn load_texture(path: []const u8) sdl.Texture
+{
+    const surface = ResourceManager.Get(path);
+    const texture = sdl.CreateTextureFromSurface(renderer, surface);
+    if (texture == null)
+    {
+        std.debug.warn("Could not create texture: {}\n", sdl.GetError());
+        std.os.exit(1);
+    }
+    return texture;
+}
+
+pub fn init() void
+{
+    block_img = load_texture("data/entity_block.png");
+    laser_img = load_texture("data/entity_laser.png");
+    std.debug.warn("Textures loaded\n");
+}
+
+pub fn render(state: *const State) void
 {
     _ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
     _ = sdl.RenderClear(renderer);
@@ -78,15 +104,15 @@ pub fn render(renderer: sdl.Renderer, state: *const State) void
     //g_gui.draw(g_gui, renderer);
 
     _ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
-    render_grid(renderer, state);
-    render_entities(renderer, state);
-    render_grid_sel(renderer, state);
-    render_segments(renderer, state);
+    render_grid(state);
+    render_entities(state);
+    render_grid_sel(state);
+    render_segments(state);
 
     sdl.RenderPresent(renderer);
 }
 
-fn render_grid_sel(renderer: sdl.Renderer, state: *const State) void
+fn render_grid_sel(state: *const State) void
 {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
@@ -96,7 +122,7 @@ fn render_grid_sel(renderer: sdl.Renderer, state: *const State) void
             .subi(state.viewpos);
 
     _ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
-    render_entity(state.get_current_entity(), renderer, grid_pos);
+    render_entity(state.get_current_entity(), grid_pos);
 
     const current_cell_area = Rect
     {
@@ -107,7 +133,7 @@ fn render_grid_sel(renderer: sdl.Renderer, state: *const State) void
     _ = sdl.RenderDrawRect(renderer, current_cell_area);
 }
 
-fn render_grid(renderer: sdl.Renderer, state: *const State) void
+fn render_grid(state: *const State) void
 {
     const top_left = state.viewpos.div(GRID_SIZE);
     const cell_count = Vec2i
@@ -131,7 +157,7 @@ fn render_grid(renderer: sdl.Renderer, state: *const State) void
     }
 }
 
-fn render_segments(renderer: sdl.Renderer, state: *const State) void
+fn render_segments(state: *const State) void
 {
     _ = sdl.SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     const viewarea = Rect.new(
@@ -170,42 +196,37 @@ fn render_segments(renderer: sdl.Renderer, state: *const State) void
     }
 }
 
-fn render_entities(renderer: sdl.Renderer, state: *const State) void
+fn render_entities(state: *const State) void
 {
     var entity_it = state.entities.iterator();
     while (entity_it.next()) |entry| {
         const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
-        render_entity(entry.value, renderer, pos);
+        render_entity(entry.value, pos);
     }
 }
 
 // pos in screen coordinates
 fn render_entity(
         entity: Entity,
-        renderer: sdl.Renderer,
         pos: Vec2i) void
 {
+    const zero = Vec2i.new(0, 0);
+    const grid_size = Vec2i.new(GRID_SIZE, GRID_SIZE);
+    const srect = Rect.new(zero, grid_size);
+    const drect = Rect.new(pos, grid_size);
     switch (entity)
     {
         Entity.Block => {
-            const rect = Rect.new(pos, Vec2i.new(GRID_SIZE, GRID_SIZE));
-            _ = sdl.RenderFillRect(renderer, rect);
+            _ = sdl.RenderCopy(renderer, block_img, srect, drect);
         },
         Entity.Laser => |direction| {
-            const rect = Rect.new(
-                    pos.add(Vec2i.new(GRID_SIZE / 8, GRID_SIZE / 4)),
-                    Vec2i.new(
-                        GRID_SIZE - 2 * GRID_SIZE / 4,
-                        GRID_SIZE - 2 * GRID_SIZE / 4));
-            _ = sdl.RenderFillRect(renderer, rect);
-            const bottom = Rect.new(
-                    pos.add(Vec2i.new(
-                            GRID_SIZE * 3 / 4,
-                            GRID_SIZE / 4 + GRID_SIZE / 8)),
-                    Vec2i.new(
-                        GRID_SIZE / 8,
-                        GRID_SIZE * 3 / 4 - GRID_SIZE / 8));
-            _ = sdl.RenderFillRect(renderer, bottom);
+            _ = sdl.RenderCopyEx(
+                    renderer,
+                    laser_img,
+                    srect, drect,
+                    dir_angle(direction),
+                    &(grid_size.div(2)),
+                    sdl.FLIP_NONE);
         },
     }
 }
@@ -219,7 +240,6 @@ pub fn on_mouse_motion(
         x: i32, y: i32,
         x_rel: i32, y_rel: i32) void
 {
-    g_gui.compute_hovered(x, y);
     if (lmb_down and placing and (x_rel * x_rel + y_rel * y_rel >= 2))
         placing = false;
 
