@@ -7,8 +7,12 @@ and mirrors, and is heavily inspired by
 
 ## Building
 
-Blink uses makefiles to build (hopefully I will be able to move to the
-zig build system).
+Blink uses the zig build system. If the dependencies are met, you can simply run
+```
+zig build
+```
+
+Optionally Blink can use GNU make to build.
 
 Dependencies:
 
