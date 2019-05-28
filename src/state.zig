@@ -116,6 +116,41 @@ pub const State = struct
         self.lightrays.deinit();
     }
 
+    pub fn raycast(self: *State, pos: Vec2i, direction: Direction) ?Vec2i {
+        var closest: ?Vec2i = null;
+        var entity_iterator = self.entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            var position = entry.key;
+            const entity_position = position;
+            switch (direction) {
+                .UP   => {},
+                .DOWN => {
+                    position.y = -position.y;
+                },
+                .LEFT => {
+                    const temp = position.x;
+                    position.x = position.y;
+                    position.y = -temp;
+                },
+                .RIGHT => {
+                    const temp = position.x;
+                    position.x = -position.y;
+                    position.y = -temp;
+                },
+            }
+            if (position.x != pos.x)
+                continue;
+            if (position.y < pos.y)
+                continue;
+            if (closest) |best_candidate| {
+                if (best_candidate.y > position.y)
+                    closest = entity_position;
+            } else {
+                closest = entity_position;
+            }
+        }
+        return closest;
+    }
     pub fn get_current_entity(self: *const State) Entity
     {
         return self.entity_wheel[self.current_entity];
