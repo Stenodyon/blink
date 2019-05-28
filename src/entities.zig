@@ -1,9 +1,18 @@
+const SegmentDirection = @import("state.zig").SegmentDirection;
+
 pub const Direction = enum
 {
     UP,
     DOWN,
     LEFT,
-    RIGHT
+    RIGHT,
+
+    pub fn to_segment(direction: Direction) SegmentDirection {
+        switch (direction) {
+            .UP,   .DOWN  => return .VERTICAL,
+            .LEFT, .RIGHT => return .HORIZONTAL,
+        }
+    }
 };
 
 pub const clockwise_directions = []Direction{

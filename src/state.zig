@@ -151,6 +151,55 @@ pub const State = struct
         }
         return closest;
     }
+
+    pub fn create_lightrays(self: *State) !void {
+        try self.lightrays.resize(0);
+        var entity_iterator = self.entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            const position = entry.key;
+            const entity = entry.value;
+            switch (entity) {
+                .Laser => |direction| {
+                    const segment_direction = direction.to_segment();
+                    const segment_endpoint = self.raycast(position, direction);
+                    switch (direction) {
+                        .UP, .DOWN => {
+                            const b = b_value: {
+                                if (segment_endpoint) |endpoint| {
+                                    break :b_value endpoint.y;
+                                } else {
+                                    break :b_value @bitCast(i32, u32(0x8FFFFFFF));
+                                }
+                            };
+                            const new_segment = Segment.new(
+                                segment_direction,
+                                position.x,
+                                position.y,
+                                b);
+                            try self.lightrays.append(new_segment);
+                        },
+                        .LEFT, .RIGHT => {
+                            const b = b_value: {
+                                if (segment_endpoint) |endpoint| {
+                                    break :b_value endpoint.x;
+                                } else {
+                                    break :b_value @bitCast(i32, u32(0x8FFFFFFF));
+                                }
+                            };
+                            const new_segment = Segment.new(
+                                segment_direction,
+                                position.y,
+                                position.x,
+                                b);
+                            try self.lightrays.append(new_segment);
+                        },
+                    }
+                },
+                else => {},
+            }
+        }
+    }
+
     pub fn get_current_entity(self: *const State) Entity
     {
         return self.entity_wheel[self.current_entity];
@@ -172,7 +221,15 @@ pub const State = struct
             return false;
 
         _ = try self.entities.put(pos, entity);
+        try self.create_lightrays();
         return true;
+    }
+
+    pub fn remove_entity(self: *State, pos: Vec2i) !?EntityMap.KV {
+        const entity = self.entities.remove(pos);
+        if (entity) |_|
+            try self.create_lightrays();
+        return entity;
     }
 
     pub fn on_wheel_down(self: *State, amount: u32) void

@@ -247,7 +247,7 @@ pub fn on_mouse_motion(
         state.viewpos = state.viewpos.sub(Vec2i.new(x_rel, y_rel));
 }
 
-pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) void
+pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) !void
 {
     const mouse_pos = Vec2i.new(x, y).addi(state.viewpos);
     const grid_pos = mouse_pos.div(GRID_SIZE);
@@ -267,7 +267,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) void
         },
         sdl.BUTTON_RIGHT => {
             rmb_down = false;
-            if (state.entities.remove(grid_pos)) |_|
+            if (try state.remove_entity(grid_pos)) |_|
                 std.debug.warn("Removed!\n");
         },
         else => {},

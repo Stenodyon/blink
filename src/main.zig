@@ -111,7 +111,7 @@ pub fn main() !void
                 sdl.MOUSEBUTTONUP =>
                 {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
-                    display.on_mouse_button_up(
+                    try display.on_mouse_button_up(
                         &state,
                         mouse_event.button,
                         mouse_event.x,
