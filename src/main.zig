@@ -69,7 +69,7 @@ fn deinit_sdl() void
 
 // ============================================================================
 
-pub fn main() anyerror!void
+pub fn main() !void
 {
     init_sdl();
     defer deinit_sdl();
@@ -78,7 +78,7 @@ pub fn main() anyerror!void
     ResourceManager.init(&resource_allocator.allocator);
     defer ResourceManager.deinit();
 
-    display.init();
+    try display.init();
 
     //var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
     //display.g_gui = @ptrCast(

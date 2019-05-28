@@ -21,7 +21,7 @@ pub fn deinit() void
     Resources.deinit();
 }
 
-pub fn Get(path: []const u8) sdl.Surface
+pub fn Get(path: []const u8) !sdl.Surface
 {
     const result = Resources.get(path);
     if (result) |entry|
@@ -34,6 +34,6 @@ pub fn Get(path: []const u8) sdl.Surface
         std.os.exit(1);
     }
 
-    _ = Resources.put(path, surface);
+    _ = try Resources.put(path, surface);
     return surface;
 }

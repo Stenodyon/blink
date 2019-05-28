@@ -77,9 +77,9 @@ pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 var block_img: sdl.Texture = undefined;
 var laser_img: sdl.Texture = undefined;
 
-fn load_texture(path: []const u8) sdl.Texture
+fn load_texture(path: []const u8) !sdl.Texture
 {
-    const surface = ResourceManager.Get(path);
+    const surface = try ResourceManager.Get(path);
     const texture = sdl.CreateTextureFromSurface(renderer, surface);
     if (texture == null)
     {
@@ -89,10 +89,10 @@ fn load_texture(path: []const u8) sdl.Texture
     return texture;
 }
 
-pub fn init() void
+pub fn init() !void
 {
-    block_img = load_texture("data/entity_block.png");
-    laser_img = load_texture("data/entity_laser.png");
+    block_img = try load_texture("data/entity_block.png");
+    laser_img = try load_texture("data/entity_laser.png");
     std.debug.warn("Textures loaded\n");
 }
 
