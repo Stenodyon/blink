@@ -22,13 +22,9 @@ fn strlen(str: [*]const u8) usize
 
 pub fn GetError() []const u8
 {
-    const maybe_msg = c.IMG_GetError();
-    if (maybe_msg) |msg| {
-        const length = strlen(msg);
-        return msg[0..length];
-    } else {
-        return "IMG_GetError() failed";
-    }
+    const msg = c.IMG_GetError();
+    const length = strlen(msg);
+    return msg[0..length];
 }
 
 pub fn Load(path: []const u8) sdl.Surface
