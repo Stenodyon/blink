@@ -2,3 +2,4 @@ blink
 blink.o
 zig-cache/
 vgcore*
+.localvimrc
