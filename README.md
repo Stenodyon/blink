@@ -7,7 +7,7 @@ and mirrors, and is heavily inspired by
 
 ## Building
 
-Blink uses makefiles to build. (Hopefully I will be able to move the the
+Blink uses makefiles to build (hopefully I will be able to move to the
 zig build system).
 
 Dependencies:
