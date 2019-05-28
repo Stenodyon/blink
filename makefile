@@ -13,6 +13,6 @@ blink: $(SRC)
 	    --library SDL2 --library SDL2_image
 
 clean:
-	rm -rf zig-cache blink
+	rm -rf zig-cache blink blink.o
 
 .PHONY: default clean
