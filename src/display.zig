@@ -2,15 +2,15 @@ const std   = @import("std");
 const sdl   = @import("sdl.zig");
 const lazy  = @import("lazy/index.zig");
 
-const ResourceManager = @import("res.zig");
-const State = @import("state.zig").State;
-const vec   = @import("vec.zig");
-const Vec2i = vec.Vec2i;
-const Rect  = vec.Rect;
-const utils = @import("utils.zig");
+const ResourceManager  = @import("res.zig");
+const State            = @import("state.zig").State;
+const vec              = @import("vec.zig");
+const Vec2i            = vec.Vec2i;
+const Rect             = vec.Rect;
+const utils            = @import("utils.zig");
 const SegmentDirection = @import("state.zig").SegmentDirection;
-const Entity = @import("entities.zig").Entity;
-const dir_angle = @import("entities.zig").dir_angle;
+const Entity           = @import("entities.zig").Entity;
+const dir_angle        = @import("entities.zig").dir_angle;
 
 pub var renderer: sdl.Renderer = undefined;
 
