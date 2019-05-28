@@ -8,8 +8,8 @@ const Vec2i = vec.Vec2i;
 const Rect  = vec.Rect;
 const utils = @import("utils.zig");
 
-const entities = @import("entities.zig");
-const Entity = entities.Entity;
+const entities  = @import("entities.zig");
+const Entity    = entities.Entity;
 const Direction = entities.Direction;
 
 pub const SegmentDirection = enum
@@ -165,9 +165,9 @@ pub const State = struct
             },
             else => return,
         }
-        const intval = @intCast(i32, @enumToInt(direction.*));
-        const newintval = @rem(intval + amount, 4);
-        direction.* = @intToEnum(Direction, @intCast(u2, newintval));
+        const intval = entities.clockwise_index(direction.*);
+        const newintval = @intCast(usize, @rem(intval + amount, 4));
+        direction.* = entities.clockwise_directions[newintval];
     }
 
     pub fn on_key_up(self: *State, keysym: sdl.Keysym) void
