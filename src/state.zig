@@ -52,11 +52,15 @@ pub const State = struct {
         entity: *Entity,
     };
 
-    pub fn raycast(self: *State, origin: Vec2i, direction: Direction) ?RayHit {
+    pub fn raycast(
+        self: *const State,
+        origin: Vec2i,
+        direction: Direction,
+    ) ?RayHit {
         var closest: ?Vec2i = null;
         var closest_entity: ?*Entity = null;
         var entity_iterator = self.entities.iterator();
-        std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
+        //std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
         while (entity_iterator.next()) |entry| {
             var pos = origin;
             var position = entry.key;
@@ -104,12 +108,12 @@ pub const State = struct {
         }
         const hitpos = closest orelse return null;
         const distance = hitpos.distanceInt(origin);
-        std.debug.warn(
-            "Raycast hit ({}, {}) at distance {}\n",
-            hitpos.x,
-            hitpos.y,
-            distance,
-        );
+        //        std.debug.warn(
+        //            "Raycast hit ({}, {}) at distance {}\n",
+        //            hitpos.x,
+        //            hitpos.y,
+        //            distance,
+        //        );
         return RayHit{
             .hitpos = hitpos,
             .distance = distance,
