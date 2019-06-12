@@ -19,6 +19,8 @@ pub const SCREEN_HEIGHT = 720;
 
 pub const GRID_SIZE = 64;
 
+pub const GRID_CENTER = Vec2i.new(GRID_SIZE / 2, GRID_SIZE / 2);
+
 pub const GUI_Element = struct {
     draw: fn (self: *GUI_Element, renderer: sdl.Renderer) void,
     resize: fn (self: *GUI_Element) void,
@@ -93,7 +95,7 @@ pub fn render(state: *const State) void {
     render_grid(state);
     render_entities(state);
     render_grid_sel(state);
-    render_segments(state);
+    render_lightrays(state);
 
     sdl.RenderPresent(renderer);
 }
@@ -135,20 +137,23 @@ fn render_grid(state: *const State) void {
     }
 }
 
-fn render_segments(state: *const State) void {
+fn render_lightrays(state: *const State) void {
     _ = sdl.SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     const viewarea = Rect.new(
-        state.viewpos,
-        Vec2i.new(SCREEN_WIDTH, SCREEN_HEIGHT),
+        screen2grid(state.viewpos),
+        Vec2i.new(
+            SCREEN_WIDTH / GRID_SIZE + 1,
+            SCREEN_HEIGHT / GRID_SIZE + 1,
+        ),
     );
     for (state.lightrays.toSlice()) |lightray| {
         if (!(lightray.intersects(viewarea)))
             continue;
 
-        var start = lightray.origin.sub(state.viewpos);
+        var start = grid2screen(lightray.origin).subi(state.viewpos);
         var end = end: {
             if (lightray.get_endpoint()) |endpoint| {
-                break :end endpoint.sub(state.viewpos);
+                break :end grid2screen(endpoint).subi(state.viewpos);
             } else {
                 switch (lightray.direction) {
                     .UP => break :end Vec2i.new(start.x, 0),
@@ -159,6 +164,9 @@ fn render_segments(state: *const State) void {
                 }
             }
         };
+        _ = start.addi(GRID_CENTER);
+        _ = end.addi(GRID_CENTER);
+
         utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
         utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
         utils.clamp(i32, &end.x, 0, SCREEN_WIDTH);
@@ -208,4 +216,8 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
 
 pub fn screen2grid(point: Vec2i) Vec2i {
     return point.div(GRID_SIZE);
+}
+
+pub fn grid2screen(point: Vec2i) Vec2i {
+    return point.mul(GRID_SIZE);
 }
