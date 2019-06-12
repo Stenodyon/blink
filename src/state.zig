@@ -52,12 +52,13 @@ pub const State = struct {
         entity: *Entity,
     };
 
-    pub fn raycast(self: *State, pos: Vec2i, direction: Direction) ?RayHit {
+    pub fn raycast(self: *State, origin: Vec2i, direction: Direction) ?RayHit {
         var closest: ?Vec2i = null;
         var closest_entity: ?*Entity = null;
         var entity_iterator = self.entities.iterator();
-        std.debug.warn("Raycasting from ({}, {})\n", pos.x, pos.y);
+        std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
         while (entity_iterator.next()) |entry| {
+            var pos = origin;
             var position = entry.key;
             const entity_position = position;
             if (entity_position.equals(pos)) // We can't hit ourselves
@@ -66,16 +67,25 @@ pub const State = struct {
                 .UP => {},
                 .DOWN => {
                     position.y = -position.y;
+                    pos.y = -pos.y;
                 },
                 .LEFT => {
-                    const temp = position.x;
-                    position.x = position.y;
-                    position.y = -temp;
+                    var temp = position.x;
+                    position.x = -position.y;
+                    position.y = temp;
+
+                    temp = pos.x;
+                    pos.x = -pos.y;
+                    pos.y = temp;
                 },
                 .RIGHT => {
-                    const temp = position.x;
+                    var temp = position.x;
                     position.x = -position.y;
                     position.y = -temp;
+
+                    temp = pos.x;
+                    pos.x = -pos.y;
+                    pos.y = -temp;
                 },
             }
             if (position.x != pos.x)
@@ -93,13 +103,13 @@ pub const State = struct {
             }
         }
         const hitpos = closest orelse return null;
-        const distance = hitpos.distanceInt(pos);
-        //        std.debug.warn(
-        //            "Raycast hit ({}, {}) at distance {}\n",
-        //            hitpos.x,
-        //            hitpos.y,
-        //            distance,
-        //        );
+        const distance = hitpos.distanceInt(origin);
+        std.debug.warn(
+            "Raycast hit ({}, {}) at distance {}\n",
+            hitpos.x,
+            hitpos.y,
+            distance,
+        );
         return RayHit{
             .hitpos = hitpos,
             .distance = distance,
@@ -112,14 +122,18 @@ pub const State = struct {
         origin: Vec2i,
         direction: Direction,
     ) !void {
-        const hit = self.raycast(origin, direction) orelse return;
+        const hit_result = self.raycast(origin, direction);
+        var distance: ?u32 = null;
+        if (hit_result) |hit| distance = hit.distance;
+
         const new_ray = LightRay.new(
             direction,
             origin,
-            hit.distance,
+            distance,
         );
         try self.lightrays.append(new_ray);
 
+        const hit = hit_result orelse return;
         switch (hit.entity.*) {
             .Block, .Laser => return,
             // Other entities would have different behavior, like mirrors
