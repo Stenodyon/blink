@@ -142,6 +142,22 @@ pub const Rect = struct {
         return point.x >= self.pos.x and point.x < (self.pos.x + self.size.x) and point.y >= self.pos.y and point.y < (self.pos.y + self.size.y);
     }
 
+    pub fn expand_to_contain(self: *Rect, point: Vec2i) void {
+        if (point.x < self.x) {
+            self.w += self.x - point.x;
+            self.x = point.x;
+        } else if (point.x > (self.x + self.w)) {
+            self.w = point.x - self.x;
+        }
+
+        if (point.y < self.y) {
+            self.h += self.y - point.y;
+            self.y = point.y;
+        } else if (point.y > (self.y + self.h)) {
+            self.h = point.y - self.y;
+        }
+    }
+
     pub fn to_sdl(self: Rect) sdl.Rect {
         return sdl.Rect{
             .x = self.pos.x,
