@@ -10,8 +10,8 @@ const utils = @import("utils.zig");
 
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
-const LightRay = entities.LightRay;
 const Direction = entities.Direction;
+const LightRay = @import("lightray.zig").LightRay;
 
 const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
 const SegmentList = std.ArrayList(LightRay);
