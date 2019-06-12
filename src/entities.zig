@@ -50,19 +50,15 @@ pub const Entity = union(enum) {
     Laser: Direction,
 
     pub fn clockwise(self: *Entity) void {
-        switch (self) {
-            Laser => |direction| {
-                self.* = Entity{ .Laser = direction.clockwise() };
-            },
+        switch (self.*) {
+            .Laser => |*direction| direction.* = direction.clockwise(),
             else => {},
         }
     }
 
     pub fn cclockwise(self: *Entity) void {
         switch (self.*) {
-            .Laser => |direction| {
-                self.* = Entity{ .Laser = direction.cclockwise() };
-            },
+            .Laser => |*direction| direction.* = direction.cclockwise(),
             else => {},
         }
     }
