@@ -26,7 +26,7 @@ pub const State = struct {
 
     entities: EntityMap,
     current_entity: usize,
-    entity_wheel: [2]Entity,
+    entity_wheel: [3]Entity,
 
     //lightrays: SegmentList,
     lighttrees: TreeMap,
@@ -39,7 +39,8 @@ pub const State = struct {
             .current_entity = 0,
             .entity_wheel = [_]Entity{
                 Entity.Block,
-                Entity{ .Laser = Direction.UP },
+                Entity{ .Laser = .UP },
+                Entity{ .Mirror = .UP },
             },
 
             //.lightrays = SegmentList.init(allocator),
@@ -127,46 +128,6 @@ pub const State = struct {
         };
     }
 
-    //    fn propagate_lightray(
-    //        self: *State,
-    //        origin: Vec2i,
-    //        direction: Direction,
-    //    ) !void {
-    //        const hit_result = self.raycast(origin, direction);
-    //        var distance: ?u32 = null;
-    //        if (hit_result) |hit| distance = hit.distance;
-    //
-    //        const new_ray = LightRay.new(
-    //            direction,
-    //            origin,
-    //            distance,
-    //        );
-    //        try self.lightrays.append(new_ray);
-    //
-    //        const hit = hit_result orelse return;
-    //        switch (hit.entity.*) {
-    //            .Block, .Laser => return,
-    //            // Other entities would have different behavior, like mirrors
-    //            // would propagate the ray at a 90 degree angle, ...
-    //            else => unreachable,
-    //        }
-    //    }
-
-    //  pub fn create_lightrays(self: *State) !void {
-    //      try self.lightrays.resize(0);
-    //      var entity_iterator = self.entities.iterator();
-    //      while (entity_iterator.next()) |entry| {
-    //          const position = entry.key;
-    //          const entity = entry.value;
-    //          switch (entity) {
-    //              .Laser => |direction| {
-    //                  try self.propagate_lightray(position, direction);
-    //              },
-    //              else => {},
-    //          }
-    //      }
-    //  }
-
     pub fn get_current_entity(self: *const State) Entity {
         return self.entity_wheel[self.current_entity];
     }
@@ -185,6 +146,7 @@ pub const State = struct {
 
         _ = try self.entities.put(pos, entity);
         switch (entity) {
+            .Block, .Mirror => {},
             .Laser => |direction| {
                 var tree = LightTree.new(
                     pos,
@@ -194,10 +156,9 @@ pub const State = struct {
                 try tree.generate(self);
                 _ = try self.lighttrees.put(pos, tree);
             },
-            else => {},
+            else => unreachable,
         }
         try self.update_trees(pos);
-        //try self.create_lightrays();
         return true;
     }
 
@@ -205,13 +166,13 @@ pub const State = struct {
         const remove_result = self.entities.remove(pos);
         if (remove_result) |entry| {
             switch (entry.value) {
+                .Block, .Mirror => {},
                 .Laser => {
                     _ = self.lighttrees.remove(pos) orelse unreachable;
                 },
-                else => {},
+                else => unreachable,
             }
             try self.update_trees(pos);
-            // try self.create_lightrays();
         }
         return remove_result;
     }
@@ -222,12 +183,12 @@ pub const State = struct {
             while (tree_iterator.next()) |entry| {
                 var tree = entry.value;
                 if (tree.in_bounds(position))
-                    try tree.regenerate(self, self.lighttrees.allocator);
+                    try tree.regenerate(self);
             }
         } else {
             while (tree_iterator.next()) |entry| {
                 var tree = entry.value;
-                try tree.regenerate(self, self.lighttrees.allocator);
+                try tree.regenerate(self);
             }
         }
     }

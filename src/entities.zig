@@ -38,46 +38,69 @@ pub const Direction = enum {
 
 pub fn dir_angle(direction: Direction) f64 {
     switch (direction) {
-        .UP => return 270,
-        .DOWN => return 90,
-        .LEFT => return 180,
-        .RIGHT => return 0,
+        .UP => return 0,
+        .DOWN => return 180,
+        .LEFT => return 270,
+        .RIGHT => return 90,
     }
 }
+
+const mirror_directions = [_]Direction{
+    .UP,
+    .DOWN,
+    .LEFT,
+    .RIGHT,
+};
 
 pub const Entity = union(enum) {
     Block,
     Laser: Direction,
+    Mirror: Direction,
 
     // Returns the direction of propagated rays
     pub fn propagated_rays(
         self: *Entity,
         hitdir: Direction,
-    ) []Direction {
+    ) []const Direction {
         switch (self.*) {
             .Block, .Laser => return [_]Direction{},
+            .Mirror => |direction| {
+                if (hitdir == direction) {
+                    const index = @intCast(usize, @enumToInt(direction.clockwise()));
+                    return mirror_directions[index .. index + 1]; //something;
+                }
+                if (hitdir == direction.cclockwise()) {
+                    const index = @intCast(usize, @enumToInt(direction.clockwise().clockwise()));
+                    return mirror_directions[index .. index + 1]; //something;
+                }
+                return [_]Direction{};
+            },
             else => unreachable,
         }
     }
 
     pub fn is_input(self: *Entity, direction: Direction) bool {
         switch (self.*) {
-            .Block, .Laser => return false,
+            .Block, .Laser, .Mirror => return false,
             else => unreachable,
         }
     }
 
     pub fn clockwise(self: *Entity) void {
         switch (self.*) {
+            .Block => {},
             .Laser => |*direction| direction.* = direction.clockwise(),
-            else => {},
+            .Mirror => |*direction| direction.* = direction.clockwise(),
+            else => unreachable,
         }
     }
 
     pub fn cclockwise(self: *Entity) void {
         switch (self.*) {
+            .Block => {},
             .Laser => |*direction| direction.* = direction.cclockwise(),
-            else => {},
+            .Mirror => |*direction| direction.* = direction.cclockwise(),
+            else => unreachable,
         }
     }
 };

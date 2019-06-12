@@ -68,6 +68,7 @@ pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 
 var block_img: sdl.Texture = undefined;
 var laser_img: sdl.Texture = undefined;
+var mirror_img: sdl.Texture = undefined;
 
 fn load_texture(path: []const u8) !sdl.Texture {
     const surface = try ResourceManager.Get(path);
@@ -82,6 +83,7 @@ fn load_texture(path: []const u8) !sdl.Texture {
 pub fn init() !void {
     block_img = try load_texture("data/entity_block.png");
     laser_img = try load_texture("data/entity_laser.png");
+    mirror_img = try load_texture("data/entity_mirror.png");
     std.debug.warn("Textures loaded\n");
 }
 
@@ -200,10 +202,10 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
     const srect = Rect.new(zero, grid_size);
     const drect = Rect.new(pos, grid_size);
     switch (entity) {
-        Entity.Block => {
+        .Block => {
             _ = sdl.RenderCopy(renderer, block_img, srect, drect);
         },
-        Entity.Laser => |direction| {
+        .Laser => |direction| {
             _ = sdl.RenderCopyEx(
                 renderer,
                 laser_img,
@@ -214,6 +216,18 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
                 sdl.FLIP_NONE,
             );
         },
+        .Mirror => |direction| {
+            _ = sdl.RenderCopyEx(
+                renderer,
+                mirror_img,
+                srect,
+                drect,
+                dir_angle(direction),
+                &(grid_size.div(2)),
+                sdl.FLIP_NONE,
+            );
+        },
+        else => unreachable,
     }
 }
 

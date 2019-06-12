@@ -171,7 +171,6 @@ pub const LightTree = struct {
     pub fn regenerate(
         self: *LightTree,
         state: *State,
-        allocator: *Allocator,
     ) !void {
         self.bounding_box = Rect.new(
             self.origin,
