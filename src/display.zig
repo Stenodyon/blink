@@ -93,9 +93,9 @@ pub fn render(state: *const State) void {
 
     _ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     render_grid(state);
+    render_lightrays(state);
     render_entities(state);
     render_grid_sel(state);
-    render_lightrays(state);
 
     sdl.RenderPresent(renderer);
 }
@@ -151,9 +151,10 @@ fn render_lightrays(state: *const State) void {
             continue;
 
         var start = grid2screen(lightray.origin).subi(state.viewpos);
+        _ = start.addi(GRID_CENTER);
         var end = end: {
             if (lightray.get_endpoint()) |endpoint| {
-                break :end grid2screen(endpoint).subi(state.viewpos);
+                break :end grid2screen(endpoint).subi(state.viewpos).addi(GRID_CENTER);
             } else {
                 switch (lightray.direction) {
                     .UP => break :end Vec2i.new(start.x, 0),
@@ -164,8 +165,6 @@ fn render_lightrays(state: *const State) void {
                 }
             }
         };
-        _ = start.addi(GRID_CENTER);
-        _ = end.addi(GRID_CENTER);
 
         utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
         utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
