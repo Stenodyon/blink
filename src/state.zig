@@ -46,12 +46,20 @@ pub const State = struct {
         self.lightrays.deinit();
     }
 
-    pub fn raycast(self: *State, pos: Vec2i, direction: Direction) ?Vec2i {
+    pub const RayHit = struct {
+        hitpos: Vec2i,
+        distance: u32,
+    };
+
+    pub fn raycast(self: *State, pos: Vec2i, direction: Direction) ?RayHit {
         var closest: ?Vec2i = null;
         var entity_iterator = self.entities.iterator();
+        std.debug.warn("Raycasting from ({}, {})\n", pos.x, pos.y);
         while (entity_iterator.next()) |entry| {
             var position = entry.key;
             const entity_position = position;
+            if (entity_position.equals(pos)) // We can't hit ourselves
+                continue;
             switch (direction) {
                 .UP => {},
                 .DOWN => {
@@ -70,16 +78,27 @@ pub const State = struct {
             }
             if (position.x != pos.x)
                 continue;
-            if (position.y < pos.y)
+            if (pos.y < position.y)
                 continue;
             if (closest) |best_candidate| {
-                if (best_candidate.y > position.y)
+                if (position.y > best_candidate.y)
                     closest = entity_position;
             } else {
                 closest = entity_position;
             }
         }
-        return closest;
+        const hitpos = closest orelse return null;
+        const distance = hitpos.distanceInt(pos);
+        //        std.debug.warn(
+        //            "Raycast hit ({}, {}) at distance {}\n",
+        //            hitpos.x,
+        //            hitpos.y,
+        //            distance,
+        //        );
+        return RayHit{
+            .hitpos = hitpos,
+            .distance = distance,
+        };
     }
 
     pub fn create_lightrays(self: *State) !void {
@@ -90,20 +109,15 @@ pub const State = struct {
             const entity = entry.value;
             switch (entity) {
                 .Laser => |direction| {
-                    const segment_endpoint = self.raycast(position, direction);
-                    const length: ?u32 = len: {
-                        if (segment_endpoint) |endpoint| {
-                            break :len endpoint.distanceInt(position);
-                        } else {
-                            break :len null;
-                        }
-                    };
-                    const new_segment = LightRay.new(
-                        direction,
-                        position,
-                        length,
-                    );
-                    try self.lightrays.append(new_segment);
+                    const hit_result = self.raycast(position, direction);
+                    if (hit_result) |hit| {
+                        const new_ray = LightRay.new(
+                            direction,
+                            position,
+                            hit.distance,
+                        );
+                        try self.lightrays.append(new_ray);
+                    }
                 },
                 else => {},
             }
