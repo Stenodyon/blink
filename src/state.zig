@@ -49,10 +49,12 @@ pub const State = struct {
     pub const RayHit = struct {
         hitpos: Vec2i,
         distance: u32,
+        entity: *Entity,
     };
 
     pub fn raycast(self: *State, pos: Vec2i, direction: Direction) ?RayHit {
         var closest: ?Vec2i = null;
+        var closest_entity: ?*Entity = null;
         var entity_iterator = self.entities.iterator();
         std.debug.warn("Raycasting from ({}, {})\n", pos.x, pos.y);
         while (entity_iterator.next()) |entry| {
@@ -81,10 +83,13 @@ pub const State = struct {
             if (pos.y < position.y)
                 continue;
             if (closest) |best_candidate| {
-                if (position.y > best_candidate.y)
+                if (position.y > best_candidate.y) {
                     closest = entity_position;
+                    closest_entity = &entry.value;
+                }
             } else {
                 closest = entity_position;
+                closest_entity = &entry.value;
             }
         }
         const hitpos = closest orelse return null;
@@ -98,7 +103,29 @@ pub const State = struct {
         return RayHit{
             .hitpos = hitpos,
             .distance = distance,
+            .entity = closest_entity orelse unreachable,
         };
+    }
+
+    fn propagate_lightray(
+        self: *State,
+        origin: Vec2i,
+        direction: Direction,
+    ) !void {
+        const hit = self.raycast(origin, direction) orelse return;
+        const new_ray = LightRay.new(
+            direction,
+            origin,
+            hit.distance,
+        );
+        try self.lightrays.append(new_ray);
+
+        switch (hit.entity.*) {
+            .Block, .Laser => return,
+            // Other entities would have different behavior, like mirrors
+            // would propagate the ray at a 90 degree angle, ...
+            else => unreachable,
+        }
     }
 
     pub fn create_lightrays(self: *State) !void {
@@ -109,15 +136,7 @@ pub const State = struct {
             const entity = entry.value;
             switch (entity) {
                 .Laser => |direction| {
-                    const hit_result = self.raycast(position, direction);
-                    if (hit_result) |hit| {
-                        const new_ray = LightRay.new(
-                            direction,
-                            position,
-                            hit.distance,
-                        );
-                        try self.lightrays.append(new_ray);
-                    }
+                    try self.propagate_lightray(position, direction);
                 },
                 else => {},
             }
