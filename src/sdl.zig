@@ -1,5 +1,6 @@
-const c = @cImport({
+pub const c = @cImport({
     @cInclude("SDL2/SDL.h");
+    @cInclude("SDL2/SDL_ttf.h");
 });
 
 const vec = @import("vec.zig");
@@ -180,6 +181,7 @@ pub fn PollEvent(event: *Event) c_int {
 // Misc
 pub const Point = c.struct_SDL_Point;
 pub const Rect = c.struct_SDL_Rect;
+pub const Color = c.struct_SDL_Color;
 
 pub const RendererFlip = c.SDL_RendererFlip;
 pub const FLIP_NONE = @intToEnum(RendererFlip, c.SDL_FLIP_NONE);

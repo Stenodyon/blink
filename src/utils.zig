@@ -40,3 +40,9 @@ pub fn key_value(keycode: i32) i32 {
 pub fn slot_value(keycode: i32) i32 {
     return @mod(key_value(keycode) - 1, 10);
 }
+
+pub fn c_to_slice(cstring: [*]const u8) []const u8 {
+    var count: usize = 0;
+    while (cstring[count] != 0) count += 1;
+    return cstring[0..count];
+}

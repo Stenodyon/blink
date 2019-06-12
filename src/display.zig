@@ -1,6 +1,10 @@
 const std = @import("std");
 const math = std.math;
+const Allocator = std.mem.Allocator;
+const Buffer = std.Buffer;
+
 const sdl = @import("sdl.zig");
+const ttf = @import("ttf.zig");
 const lazy = @import("lazy/index.zig");
 
 const ResourceManager = @import("res.zig");
@@ -70,6 +74,9 @@ var block_img: sdl.Texture = undefined;
 var laser_img: sdl.Texture = undefined;
 var mirror_img: sdl.Texture = undefined;
 
+const font_name = c"data/VT323-Regular.ttf";
+var font: ttf.Font = undefined;
+
 fn load_texture(path: []const u8) !sdl.Texture {
     const surface = try ResourceManager.Get(path);
     const texture = sdl.CreateTextureFromSurface(renderer, surface);
@@ -84,7 +91,19 @@ pub fn init() !void {
     block_img = try load_texture("data/entity_block.png");
     laser_img = try load_texture("data/entity_laser.png");
     mirror_img = try load_texture("data/entity_mirror.png");
+    font = ttf.OpenFont(font_name, 25);
+    if (font == null) {
+        std.debug.warn(
+            "Failed to load font \"{}\"\n",
+            utils.c_to_slice(font_name),
+        );
+        std.os.exit(1);
+    }
     std.debug.warn("Textures loaded\n");
+}
+
+pub fn deinit() void {
+    ttf.CloseFont(font);
 }
 
 pub fn render(state: *const State) void {
@@ -151,9 +170,11 @@ fn render_lightrays(state: *const State) void {
     var tree_iterator = state.lighttrees.iterator();
     while (tree_iterator.next()) |entry| {
         const tree = entry.value;
+        var count: usize = 0;
         for (tree.rays.toSlice()) |lightray| {
             if (!(lightray.intersects(viewarea)))
                 continue;
+            count += 1;
 
             var start = grid2screen(lightray.origin).subi(state.viewpos);
             _ = start.addi(GRID_CENTER);
@@ -184,6 +205,11 @@ fn render_lightrays(state: *const State) void {
                 end.y,
             );
         }
+        debug_write(
+            std.debug.global_allocator,
+            "{} rays rendered",
+            count,
+        ) catch {};
     }
 }
 
@@ -229,6 +255,34 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
         },
         else => unreachable,
     }
+}
+
+pub fn debug_write(
+    allocator: *Allocator,
+    comptime fmt: []const u8,
+    args: ...,
+) !void {
+    var buffer = try Buffer.allocPrint(allocator, fmt, args);
+    defer buffer.deinit();
+    try buffer.appendByte(0);
+
+    const text = buffer.toSlice();
+    const color = sdl.Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
+    const surface = ttf.RenderText_Solid(
+        font,
+        @ptrCast([*c]const u8, &text[0]),
+        color,
+    );
+    defer sdl.FreeSurface(surface);
+
+    const texture = sdl.CreateTextureFromSurface(renderer, surface);
+    defer sdl.DestroyTexture(texture);
+
+    const dest_rect = Rect.new(
+        Vec2i.new(0, 0),
+        Vec2i.new(surface.*.w, surface.*.h),
+    );
+    _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
 pub fn screen2grid(point: Vec2i) Vec2i {

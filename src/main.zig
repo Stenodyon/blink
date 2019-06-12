@@ -4,6 +4,7 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 
 const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
+const ttf = @import("ttf.zig");
 const img = @import("img.zig");
 const display = @import("display.zig");
 const input = @import("input.zig");
@@ -58,15 +59,35 @@ fn deinit_sdl() void {
 
 // ============================================================================
 
+fn init_ttf() void {
+    if (ttf.Init() < 0) {
+        std.debug.warn("Could not initialize TTF: {}\n", ttf.GetError());
+        std.os.exit(1);
+    }
+}
+
+// ============================================================================
+
+fn deinit_ttf() void {
+    ttf.Quit();
+}
+
+// ============================================================================
+
 pub fn main() !void {
     init_sdl();
-    defer deinit_sdl();
+    init_ttf();
+    defer {
+        deinit_sdl();
+        deinit_ttf();
+    }
 
     var resource_allocator = ArenaAllocator.init(std.debug.global_allocator);
     ResourceManager.init(&resource_allocator.allocator);
     defer ResourceManager.deinit();
 
     try display.init();
+    defer display.deinit();
 
     //var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
     //display.g_gui = @ptrCast(
