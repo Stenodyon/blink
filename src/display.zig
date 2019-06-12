@@ -193,7 +193,15 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
             _ = sdl.RenderCopy(renderer, block_img, srect, drect);
         },
         Entity.Laser => |direction| {
-            _ = sdl.RenderCopyEx(renderer, laser_img, srect, drect, dir_angle(direction), &(grid_size.div(2)), sdl.FLIP_NONE);
+            _ = sdl.RenderCopyEx(
+                renderer,
+                laser_img,
+                srect,
+                drect,
+                dir_angle(direction),
+                &(grid_size.div(2)),
+                sdl.FLIP_NONE,
+            );
         },
     }
 }
