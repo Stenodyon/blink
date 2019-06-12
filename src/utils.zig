@@ -2,6 +2,8 @@ const std = @import("std");
 const math = std.math;
 const assert = std.debug.assert;
 
+const sdl = @import("sdl.zig");
+
 // Ensures a < b
 pub fn min_order(a: var, b: @typeOf(a)) void {
     if (b.* < a.*) {
@@ -29,4 +31,12 @@ test "min_order >" {
 
 pub fn clamp(comptime T: type, value: *T, min: T, max: T) void {
     value.* = math.max(min, math.min(max, value.*));
+}
+
+pub fn key_value(keycode: i32) i32 {
+    return keycode - sdl.K_0;
+}
+
+pub fn slot_value(keycode: i32) i32 {
+    return @mod(key_value(keycode) - 1, 10);
 }

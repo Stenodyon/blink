@@ -20,7 +20,7 @@ pub const State = struct {
     viewpos: Vec2i,
 
     entities: EntityMap,
-    current_entity: u32,
+    current_entity: usize,
     entity_wheel: [2]Entity,
 
     lightrays: SegmentList,
@@ -195,8 +195,27 @@ pub const State = struct {
 
     pub fn on_key_up(self: *State, keysym: sdl.Keysym) void {
         switch (keysym.sym) {
+            sdl.K_0,
+            sdl.K_1,
+            sdl.K_2,
+            sdl.K_3,
+            sdl.K_4,
+            sdl.K_5,
+            sdl.K_6,
+            sdl.K_7,
+            sdl.K_8,
+            sdl.K_9,
+            => {
+                const index = @intCast(usize, utils.slot_value(keysym.sym));
+                if (index < self.entity_wheel.len) {
+                    self.current_entity = index;
+                }
+            },
             sdl.K_q => {
                 self.get_entity_ptr().cclockwise();
+            },
+            sdl.K_e => {
+                self.get_entity_ptr().clockwise();
             },
             else => {},
         }
