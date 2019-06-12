@@ -1,5 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+const TailQueue = std.TailQueue;
 
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
@@ -11,9 +13,12 @@ const utils = @import("utils.zig");
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
-const LightRay = @import("lightray.zig").LightRay;
+const lightray = @import("lightray.zig");
+const LightRay = lightray.LightRay;
+const LightTree = lightray.LightTree;
 
 const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
+const TreeMap = std.HashMap(Vec2i, LightTree, Vec2i.hash, Vec2i.equals);
 const SegmentList = std.ArrayList(LightRay);
 
 pub const State = struct {
@@ -23,7 +28,8 @@ pub const State = struct {
     current_entity: usize,
     entity_wheel: [2]Entity,
 
-    lightrays: SegmentList,
+    //lightrays: SegmentList,
+    lighttrees: TreeMap,
 
     pub fn new(allocator: *Allocator) State {
         var new_state = State{
@@ -36,14 +42,16 @@ pub const State = struct {
                 Entity{ .Laser = Direction.UP },
             },
 
-            .lightrays = SegmentList.init(allocator),
+            //.lightrays = SegmentList.init(allocator),
+            .lighttrees = TreeMap.init(allocator),
         };
         return new_state;
     }
 
     pub fn destroy(self: *State) void {
         self.entities.deinit();
-        self.lightrays.deinit();
+        //self.lightrays.deinit();
+        self.lighttrees.deinit();
     }
 
     pub const RayHit = struct {
@@ -52,68 +60,66 @@ pub const State = struct {
         entity: *Entity,
     };
 
+    fn to_canonic(pos: Vec2i, direction: Direction) Vec2i {
+        switch (direction) {
+            .UP => {
+                return Vec2i.new(pos.x, pos.y);
+            },
+            .DOWN => {
+                return Vec2i.new(-pos.x, -pos.y);
+            },
+            .LEFT => {
+                return Vec2i.new(-pos.y, pos.x);
+            },
+            .RIGHT => {
+                return Vec2i.new(pos.y, -pos.x);
+            },
+        }
+    }
+
     pub fn raycast(
         self: *const State,
         origin: Vec2i,
         direction: Direction,
     ) ?RayHit {
+        var hitpos_canonic: ?Vec2i = null;
         var closest: ?Vec2i = null;
         var closest_entity: ?*Entity = null;
+        std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
+        const pos = to_canonic(origin, direction);
+
         var entity_iterator = self.entities.iterator();
-        //std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
         while (entity_iterator.next()) |entry| {
-            var pos = origin;
-            var position = entry.key;
-            const entity_position = position;
-            if (entity_position.equals(pos)) // We can't hit ourselves
+            const entity_position = entry.key;
+            const position = to_canonic(entity_position, direction);
+
+            if (entity_position.equals(origin)) // We can't hit ourselves
                 continue;
-            switch (direction) {
-                .UP => {},
-                .DOWN => {
-                    position.y = -position.y;
-                    pos.y = -pos.y;
-                },
-                .LEFT => {
-                    var temp = position.x;
-                    position.x = -position.y;
-                    position.y = temp;
-
-                    temp = pos.x;
-                    pos.x = -pos.y;
-                    pos.y = temp;
-                },
-                .RIGHT => {
-                    var temp = position.x;
-                    position.x = -position.y;
-                    position.y = -temp;
-
-                    temp = pos.x;
-                    pos.x = -pos.y;
-                    pos.y = -temp;
-                },
-            }
             if (position.x != pos.x)
                 continue;
             if (pos.y < position.y)
                 continue;
-            if (closest) |best_candidate| {
+            //std.debug.warn("Hit ({}
+            if (hitpos_canonic) |best_candidate| {
                 if (position.y > best_candidate.y) {
+                    hitpos_canonic = position;
                     closest = entity_position;
                     closest_entity = &entry.value;
                 }
             } else {
+                hitpos_canonic = position;
                 closest = entity_position;
                 closest_entity = &entry.value;
             }
         }
         const hitpos = closest orelse return null;
         const distance = hitpos.distanceInt(origin);
-        //        std.debug.warn(
-        //            "Raycast hit ({}, {}) at distance {}\n",
-        //            hitpos.x,
-        //            hitpos.y,
-        //            distance,
-        //        );
+        std.debug.warn(
+            "Raycast hit ({}, {}) at distance {}\n",
+            hitpos.x,
+            hitpos.y,
+            distance,
+        );
         return RayHit{
             .hitpos = hitpos,
             .distance = distance,
@@ -121,45 +127,45 @@ pub const State = struct {
         };
     }
 
-    fn propagate_lightray(
-        self: *State,
-        origin: Vec2i,
-        direction: Direction,
-    ) !void {
-        const hit_result = self.raycast(origin, direction);
-        var distance: ?u32 = null;
-        if (hit_result) |hit| distance = hit.distance;
+    //    fn propagate_lightray(
+    //        self: *State,
+    //        origin: Vec2i,
+    //        direction: Direction,
+    //    ) !void {
+    //        const hit_result = self.raycast(origin, direction);
+    //        var distance: ?u32 = null;
+    //        if (hit_result) |hit| distance = hit.distance;
+    //
+    //        const new_ray = LightRay.new(
+    //            direction,
+    //            origin,
+    //            distance,
+    //        );
+    //        try self.lightrays.append(new_ray);
+    //
+    //        const hit = hit_result orelse return;
+    //        switch (hit.entity.*) {
+    //            .Block, .Laser => return,
+    //            // Other entities would have different behavior, like mirrors
+    //            // would propagate the ray at a 90 degree angle, ...
+    //            else => unreachable,
+    //        }
+    //    }
 
-        const new_ray = LightRay.new(
-            direction,
-            origin,
-            distance,
-        );
-        try self.lightrays.append(new_ray);
-
-        const hit = hit_result orelse return;
-        switch (hit.entity.*) {
-            .Block, .Laser => return,
-            // Other entities would have different behavior, like mirrors
-            // would propagate the ray at a 90 degree angle, ...
-            else => unreachable,
-        }
-    }
-
-    pub fn create_lightrays(self: *State) !void {
-        try self.lightrays.resize(0);
-        var entity_iterator = self.entities.iterator();
-        while (entity_iterator.next()) |entry| {
-            const position = entry.key;
-            const entity = entry.value;
-            switch (entity) {
-                .Laser => |direction| {
-                    try self.propagate_lightray(position, direction);
-                },
-                else => {},
-            }
-        }
-    }
+    //  pub fn create_lightrays(self: *State) !void {
+    //      try self.lightrays.resize(0);
+    //      var entity_iterator = self.entities.iterator();
+    //      while (entity_iterator.next()) |entry| {
+    //          const position = entry.key;
+    //          const entity = entry.value;
+    //          switch (entity) {
+    //              .Laser => |direction| {
+    //                  try self.propagate_lightray(position, direction);
+    //              },
+    //              else => {},
+    //          }
+    //      }
+    //  }
 
     pub fn get_current_entity(self: *const State) Entity {
         return self.entity_wheel[self.current_entity];
@@ -178,15 +184,52 @@ pub const State = struct {
             return false;
 
         _ = try self.entities.put(pos, entity);
-        try self.create_lightrays();
+        switch (entity) {
+            .Laser => |direction| {
+                var tree = LightTree.new(
+                    pos,
+                    direction,
+                    self.lighttrees.allocator,
+                );
+                try tree.generate(self);
+                _ = try self.lighttrees.put(pos, tree);
+            },
+            else => {},
+        }
+        try self.update_trees(pos);
+        //try self.create_lightrays();
         return true;
     }
 
     pub fn remove_entity(self: *State, pos: Vec2i) !?EntityMap.KV {
-        const entity = self.entities.remove(pos);
-        if (entity) |_|
-            try self.create_lightrays();
-        return entity;
+        const remove_result = self.entities.remove(pos);
+        if (remove_result) |entry| {
+            switch (entry.value) {
+                .Laser => {
+                    _ = self.lighttrees.remove(pos) orelse unreachable;
+                },
+                else => {},
+            }
+            try self.update_trees(pos);
+            // try self.create_lightrays();
+        }
+        return remove_result;
+    }
+
+    pub fn update_trees(self: *State, pos: ?Vec2i) !void { // null means update all trees
+        var tree_iterator = self.lighttrees.iterator();
+        if (pos) |position| {
+            while (tree_iterator.next()) |entry| {
+                var tree = entry.value;
+                if (tree.in_bounds(position))
+                    try tree.regenerate(self, self.lighttrees.allocator);
+            }
+        } else {
+            while (tree_iterator.next()) |entry| {
+                var tree = entry.value;
+                try tree.regenerate(self, self.lighttrees.allocator);
+            }
+        }
     }
 
     pub fn on_wheel_down(self: *State, amount: u32) void {

@@ -1,10 +1,15 @@
 const std = @import("std");
 const swap = std.mem.swap;
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
 
-const Direction = @import("entities.zig").Direction;
+const entities = @import("entities.zig");
+const Direction = entities.Direction;
+const Entity = entities.Entity;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
 const Rect = vec.Rect;
+const State = @import("state.zig").State;
 
 pub const LightRay = struct {
     direction: Direction,
@@ -69,5 +74,111 @@ pub const LightRay = struct {
                 return true;
             },
         }
+    }
+};
+
+/// A LightTree is the entire path a light ray takes, from its origin to
+/// its (possibly multiple) end(s)
+pub const LightTree = struct {
+    origin: Vec2i,
+    direction: Direction,
+
+    /// Helps determining when a light tree must be updated (a new entity
+    /// has been added for example)
+    bounding_box: ?Rect, // null means the whole space
+    rays: ArrayList(LightRay),
+    leaves: ArrayList(*Entity),
+
+    pub fn new(
+        origin: Vec2i,
+        direction: Direction,
+        allocator: *Allocator,
+    ) LightTree {
+        return LightTree{
+            .origin = origin,
+            .direction = direction,
+            .bounding_box = Rect.new(origin, Vec2i.new(1, 1)),
+            .rays = ArrayList(LightRay).init(allocator),
+            .leaves = ArrayList(*Entity).init(allocator),
+        };
+    }
+
+    pub fn in_bounds(self: *const LightTree, point: Vec2i) bool {
+        const area = self.bounding_box orelse return true;
+        return area.contains(point);
+    }
+
+    pub fn generate(
+        self: *LightTree,
+        state: *State,
+    ) !void {
+        try self.propagate_lightray(
+            self.origin,
+            self.direction,
+            state,
+        );
+        if (self.bounding_box) |bounding_box| {
+            std.debug.warn(
+                "Tree bounding box is ({}, {}), ({}, {})\n",
+                bounding_box.pos.x,
+                bounding_box.pos.y,
+                bounding_box.size.x,
+                bounding_box.size.y,
+            );
+        } else {
+            std.debug.warn("Tree has infinite bounding box\n");
+        }
+    }
+
+    fn propagate_lightray(
+        self: *LightTree,
+        origin: Vec2i,
+        direction: Direction,
+        state: *const State,
+    ) error{
+        OutOfMemory,
+        OutOfBounds,
+    }!void {
+        const hit_result = state.raycast(origin, direction);
+        var distance: ?u32 = null;
+        if (hit_result) |hit| {
+            distance = hit.distance;
+            if (self.bounding_box) |*bounding_box|
+                bounding_box.expand_to_contain(hit.hitpos);
+        } else if (self.bounding_box) |_| {
+            self.bounding_box = null;
+        }
+        const new_ray = LightRay.new(
+            direction,
+            origin,
+            distance,
+        );
+        try self.rays.append(new_ray);
+
+        const hit = hit_result orelse return;
+        if (hit.entity.is_input(direction))
+            try self.leaves.append(hit.entity);
+
+        for (hit.entity.propagated_rays(direction)) |newdir| {
+            try self.propagate_lightray(
+                hit.hitpos,
+                newdir,
+                state,
+            );
+        }
+    }
+
+    pub fn regenerate(
+        self: *LightTree,
+        state: *State,
+        allocator: *Allocator,
+    ) !void {
+        self.bounding_box = Rect.new(
+            self.origin,
+            Vec2i.new(1, 1),
+        );
+        try self.rays.resize(0);
+        try self.leaves.resize(0);
+        try self.generate(state);
     }
 };

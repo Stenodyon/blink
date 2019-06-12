@@ -146,38 +146,42 @@ fn render_lightrays(state: *const State) void {
             SCREEN_HEIGHT / GRID_SIZE + 1,
         ),
     );
-    for (state.lightrays.toSlice()) |lightray| {
-        if (!(lightray.intersects(viewarea)))
-            continue;
+    var tree_iterator = state.lighttrees.iterator();
+    while (tree_iterator.next()) |entry| {
+        const tree = entry.value;
+        for (tree.rays.toSlice()) |lightray| {
+            if (!(lightray.intersects(viewarea)))
+                continue;
 
-        var start = grid2screen(lightray.origin).subi(state.viewpos);
-        _ = start.addi(GRID_CENTER);
-        var end = end: {
-            if (lightray.get_endpoint()) |endpoint| {
-                break :end grid2screen(endpoint).subi(state.viewpos).addi(GRID_CENTER);
-            } else {
-                switch (lightray.direction) {
-                    .UP => break :end Vec2i.new(start.x, 0),
-                    .DOWN => break :end Vec2i.new(start.x, SCREEN_HEIGHT),
-                    .LEFT => break :end Vec2i.new(0, start.y),
-                    .RIGHT => break :end Vec2i.new(SCREEN_WIDTH, start.y),
-                    else => unreachable,
+            var start = grid2screen(lightray.origin).subi(state.viewpos);
+            _ = start.addi(GRID_CENTER);
+            var end = end: {
+                if (lightray.get_endpoint()) |endpoint| {
+                    break :end grid2screen(endpoint).subi(state.viewpos).addi(GRID_CENTER);
+                } else {
+                    switch (lightray.direction) {
+                        .UP => break :end Vec2i.new(start.x, 0),
+                        .DOWN => break :end Vec2i.new(start.x, SCREEN_HEIGHT),
+                        .LEFT => break :end Vec2i.new(0, start.y),
+                        .RIGHT => break :end Vec2i.new(SCREEN_WIDTH, start.y),
+                        else => unreachable,
+                    }
                 }
-            }
-        };
+            };
 
-        utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
-        utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
-        utils.clamp(i32, &end.x, 0, SCREEN_WIDTH);
-        utils.clamp(i32, &end.y, 0, SCREEN_HEIGHT);
+            utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
+            utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
+            utils.clamp(i32, &end.x, 0, SCREEN_WIDTH);
+            utils.clamp(i32, &end.y, 0, SCREEN_HEIGHT);
 
-        _ = sdl.RenderDrawLine(
-            renderer,
-            start.x,
-            start.y,
-            end.x,
-            end.y,
-        );
+            _ = sdl.RenderDrawLine(
+                renderer,
+                start.x,
+                start.y,
+                end.x,
+                end.y,
+            );
+        }
     }
 }
 

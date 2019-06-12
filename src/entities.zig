@@ -49,6 +49,24 @@ pub const Entity = union(enum) {
     Block,
     Laser: Direction,
 
+    // Returns the direction of propagated rays
+    pub fn propagated_rays(
+        self: *Entity,
+        hitdir: Direction,
+    ) []Direction {
+        switch (self.*) {
+            .Block, .Laser => return [_]Direction{},
+            else => unreachable,
+        }
+    }
+
+    pub fn is_input(self: *Entity, direction: Direction) bool {
+        switch (self.*) {
+            .Block, .Laser => return false,
+            else => unreachable,
+        }
+    }
+
     pub fn clockwise(self: *Entity) void {
         switch (self.*) {
             .Laser => |*direction| direction.* = direction.clockwise(),

@@ -26,7 +26,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) !void {
             lmb_down = false;
             if (placing) {
                 if (state.place_entity(grid_pos) catch false) {
-                    std.debug.warn("Placing!\n");
+                    std.debug.warn("Placed!\n");
                 } else {
                     std.debug.warn("Blocked!\n");
                 }
