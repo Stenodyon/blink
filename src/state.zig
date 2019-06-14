@@ -180,14 +180,16 @@ pub const State = struct {
         const remove_result = self.entities.remove(pos);
         if (remove_result) |entry| {
             switch (entry.value) {
-                .Block, .Mirror => {},
+                .Block,
+                .Mirror,
+                .Splitter,
+                => {},
                 .Laser => |direction| {
                     _ = self.lighttrees.remove(RayOrigin{
                         .position = pos,
                         .direction = direction,
                     }) orelse unreachable;
                 },
-                else => unreachable,
             }
             try self.update_trees(pos);
         }
