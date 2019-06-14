@@ -79,7 +79,8 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn equals(a: Self, b: Self) bool {
-            return a.x == b.x and a.y == b.y;
+            return a.x == b.x and
+                a.y == b.y;
         }
 
         pub fn hash(vec: Self) u32 {
