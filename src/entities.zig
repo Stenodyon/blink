@@ -85,14 +85,12 @@ pub const Entity = union(enum) {
                 }
                 return [_]Direction{};
             },
-            else => unreachable,
         }
     }
 
     pub fn is_input(self: *Entity, direction: Direction) bool {
         switch (self.*) {
             .Block, .Laser, .Mirror => return false,
-            else => unreachable,
         }
     }
 
@@ -101,7 +99,6 @@ pub const Entity = union(enum) {
             .Block => {},
             .Laser => |*direction| direction.* = direction.clockwise(),
             .Mirror => |*direction| direction.* = direction.clockwise(),
-            else => unreachable,
         }
     }
 
@@ -110,7 +107,6 @@ pub const Entity = union(enum) {
             .Block => {},
             .Laser => |*direction| direction.* = direction.cclockwise(),
             .Mirror => |*direction| direction.* = direction.cclockwise(),
-            else => unreachable,
         }
     }
 };
