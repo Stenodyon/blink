@@ -205,11 +205,9 @@ fn render_lightrays(state: *const State) void {
                 end.y,
             );
         }
-        debug_write(
-            std.debug.global_allocator,
-            "{} rays rendered",
-            count,
-        ) catch {};
+        debug_write("{} rays rendered", count) catch {
+            std.debug.warn("Failed to render debug text\n");
+        };
     }
 }
 
@@ -258,11 +256,10 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
 }
 
 pub fn debug_write(
-    allocator: *Allocator,
     comptime fmt: []const u8,
     args: ...,
 ) !void {
-    var buffer = try Buffer.allocPrint(allocator, fmt, args);
+    var buffer = try Buffer.allocPrint(std.debug.global_allocator, fmt, args);
     defer buffer.deinit();
     try buffer.appendByte(0);
 
@@ -273,9 +270,17 @@ pub fn debug_write(
         @ptrCast([*c]const u8, &text[0]),
         color,
     );
+    if (surface == null) {
+        std.debug.warn("Failed to render text\n");
+        return;
+    }
     defer sdl.FreeSurface(surface);
 
     const texture = sdl.CreateTextureFromSurface(renderer, surface);
+    if (texture == null) {
+        std.debug.warn("Failed to create texture from surface\n");
+        return;
+    }
     defer sdl.DestroyTexture(texture);
 
     const dest_rect = Rect.new(
