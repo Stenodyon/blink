@@ -251,7 +251,6 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
                 sdl.FLIP_NONE,
             );
         },
-        else => unreachable,
     }
 }
 
