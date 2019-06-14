@@ -74,6 +74,8 @@ var block_img: sdl.Texture = undefined;
 var laser_img: sdl.Texture = undefined;
 var mirror_img: sdl.Texture = undefined;
 var splitter_img: sdl.Texture = undefined;
+var delayer_on_img: sdl.Texture = undefined;
+var delayer_off_img: sdl.Texture = undefined;
 
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
@@ -93,6 +95,8 @@ pub fn init() !void {
     laser_img = try load_texture("data/entity_laser.png");
     mirror_img = try load_texture("data/entity_mirror.png");
     splitter_img = try load_texture("data/entity_splitter.png");
+    delayer_on_img = try load_texture("data/entity_delayer_on.png");
+    delayer_off_img = try load_texture("data/entity_delayer_off.png");
 
     font = ttf.OpenFont(font_name, 25);
     if (font == null) {
@@ -261,6 +265,20 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
                 srect,
                 drect,
                 dir_angle(direction),
+                &(grid_size.div(2)),
+                sdl.FLIP_NONE,
+            );
+        },
+        .Delayer => |*delayer| {
+            _ = sdl.RenderCopyEx(
+                renderer,
+                switch (delayer.is_on) {
+                    true => delayer_on_img,
+                    false => delayer_off_img,
+                },
+                srect,
+                drect,
+                dir_angle(delayer.direction),
                 &(grid_size.div(2)),
                 sdl.FLIP_NONE,
             );

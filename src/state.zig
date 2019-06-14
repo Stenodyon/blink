@@ -13,6 +13,7 @@ const utils = @import("utils.zig");
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
+const Delayer = entities.Delayer;
 
 usingnamespace @import("lightray.zig");
 
@@ -30,7 +31,7 @@ pub const State = struct {
 
     entities: EntityMap,
     current_entity: usize,
-    entity_wheel: [4]Entity,
+    entity_wheel: [5]Entity,
 
     //lightrays: SegmentList,
     lighttrees: TreeMap,
@@ -46,6 +47,12 @@ pub const State = struct {
                 Entity{ .Laser = .UP },
                 Entity{ .Mirror = .UP },
                 Entity{ .Splitter = .UP },
+                Entity{
+                    .Delayer = Delayer{
+                        .direction = .UP,
+                        .is_on = false,
+                    },
+                },
             },
 
             //.lightrays = SegmentList.init(allocator),
@@ -157,6 +164,7 @@ pub const State = struct {
             => {},
 
             .Laser => |direction| try self.add_tree(pos, direction),
+            .Delayer => |*delayer| try self.add_tree(pos, delayer.direction),
         }
         try self.update_trees(pos);
         return true;
@@ -171,6 +179,7 @@ pub const State = struct {
                 .Splitter,
                 => {},
                 .Laser => |direction| self.remove_tree(pos, direction),
+                .Delayer => |*delayer| self.remove_tree(pos, delayer.direction),
             }
             try self.update_trees(pos);
         }

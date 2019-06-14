@@ -79,11 +79,17 @@ const splitter_directions = [_]Direction{
     .UP,
 };
 
+pub const Delayer = struct {
+    direction: Direction,
+    is_on: bool,
+};
+
 pub const Entity = union(enum) {
     Block,
     Laser: Direction,
     Mirror: Direction,
     Splitter: Direction,
+    Delayer: Delayer,
 
     // Returns the direction of propagated rays
     pub fn propagated_rays(
@@ -91,7 +97,11 @@ pub const Entity = union(enum) {
         hitdir: Direction,
     ) []const Direction {
         switch (self.*) {
-            .Block, .Laser => return [_]Direction{},
+            .Block,
+            .Laser,
+            .Delayer,
+            => return [_]Direction{},
+
             .Mirror => |direction| {
                 if (hitdir == direction) {
                     const index = @intCast(usize, @enumToInt(direction.clockwise()));
@@ -135,6 +145,7 @@ pub const Entity = union(enum) {
             .Mirror,
             .Splitter,
             => return false,
+            .Delayer => return true,
         }
     }
 
@@ -144,6 +155,9 @@ pub const Entity = union(enum) {
             .Laser => |*direction| direction.* = direction.clockwise(),
             .Mirror => |*direction| direction.* = direction.clockwise(),
             .Splitter => |*direction| direction.* = direction.clockwise(),
+            .Delayer => |*delayer| {
+                delayer.direction = delayer.direction.cclockwise();
+            },
         }
     }
 
@@ -153,6 +167,9 @@ pub const Entity = union(enum) {
             .Laser => |*direction| direction.* = direction.cclockwise(),
             .Mirror => |*direction| direction.* = direction.cclockwise(),
             .Splitter => |*direction| direction.* = direction.cclockwise(),
+            .Delayer => |*delayer| {
+                delayer.direction = delayer.direction.cclockwise();
+            },
         }
     }
 };

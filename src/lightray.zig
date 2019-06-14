@@ -114,7 +114,7 @@ pub const LightTree = struct {
     rays: ArrayList(LightRay),
     leaves: ArrayList(*Entity),
 
-    is_on: bool,
+    is_visible: bool,
 
     pub fn new(
         origin: Vec2i,
@@ -127,7 +127,7 @@ pub const LightTree = struct {
             .bounding_box = Rect.new(origin, Vec2i.new(1, 1)),
             .rays = ArrayList(LightRay).init(allocator),
             .leaves = ArrayList(*Entity).init(allocator),
-            .is_on = true,
+            .is_visible = true,
         };
     }
 
