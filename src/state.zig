@@ -156,21 +156,7 @@ pub const State = struct {
             .Splitter,
             => {},
 
-            .Laser => |direction| {
-                var tree = LightTree.new(
-                    pos,
-                    direction,
-                    self.lighttrees.allocator,
-                );
-                try tree.generate(self);
-                _ = try self.lighttrees.put(
-                    RayOrigin{
-                        .position = pos,
-                        .direction = direction,
-                    },
-                    tree,
-                );
-            },
+            .Laser => |direction| try self.add_tree(pos, direction),
         }
         try self.update_trees(pos);
         return true;
@@ -184,16 +170,45 @@ pub const State = struct {
                 .Mirror,
                 .Splitter,
                 => {},
-                .Laser => |direction| {
-                    _ = self.lighttrees.remove(RayOrigin{
-                        .position = pos,
-                        .direction = direction,
-                    }) orelse unreachable;
-                },
+                .Laser => |direction| self.remove_tree(pos, direction),
             }
             try self.update_trees(pos);
         }
         return remove_result;
+    }
+
+    pub fn add_tree(self: *State, pos: Vec2i, direction: Direction) !void {
+        var tree = LightTree.new(
+            pos,
+            direction,
+            self.lighttrees.allocator,
+        );
+        try tree.generate(self);
+        _ = try self.lighttrees.put(
+            RayOrigin{
+                .position = pos,
+                .direction = direction,
+            },
+            tree,
+        );
+    }
+
+    pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) void {
+        _ = self.lighttrees.remove(RayOrigin{
+            .position = pos,
+            .direction = direction,
+        }) orelse unreachable;
+    }
+
+    pub fn get_tree(
+        self: *State,
+        pos: Vec2i,
+        direction: Direction,
+    ) ?*LightTree {
+        return self.lighttrees.get(RayOrigin{
+            .position = pos,
+            .direction = direction,
+        });
     }
 
     pub fn update_trees(self: *State, pos: ?Vec2i) !void { // null means update all trees
