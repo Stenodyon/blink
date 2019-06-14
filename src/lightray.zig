@@ -36,26 +36,31 @@ pub const LightRay = struct {
     pub fn intersects(self: *const LightRay, area: Rect) bool {
         switch (self.direction) {
             .UP, .DOWN => {
-                if (self.origin.x < area.pos.x or self.origin.x >= (area.pos.x + area.size.x))
+                if (self.origin.x < area.pos.x or
+                    self.origin.x >= (area.pos.x + area.size.x))
                     return false;
                 if (self.get_endpoint()) |endpoint| {
                     var min_val = self.origin.y;
                     var max_val = endpoint.y;
                     if (min_val > max_val) swap(i32, &min_val, &max_val);
 
-                    if (min_val >= (area.pos.y + area.size.y) or max_val < area.pos.y)
+                    if (min_val >= (area.pos.y + area.size.y) or
+                        max_val < area.pos.y)
                         return false;
                 } else {
-                    if (self.direction == .DOWN and self.origin.y >= (area.pos.y + area.size.y))
+                    if (self.direction == .DOWN and
+                        self.origin.y >= (area.pos.y + area.size.y))
                         return false;
-                    if (self.direction == .UP and self.origin.y < area.pos.y)
+                    if (self.direction == .UP and
+                        self.origin.y < area.pos.y)
                         return false;
                 }
 
                 return true;
             },
             .LEFT, .RIGHT => {
-                if (self.origin.y < area.pos.y or self.origin.y >= (area.pos.y + area.size.y))
+                if (self.origin.y < area.pos.y or
+                    self.origin.y >= (area.pos.y + area.size.y))
                     return false;
                 if (self.get_endpoint()) |endpoint| {
                     var min_val = self.origin.x;
@@ -65,9 +70,11 @@ pub const LightRay = struct {
                     if (min_val >= (area.pos.x + area.size.x) or max_val < area.pos.x)
                         return false;
                 } else {
-                    if (self.direction == .DOWN and self.origin.x >= (area.pos.x + area.size.x))
+                    if (self.direction == .DOWN and
+                        self.origin.x >= (area.pos.x + area.size.x))
                         return false;
-                    if (self.direction == .UP and self.origin.x < area.pos.x)
+                    if (self.direction == .UP and
+                        self.origin.x < area.pos.x)
                         return false;
                 }
 
