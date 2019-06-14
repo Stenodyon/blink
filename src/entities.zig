@@ -34,6 +34,16 @@ pub const Direction = enum {
             .RIGHT => return Vec2i.new(1, 0),
         }
     }
+
+    pub fn to_string(self: Direction) []const u8 {
+        switch (self) {
+            .UP => return "UP",
+            .DOWN => return "DOWN",
+            .LEFT => return "LEFT",
+            .RIGHT => return "RIGHT",
+            else => unreachable,
+        }
+    }
 };
 
 pub fn dir_angle(direction: Direction) f64 {
