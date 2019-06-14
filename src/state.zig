@@ -181,13 +181,13 @@ pub const State = struct {
         var tree_iterator = self.lighttrees.iterator();
         if (pos) |position| {
             while (tree_iterator.next()) |entry| {
-                var tree = entry.value;
+                var tree = &entry.value;
                 if (tree.in_bounds(position))
                     try tree.regenerate(self);
             }
         } else {
             while (tree_iterator.next()) |entry| {
-                var tree = entry.value;
+                var tree = &entry.value;
                 try tree.regenerate(self);
             }
         }
