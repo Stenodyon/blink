@@ -176,7 +176,10 @@ fn render_lightrays(state: *const State) void {
     );
     var tree_iterator = state.lighttrees.iterator();
     while (tree_iterator.next()) |entry| {
-        const tree = entry.value;
+        const tree = &entry.value;
+        if (!tree.is_visible)
+            continue;
+
         var count: usize = 0;
         for (tree.rays.toSlice()) |lightray| {
             if (!(lightray.intersects(viewarea)))
