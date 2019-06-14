@@ -4,9 +4,9 @@ const Vec2i = @import("vec.zig").Vec2i;
 
 pub const Direction = enum {
     UP,
+    RIGHT,
     DOWN,
     LEFT,
-    RIGHT,
 
     pub fn clockwise(self: Direction) Direction {
         switch (self) {
@@ -23,6 +23,15 @@ pub const Direction = enum {
             .DOWN => return .RIGHT,
             .LEFT => return .DOWN,
             .RIGHT => return .UP,
+        }
+    }
+
+    pub fn opposite(self: Direction) Direction {
+        switch (self) {
+            .UP => return .DOWN,
+            .DOWN => return .UP,
+            .LEFT => return .RIGHT,
+            .RIGHT => return .LEFT,
         }
     }
 
@@ -57,9 +66,9 @@ pub fn dir_angle(direction: Direction) f64 {
 
 const mirror_directions = [_]Direction{
     .UP,
+    .RIGHT,
     .DOWN,
     .LEFT,
-    .RIGHT,
 };
 
 const splitter_directions = [_]Direction{
@@ -89,17 +98,31 @@ pub const Entity = union(enum) {
                     return mirror_directions[index .. index + 1];
                 }
                 if (hitdir == direction.cclockwise()) {
-                    const index = @intCast(usize, @enumToInt(direction.clockwise().clockwise()));
+                    const index = @intCast(usize, @enumToInt(direction.opposite()));
                     return mirror_directions[index .. index + 1];
                 }
                 return [_]Direction{};
             },
+
             .Splitter => |direction| {
-                if (hitdir == direction) {
-                    const index = @intCast(usize, @enumToInt(direction));
+                std.debug.warn(
+                    "dir {}, hitdir {}\n",
+                    direction.to_string(),
+                    hitdir.to_string(),
+                );
+                if (hitdir == direction or
+                    hitdir == direction.opposite())
+                {
+                    const index = @intCast(usize, @enumToInt(hitdir));
                     return splitter_directions[index .. index + 2];
                 }
-                // TODO hitdir == direction.cclockwise()
+                if (hitdir == direction.cclockwise() or
+                    hitdir == direction.clockwise())
+                {
+                    const index = @intCast(usize, @enumToInt(hitdir.cclockwise()));
+                    std.debug.warn("index is {}\n", index);
+                    return splitter_directions[index .. index + 2];
+                }
                 return [_]Direction{};
             },
         }
