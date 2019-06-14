@@ -139,7 +139,10 @@ pub const Rect = struct {
     }
 
     pub fn contains(self: *const Rect, point: Vec2i) bool {
-        return point.x >= self.pos.x and point.x < (self.pos.x + self.size.x) and point.y >= self.pos.y and point.y < (self.pos.y + self.size.y);
+        return point.x >= self.pos.x and
+            point.x < (self.pos.x + self.size.x) and
+            point.y >= self.pos.y and
+            point.y < (self.pos.y + self.size.y);
     }
 
     pub fn expand_to_contain(self: *Rect, point: Vec2i) void {
