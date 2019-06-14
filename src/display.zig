@@ -73,6 +73,7 @@ pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 var block_img: sdl.Texture = undefined;
 var laser_img: sdl.Texture = undefined;
 var mirror_img: sdl.Texture = undefined;
+var splitter_img: sdl.Texture = undefined;
 
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
@@ -91,6 +92,8 @@ pub fn init() !void {
     block_img = try load_texture("data/entity_block.png");
     laser_img = try load_texture("data/entity_laser.png");
     mirror_img = try load_texture("data/entity_mirror.png");
+    splitter_img = try load_texture("data/entity_splitter.png");
+
     font = ttf.OpenFont(font_name, 25);
     if (font == null) {
         std.debug.warn(
@@ -244,6 +247,17 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
             _ = sdl.RenderCopyEx(
                 renderer,
                 mirror_img,
+                srect,
+                drect,
+                dir_angle(direction),
+                &(grid_size.div(2)),
+                sdl.FLIP_NONE,
+            );
+        },
+        .Splitter => |direction| {
+            _ = sdl.RenderCopyEx(
+                renderer,
+                splitter_img,
                 srect,
                 drect,
                 dir_angle(direction),

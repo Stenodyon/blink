@@ -30,7 +30,7 @@ pub const State = struct {
 
     entities: EntityMap,
     current_entity: usize,
-    entity_wheel: [3]Entity,
+    entity_wheel: [4]Entity,
 
     //lightrays: SegmentList,
     lighttrees: TreeMap,
@@ -45,6 +45,7 @@ pub const State = struct {
                 Entity.Block,
                 Entity{ .Laser = .UP },
                 Entity{ .Mirror = .UP },
+                Entity{ .Splitter = .UP },
             },
 
             //.lightrays = SegmentList.init(allocator),
@@ -150,7 +151,11 @@ pub const State = struct {
 
         _ = try self.entities.put(pos, entity);
         switch (entity) {
-            .Block, .Mirror => {},
+            .Block,
+            .Mirror,
+            .Splitter,
+            => {},
+
             .Laser => |direction| {
                 var tree = LightTree.new(
                     pos,
@@ -166,7 +171,6 @@ pub const State = struct {
                     tree,
                 );
             },
-            else => unreachable,
         }
         try self.update_trees(pos);
         return true;

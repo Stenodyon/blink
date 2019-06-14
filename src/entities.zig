@@ -62,10 +62,19 @@ const mirror_directions = [_]Direction{
     .RIGHT,
 };
 
+const splitter_directions = [_]Direction{
+    .UP,
+    .RIGHT,
+    .DOWN,
+    .LEFT,
+    .UP,
+};
+
 pub const Entity = union(enum) {
     Block,
     Laser: Direction,
     Mirror: Direction,
+    Splitter: Direction,
 
     // Returns the direction of propagated rays
     pub fn propagated_rays(
@@ -77,12 +86,20 @@ pub const Entity = union(enum) {
             .Mirror => |direction| {
                 if (hitdir == direction) {
                     const index = @intCast(usize, @enumToInt(direction.clockwise()));
-                    return mirror_directions[index .. index + 1]; //something;
+                    return mirror_directions[index .. index + 1];
                 }
                 if (hitdir == direction.cclockwise()) {
                     const index = @intCast(usize, @enumToInt(direction.clockwise().clockwise()));
-                    return mirror_directions[index .. index + 1]; //something;
+                    return mirror_directions[index .. index + 1];
                 }
+                return [_]Direction{};
+            },
+            .Splitter => |direction| {
+                if (hitdir == direction) {
+                    const index = @intCast(usize, @enumToInt(direction));
+                    return splitter_directions[index .. index + 2];
+                }
+                // TODO hitdir == direction.cclockwise()
                 return [_]Direction{};
             },
         }
@@ -90,7 +107,11 @@ pub const Entity = union(enum) {
 
     pub fn is_input(self: *Entity, direction: Direction) bool {
         switch (self.*) {
-            .Block, .Laser, .Mirror => return false,
+            .Block,
+            .Laser,
+            .Mirror,
+            .Splitter,
+            => return false,
         }
     }
 
@@ -99,6 +120,7 @@ pub const Entity = union(enum) {
             .Block => {},
             .Laser => |*direction| direction.* = direction.clockwise(),
             .Mirror => |*direction| direction.* = direction.clockwise(),
+            .Splitter => |*direction| direction.* = direction.clockwise(),
         }
     }
 
@@ -107,6 +129,7 @@ pub const Entity = union(enum) {
             .Block => {},
             .Laser => |*direction| direction.* = direction.cclockwise(),
             .Mirror => |*direction| direction.* = direction.cclockwise(),
+            .Splitter => |*direction| direction.* = direction.cclockwise(),
         }
     }
 };
