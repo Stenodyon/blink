@@ -85,8 +85,10 @@ fn Vec2(comptime ValType: type) type {
 
         pub fn hash(vec: Self) u32 {
             var seed: u32 = 2;
-            seed ^= @bitCast(u32, vec.x) +% 0x9e3779b9 +% (seed << 6) +% (seed >> 2);
-            seed ^= @bitCast(u32, vec.y) +% 0x9e3779b9 +% (seed << 6) +% (seed >> 2);
+            seed ^= @bitCast(u32, vec.x) +%
+                0x9e3779b9 +% (seed << 6) +% (seed >> 2);
+            seed ^= @bitCast(u32, vec.y) +%
+                0x9e3779b9 +% (seed << 6) +% (seed >> 2);
             return seed;
         }
 
