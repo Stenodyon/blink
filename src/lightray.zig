@@ -81,12 +81,12 @@ pub const RayOrigin = struct {
     position: Vec2i,
     direction: Direction,
 
-    pub fn equals(self: *RayOrigin, other: *RayOrigin) bool {
+    pub fn equals(self: RayOrigin, other: RayOrigin) bool {
         return self.position.equals(other.position) and
             self.direction == other.direction;
     }
 
-    pub fn hash(self: *RayOrigin) u32 {
+    pub fn hash(self: RayOrigin) u32 {
         var seed = self.position.hash();
         seed ^= @intCast(u32, @enumToInt(self.direction)) +%
             0x9e3779b9 +% (seed << 6) +% (seed >> 2);

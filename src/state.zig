@@ -13,12 +13,16 @@ const utils = @import("utils.zig");
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
-const lightray = @import("lightray.zig");
-const LightRay = lightray.LightRay;
-const LightTree = lightray.LightTree;
+
+usingnamespace @import("lightray.zig");
 
 const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
-const TreeMap = std.HashMap(Vec2i, LightTree, Vec2i.hash, Vec2i.equals);
+const TreeMap = std.HashMap(
+    RayOrigin,
+    LightTree,
+    RayOrigin.hash,
+    RayOrigin.equals,
+);
 const SegmentList = std.ArrayList(LightRay);
 
 pub const State = struct {
@@ -154,7 +158,13 @@ pub const State = struct {
                     self.lighttrees.allocator,
                 );
                 try tree.generate(self);
-                _ = try self.lighttrees.put(pos, tree);
+                _ = try self.lighttrees.put(
+                    RayOrigin{
+                        .position = pos,
+                        .direction = direction,
+                    },
+                    tree,
+                );
             },
             else => unreachable,
         }
@@ -167,8 +177,11 @@ pub const State = struct {
         if (remove_result) |entry| {
             switch (entry.value) {
                 .Block, .Mirror => {},
-                .Laser => {
-                    _ = self.lighttrees.remove(pos) orelse unreachable;
+                .Laser => |direction| {
+                    _ = self.lighttrees.remove(RayOrigin{
+                        .position = pos,
+                        .direction = direction,
+                    }) orelse unreachable;
                 },
                 else => unreachable,
             }
