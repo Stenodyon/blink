@@ -208,9 +208,9 @@ fn render_lightrays(state: *const State) void {
                 end.y,
             );
         }
-        debug_write("{} rays rendered", count) catch {
-            std.debug.warn("Failed to render debug text\n");
-        };
+        //        debug_write("{} rays rendered", count) catch {
+        //            std.debug.warn("Failed to render debug text\n");
+        //        };
     }
 }
 
