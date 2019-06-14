@@ -108,8 +108,9 @@ pub const LightTree = struct {
     direction: Direction,
 
     /// Helps determining when a light tree must be updated (a new entity
-    /// has been added for example)
-    bounding_box: ?Rect, // null means the whole space
+    /// has been added for example). null means the bounding box encompasses
+    /// the entire space (e.g. it's infinite).
+    bounding_box: ?Rect,
     rays: ArrayList(LightRay),
     leaves: ArrayList(*Entity),
 
