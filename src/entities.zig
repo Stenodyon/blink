@@ -172,4 +172,16 @@ pub const Entity = union(enum) {
             },
         }
     }
+
+    pub fn set_direction(self: *Entity, new_direction: Direction) void {
+        switch (self.*) {
+            .Block => {},
+            .Laser => |*direction| direction.* = new_direction,
+            .Mirror => |*direction| direction.* = new_direction,
+            .Splitter => |*direction| direction.* = new_direction,
+            .Delayer => |*delayer| {
+                delayer.direction = new_direction;
+            },
+        }
+    }
 };

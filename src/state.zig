@@ -69,6 +69,7 @@ pub const State = struct {
 
     entities: EntityMap,
     current_entity: usize,
+    entity_ghost_dir: Direction,
     entity_wheel: [5]Entity,
 
     lighttrees: TreeMap,
@@ -80,6 +81,7 @@ pub const State = struct {
 
             .entities = EntityMap.init(allocator),
             .current_entity = 0,
+            .entity_ghost_dir = .UP,
             .entity_wheel = [_]Entity{
                 Entity.Block,
                 Entity{ .Laser = .UP },
@@ -278,11 +280,13 @@ pub const State = struct {
     pub fn on_wheel_down(self: *State, amount: u32) void {
         self.current_entity = @mod(self.current_entity + amount,
                                    @intCast(u32, self.entity_wheel.len));
+        self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
     pub fn on_wheel_up(self: *State, amount: u32) void {
         self.current_entity = @mod((self.current_entity + self.entity_wheel.len) -% amount,
                                    @intCast(u32, self.entity_wheel.len));
+        self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
     pub fn on_key_up(self: *State, keysym: sdl.Keysym) void {
@@ -304,10 +308,12 @@ pub const State = struct {
                 }
             },
             sdl.K_q => {
-                self.get_entity_ptr().cclockwise();
+                self.entity_ghost_dir = self.entity_ghost_dir.cclockwise();
+                self.get_entity_ptr().set_direction(self.entity_ghost_dir);
             },
             sdl.K_e => {
-                self.get_entity_ptr().clockwise();
+                self.entity_ghost_dir = self.entity_ghost_dir.clockwise();
+                self.get_entity_ptr().set_direction(self.entity_ghost_dir);
             },
             else => {},
         }
