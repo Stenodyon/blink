@@ -7,10 +7,7 @@ INCLUDE_PATH:=/usr/include
 default: blink
 
 blink: $(SRC)
-	zig build-exe src/main.zig --name blink -isystem $(INCLUDE_PATH) \
-	    -L$(LIB_PATH) \
-	    --library c \
-	    --library SDL2 --library SDL2_image
+	zig build
 
 clean:
 	rm -rf zig-cache blink blink.o
