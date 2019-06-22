@@ -152,15 +152,15 @@ pub const Rect = struct {
         if (point.x < self.pos.x) {
             self.size.x += self.pos.x - point.x;
             self.pos.x = point.x;
-        } else if (point.x > (self.pos.x + self.size.x)) {
-            self.size.x = point.x - self.pos.x;
+        } else if (point.x >= (self.pos.x + self.size.x)) {
+            self.size.x = point.x - self.pos.x + 1;
         }
 
         if (point.y < self.pos.y) {
             self.size.y += self.pos.y - point.y;
             self.pos.y = point.y;
-        } else if (point.y > (self.pos.y + self.size.y)) {
-            self.size.y = point.y - self.pos.y;
+        } else if (point.y >= (self.pos.y + self.size.y)) {
+            self.size.y = point.y - self.pos.y + 1;
         }
     }
 
