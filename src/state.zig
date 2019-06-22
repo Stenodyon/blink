@@ -24,7 +24,44 @@ const TreeMap = std.HashMap(
     RayOrigin.hash,
     RayOrigin.equals,
 );
-const SegmentList = std.ArrayList(LightRay);
+
+const IOList = struct {
+    const Container = ArrayList(Vec2i);
+
+    list: Container,
+
+    fn index_of(self: *IOList, entity: Vec2i) ?usize {
+        var index = 0;
+        var iterator = self.list.iterator();
+        while (iterator) |entry| {
+            if (entry.equals(entity))
+                return index;
+            index += 1;
+        }
+        return null;
+    }
+
+    pub fn insert(self: *IOList, entity: Vec2i) void {
+        if (self.index_of(entity)) |_|
+            return;
+        self.list.append(entity);
+    }
+
+    pub fn remove(self: *IOList, entity: Vec2i) void {
+        const index = self.index_of(entity) orelse return;
+        self.list.swapRemove(index);
+    }
+
+    pub fn iterator(self: *IOList) Container.Iterator {
+        return self.list.iterator();
+    }
+};
+const IOMap = std.HashMap(
+    Vec2i,
+    ArrayList(IOList),
+    Vec2i.hash,
+    Vec2i.equals,
+);
 
 pub const State = struct {
     viewpos: Vec2i,
@@ -34,6 +71,7 @@ pub const State = struct {
     entity_wheel: [5]Entity,
 
     lighttrees: TreeMap,
+    input_map: IOMap,
 
     pub fn new(allocator: *Allocator) State {
         var new_state = State{
@@ -55,6 +93,7 @@ pub const State = struct {
             },
 
             .lighttrees = TreeMap.init(allocator),
+            .input_map = IOMap.init(allocator),
         };
         return new_state;
     }
@@ -62,6 +101,7 @@ pub const State = struct {
     pub fn destroy(self: *State) void {
         self.entities.deinit();
         self.lighttrees.deinit();
+        self.input_map.deinit();
     }
 
     pub const RayHit = struct {
@@ -222,8 +262,9 @@ pub const State = struct {
         if (pos) |position| {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
-                if (tree.in_bounds(position))
+                if (tree.in_bounds(position)) {
                     try tree.regenerate(self);
+                }
             }
         } else {
             while (tree_iterator.next()) |entry| {
