@@ -33,7 +33,6 @@ pub const State = struct {
     current_entity: usize,
     entity_wheel: [5]Entity,
 
-    //lightrays: SegmentList,
     lighttrees: TreeMap,
 
     pub fn new(allocator: *Allocator) State {
@@ -55,7 +54,6 @@ pub const State = struct {
                 },
             },
 
-            //.lightrays = SegmentList.init(allocator),
             .lighttrees = TreeMap.init(allocator),
         };
         return new_state;
@@ -63,7 +61,6 @@ pub const State = struct {
 
     pub fn destroy(self: *State) void {
         self.entities.deinit();
-        //self.lightrays.deinit();
         self.lighttrees.deinit();
     }
 
