@@ -56,6 +56,7 @@ const IOList = struct {
         return self.list.iterator();
     }
 };
+
 const IOMap = std.HashMap(
     Vec2i,
     ArrayList(IOList),
@@ -275,11 +276,13 @@ pub const State = struct {
     }
 
     pub fn on_wheel_down(self: *State, amount: u32) void {
-        self.current_entity = @mod(self.current_entity + amount, @intCast(u32, self.entity_wheel.len));
+        self.current_entity = @mod(self.current_entity + amount,
+                                   @intCast(u32, self.entity_wheel.len));
     }
 
     pub fn on_wheel_up(self: *State, amount: u32) void {
-        self.current_entity = @mod(self.current_entity -% amount, @intCast(u32, self.entity_wheel.len));
+        self.current_entity = @mod((self.current_entity + self.entity_wheel.len) -% amount,
+                                   @intCast(u32, self.entity_wheel.len));
     }
 
     pub fn on_key_up(self: *State, keysym: sdl.Keysym) void {
