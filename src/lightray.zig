@@ -112,7 +112,7 @@ pub const LightTree = struct {
     /// the entire space (e.g. it's infinite).
     bounding_box: ?Rect,
     rays: ArrayList(LightRay),
-    leaves: ArrayList(*Entity),
+    leaves: ArrayList(Vec2i),
 
     is_visible: bool,
 
@@ -126,7 +126,7 @@ pub const LightTree = struct {
             .direction = direction,
             .bounding_box = Rect.new(origin, Vec2i.new(1, 1)),
             .rays = ArrayList(LightRay).init(allocator),
-            .leaves = ArrayList(*Entity).init(allocator),
+            .leaves = ArrayList(Vec2i).init(allocator),
             .is_visible = true,
         };
     }
@@ -194,7 +194,7 @@ pub const LightTree = struct {
 
         const hit = hit_result orelse return;
         if (hit.entity.is_input(direction))
-            try self.leaves.append(hit.entity);
+            try self.leaves.append(hit.hitpos);
 
         for (hit.entity.propagated_rays(direction)) |newdir| {
             try self.propagate_lightray(
