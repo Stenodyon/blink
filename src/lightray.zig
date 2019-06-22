@@ -176,7 +176,6 @@ pub const LightTree = struct {
             }
         }
 
-
         const hit_result = state.raycast(origin, direction);
         var distance: ?u32 = null;
         if (hit_result) |hit| {
