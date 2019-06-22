@@ -167,6 +167,16 @@ pub const LightTree = struct {
         OutOfMemory,
         OutOfBounds,
     }!void {
+        // Avoid recursive loops. If the ray being propagated is already in
+        // the list of rays, don't visit it again.
+        for (self.rays.toSlice()) |light_ray| {
+            if (light_ray.origin.equals(origin)
+                and light_ray.direction == direction) {
+                return;
+            }
+        }
+
+
         const hit_result = state.raycast(origin, direction);
         var distance: ?u32 = null;
         if (hit_result) |hit| {
