@@ -156,7 +156,7 @@ pub const Entity = union(enum) {
             .Mirror => |*direction| direction.* = direction.clockwise(),
             .Splitter => |*direction| direction.* = direction.clockwise(),
             .Delayer => |*delayer| {
-                delayer.direction = delayer.direction.cclockwise();
+                delayer.direction = delayer.direction.clockwise();
             },
         }
     }
