@@ -85,6 +85,9 @@ pub const State = struct {
     pub fn destroy(self: *State) void {
         self.entities.deinit();
         self.lighttrees.deinit();
+
+        var input_map_iter = self.input_map.iterator();
+        while (input_map_iter.next()) |input_set| input_set.value.deinit();
         self.input_map.deinit();
     }
 
@@ -178,6 +181,7 @@ pub const State = struct {
             return false;
 
         _ = try self.entities.put(pos, entity);
+        _ = try self.input_map.put(pos, IOSet.init(self.input_map.allocator));
         switch (entity) {
             .Block,
             .Mirror,
@@ -192,19 +196,21 @@ pub const State = struct {
     }
 
     pub fn remove_entity(self: *State, pos: Vec2i) !?EntityMap.KV {
-        const remove_result = self.entities.remove(pos);
-        if (remove_result) |entry| {
-            switch (entry.value) {
-                .Block,
-                .Mirror,
-                .Splitter,
-                => {},
-                .Laser => |direction| self.remove_tree(pos, direction),
-                .Delayer => |*delayer| self.remove_tree(pos, delayer.direction),
-            }
-            try self.update_trees(pos);
+        const entry = self.entities.remove(pos) orelse return null;
+        const input_set = self.input_map.remove(pos) orelse unreachable;
+        input_set.value.deinit();
+
+        switch (entry.value) {
+            .Block,
+            .Mirror,
+            .Splitter,
+            => {},
+            .Laser => |direction| self.remove_tree(pos, direction),
+            .Delayer => |*delayer| self.remove_tree(pos, delayer.direction),
         }
-        return remove_result;
+        try self.update_trees(pos);
+
+        return entry;
     }
 
     pub fn add_tree(self: *State, pos: Vec2i, direction: Direction) !void {
