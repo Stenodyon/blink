@@ -25,41 +25,16 @@ const TreeMap = std.HashMap(
     RayOrigin.equals,
 );
 
-const IOList = struct {
-    const Container = ArrayList(Vec2i);
-
-    list: Container,
-
-    fn index_of(self: *IOList, entity: Vec2i) ?usize {
-        var index = 0;
-        var iterator = self.list.iterator();
-        while (iterator) |entry| {
-            if (entry.equals(entity))
-                return index;
-            index += 1;
-        }
-        return null;
-    }
-
-    pub fn insert(self: *IOList, entity: Vec2i) void {
-        if (self.index_of(entity)) |_|
-            return;
-        self.list.append(entity);
-    }
-
-    pub fn remove(self: *IOList, entity: Vec2i) void {
-        const index = self.index_of(entity) orelse return;
-        self.list.swapRemove(index);
-    }
-
-    pub fn iterator(self: *IOList) Container.Iterator {
-        return self.list.iterator();
-    }
-};
+const IOSet = std.HashMap(
+    Vec2i,
+    void,
+    Vec2i.hash,
+    Vec2i.equals,
+);
 
 const IOMap = std.HashMap(
     Vec2i,
-    ArrayList(IOList),
+    IOSet,
     Vec2i.hash,
     Vec2i.equals,
 );
