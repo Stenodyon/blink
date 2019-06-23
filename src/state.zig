@@ -285,12 +285,17 @@ pub const State = struct {
     }
 
     pub fn on_wheel_down(self: *State, amount: u32) void {
-        self.current_entity = @mod(self.current_entity + amount, @intCast(u32, self.entity_wheel.len));
-        self.get_entity_ptr().set_direction(self.entity_ghost_dir);
+        const slot = @mod(self.current_entity + amount, @intCast(u32, self.entity_wheel.len));
+        self.set_selected_slot(slot);
     }
 
     pub fn on_wheel_up(self: *State, amount: u32) void {
-        self.current_entity = @mod((self.current_entity + self.entity_wheel.len) -% amount, @intCast(u32, self.entity_wheel.len));
+        const slot = @mod((self.current_entity + self.entity_wheel.len) -% amount, @intCast(u32, self.entity_wheel.len));
+        self.set_selected_slot(slot);
+    }
+
+    pub fn set_selected_slot(self: *State, slot: usize) void {
+        self.current_entity = slot;
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
@@ -309,7 +314,7 @@ pub const State = struct {
             => {
                 const index = @intCast(usize, utils.slot_value(keysym.sym));
                 if (index < self.entity_wheel.len) {
-                    self.current_entity = index;
+                    self.set_selected_slot(index);
                 }
             },
             sdl.K_q => {
