@@ -253,13 +253,33 @@ pub const State = struct {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
                 if (tree.in_bounds(position)) {
+                    for (tree.leaves.toSlice()) |leaf| {
+                        var input_set = self.input_map.get(leaf) orelse unreachable;
+                        _ = input_set.value.remove(entry.key.position);
+                    }
+
                     try tree.regenerate(self);
+
+                    for (tree.leaves.toSlice()) |leaf| {
+                        var input_set = self.input_map.get(leaf) orelse unreachable;
+                        _ = try input_set.value.put(entry.key.position, {});
+                    }
                 }
             }
         } else {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
+                for (tree.leaves.toSlice()) |leaf| {
+                    var input_set = self.input_map.get(leaf) orelse unreachable;
+                    _ = input_set.value.remove(entry.key.position);
+                }
+
                 try tree.regenerate(self);
+
+                for (tree.leaves.toSlice()) |leaf| {
+                    var input_set = self.input_map.get(leaf) orelse unreachable;
+                    _ = try input_set.value.put(entry.key.position, {});
+                }
             }
         }
     }
