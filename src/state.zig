@@ -17,7 +17,13 @@ const Delayer = entities.Delayer;
 
 usingnamespace @import("lightray.zig");
 
-const EntityMap = std.HashMap(Vec2i, Entity, Vec2i.hash, Vec2i.equals);
+const EntityMap = std.HashMap(
+    Vec2i,
+    Entity,
+    Vec2i.hash,
+    Vec2i.equals,
+);
+
 const TreeMap = std.HashMap(
     RayOrigin,
     LightTree,
