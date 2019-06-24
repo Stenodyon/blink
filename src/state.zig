@@ -31,7 +31,7 @@ const TreeMap = std.HashMap(
     RayOrigin.equals,
 );
 
-const IOSet = std.HashMap(
+const EntitySet = std.HashMap(
     Vec2i,
     void,
     Vec2i.hash,
@@ -40,7 +40,7 @@ const IOSet = std.HashMap(
 
 const IOMap = std.HashMap(
     Vec2i,
-    IOSet,
+    EntitySet,
     Vec2i.hash,
     Vec2i.equals,
 );
@@ -191,7 +191,7 @@ pub const State = struct {
             return false;
 
         _ = try self.entities.put(pos, entity);
-        _ = try self.input_map.put(pos, IOSet.init(self.input_map.allocator));
+        _ = try self.input_map.put(pos, EntitySet.init(self.input_map.allocator));
         switch (entity) {
             .Block,
             .Mirror,
