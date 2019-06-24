@@ -174,6 +174,8 @@ pub const K_x = c.SDLK_x;
 pub const K_y = c.SDLK_y;
 pub const K_z = c.SDLK_z;
 
+pub const K_SPACE = c.SDLK_SPACE;
+
 pub fn PollEvent(event: *Event) c_int {
     return c.SDL_PollEvent(@ptrCast(?[*]c.union_SDL_Event, event));
 }
