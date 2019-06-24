@@ -16,6 +16,7 @@ const Direction = entities.Direction;
 const Delayer = entities.Delayer;
 
 usingnamespace @import("lightray.zig");
+usingnamespace @import("simulation.zig");
 
 const EntityMap = std.HashMap(
     Vec2i,
@@ -31,7 +32,7 @@ const TreeMap = std.HashMap(
     RayOrigin.equals,
 );
 
-const EntitySet = std.HashMap(
+pub const EntitySet = std.HashMap(
     Vec2i,
     void,
     Vec2i.hash,
@@ -41,13 +42,6 @@ const EntitySet = std.HashMap(
 const IOMap = std.HashMap(
     Vec2i,
     EntitySet,
-    Vec2i.hash,
-    Vec2i.equals,
-);
-
-const UpdateMap = std.HashMap(
-    Vec2i,
-    bool,
     Vec2i.hash,
     Vec2i.equals,
 );
@@ -62,8 +56,7 @@ pub const State = struct {
 
     lighttrees: TreeMap,
     input_map: IOMap,
-    to_update: EntitySet,
-    update_map: UpdateMap,
+    sim: Simulation,
 
     pub fn new(allocator: *Allocator) State {
         return State{
@@ -87,8 +80,7 @@ pub const State = struct {
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
-            .to_update = EntitySet.init(allocator),
-            .update_map = UpdateMap.init(allocator),
+            .sim = Simulation.init(allocator),
         };
     }
 
@@ -99,8 +91,7 @@ pub const State = struct {
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
         self.input_map.deinit();
-        self.to_update.deinit();
-        self.update_map.deinit();
+        self.sim.deinit();
     }
 
     pub const RayHit = struct {
@@ -336,6 +327,9 @@ pub const State = struct {
             sdl.K_e => {
                 self.entity_ghost_dir = self.entity_ghost_dir.clockwise();
                 self.get_entity_ptr().set_direction(self.entity_ghost_dir);
+            },
+            sdl.K_SPACE => {
+                self.sim.update(self);
             },
             else => {},
         }
