@@ -45,6 +45,13 @@ const IOMap = std.HashMap(
     Vec2i.equals,
 );
 
+const UpdateMap = std.HashMap(
+    Vec2i,
+    bool,
+    Vec2i.hash,
+    Vec2i.equals,
+);
+
 pub const State = struct {
     viewpos: Vec2i,
 
@@ -55,6 +62,7 @@ pub const State = struct {
 
     lighttrees: TreeMap,
     input_map: IOMap,
+    update_map: UpdateMap,
 
     pub fn new(allocator: *Allocator) State {
         var new_state = State{
@@ -78,6 +86,7 @@ pub const State = struct {
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
+            .update_map = UpdateMap.init(allocator),
         };
         return new_state;
     }
@@ -89,6 +98,7 @@ pub const State = struct {
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
         self.input_map.deinit();
+        self.update_map.deinit();
     }
 
     pub const RayHit = struct {
