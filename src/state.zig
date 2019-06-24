@@ -125,7 +125,6 @@ pub const State = struct {
         var hitpos_canonic: ?Vec2i = null;
         var closest: ?Vec2i = null;
         var closest_entity: ?*Entity = null;
-        std.debug.warn("Raycasting from ({}, {})\n", origin.x, origin.y);
         const pos = to_canonic(origin, direction);
 
         var entity_iterator = self.entities.iterator();
@@ -139,7 +138,6 @@ pub const State = struct {
                 continue;
             if (pos.y < position.y)
                 continue;
-            //std.debug.warn("Hit ({}
             if (hitpos_canonic) |best_candidate| {
                 if (position.y > best_candidate.y) {
                     hitpos_canonic = position;
@@ -154,12 +152,6 @@ pub const State = struct {
         }
         const hitpos = closest orelse return null;
         const distance = hitpos.distanceInt(origin);
-        std.debug.warn(
-            "Raycast hit ({}, {}) at distance {}\n",
-            hitpos.x,
-            hitpos.y,
-            distance,
-        );
         return RayHit{
             .hitpos = hitpos,
             .distance = distance,
@@ -211,8 +203,8 @@ pub const State = struct {
             .Mirror,
             .Splitter,
             => {},
-            .Laser => |direction| self.remove_tree(pos, direction),
-            .Delayer => |*delayer| self.remove_tree(pos, delayer.direction),
+            .Laser => |direction| try self.remove_tree(pos, direction),
+            .Delayer => |*delayer| try self.remove_tree(pos, delayer.direction),
         }
         try self.update_trees(pos);
 
@@ -227,10 +219,22 @@ pub const State = struct {
         );
         try tree.generate(self);
         _ = try self.lighttrees.put(pos, tree);
+        var output_iterator = tree.leaves.iterator();
+        while (output_iterator.next()) |output_pos| {
+            try self.sim.queue_update(output_pos);
+            const input_entry = self.input_map.get(output_pos) orelse unreachable;
+            _ = try input_entry.value.put(pos, {});
+        }
     }
 
-    pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) void {
-        _ = self.lighttrees.remove(pos) orelse unreachable;
+    pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) !void {
+        const tree_entry = self.lighttrees.remove(pos) orelse unreachable;
+        var output_iterator = tree_entry.value.leaves.iterator();
+        while (output_iterator.next()) |output_pos| {
+            try self.sim.queue_update(output_pos);
+            const input_entry = self.input_map.get(output_pos) orelse unreachable;
+            _ = input_entry.value.remove(pos);
+        }
     }
 
     pub fn get_tree(
@@ -251,7 +255,9 @@ pub const State = struct {
                 var tree = &entry.value;
                 if (tree.in_bounds(position)) {
                     for (tree.leaves.toSlice()) |leaf| {
-                        var input_set = self.input_map.get(leaf) orelse unreachable;
+                        // If the tree updates because an entity was removed,
+                        // this entity could be among the outputs
+                        var input_set = self.input_map.get(leaf) orelse continue;
                         _ = input_set.value.remove(entry.key);
                     }
 
@@ -267,7 +273,7 @@ pub const State = struct {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
                 for (tree.leaves.toSlice()) |leaf| {
-                    var input_set = self.input_map.get(leaf) orelse unreachable;
+                    var input_set = self.input_map.get(leaf) orelse continue;
                     _ = input_set.value.remove(entry.key);
                 }
 
