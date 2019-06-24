@@ -177,7 +177,8 @@ fn render_lightrays(state: *const State) void {
     var tree_iterator = state.lighttrees.iterator();
     while (tree_iterator.next()) |entry| {
         const tree = &entry.value;
-        if (!tree.is_visible)
+        const entity_entry = state.entities.get(entry.key) orelse unreachable;
+        if (!entity_entry.value.is_emitting())
             continue;
 
         var count: usize = 0;

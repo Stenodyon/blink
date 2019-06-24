@@ -187,8 +187,11 @@ pub const Entity = union(enum) {
 
     pub fn is_emitting(self: *const Entity) bool {
         switch (self.*) {
-            .Block => false,
-            .Laser => true,
+            .Block,
+            .Mirror,
+            .Splitter,
+            => return false,
+            .Laser => return true,
             .Delayer => |*delayer| return delayer.is_on,
         }
     }

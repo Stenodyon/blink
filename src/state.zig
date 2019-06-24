@@ -26,10 +26,10 @@ const EntityMap = std.HashMap(
 );
 
 const TreeMap = std.HashMap(
-    RayOrigin,
+    Vec2i,
     LightTree,
-    RayOrigin.hash,
-    RayOrigin.equals,
+    Vec2i.hash,
+    Vec2i.equals,
 );
 
 pub const EntitySet = std.HashMap(
@@ -192,7 +192,10 @@ pub const State = struct {
             => {},
 
             .Laser => |direction| try self.add_tree(pos, direction),
-            .Delayer => |*delayer| try self.add_tree(pos, delayer.direction),
+            .Delayer => |*delayer| {
+                try self.add_tree(pos, delayer.direction);
+                try self.sim.queue_update(pos);
+            },
         }
         try self.update_trees(pos);
         return true;
@@ -223,20 +226,11 @@ pub const State = struct {
             self.lighttrees.allocator,
         );
         try tree.generate(self);
-        _ = try self.lighttrees.put(
-            RayOrigin{
-                .position = pos,
-                .direction = direction,
-            },
-            tree,
-        );
+        _ = try self.lighttrees.put(pos, tree);
     }
 
     pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) void {
-        _ = self.lighttrees.remove(RayOrigin{
-            .position = pos,
-            .direction = direction,
-        }) orelse unreachable;
+        _ = self.lighttrees.remove(pos) orelse unreachable;
     }
 
     pub fn get_tree(
@@ -258,14 +252,14 @@ pub const State = struct {
                 if (tree.in_bounds(position)) {
                     for (tree.leaves.toSlice()) |leaf| {
                         var input_set = self.input_map.get(leaf) orelse unreachable;
-                        _ = input_set.value.remove(entry.key.position);
+                        _ = input_set.value.remove(entry.key);
                     }
 
                     try tree.regenerate(self);
 
                     for (tree.leaves.toSlice()) |leaf| {
                         var input_set = self.input_map.get(leaf) orelse unreachable;
-                        _ = try input_set.value.put(entry.key.position, {});
+                        _ = try input_set.value.put(entry.key, {});
                     }
                 }
             }
@@ -274,14 +268,14 @@ pub const State = struct {
                 var tree = &entry.value;
                 for (tree.leaves.toSlice()) |leaf| {
                     var input_set = self.input_map.get(leaf) orelse unreachable;
-                    _ = input_set.value.remove(entry.key.position);
+                    _ = input_set.value.remove(entry.key);
                 }
 
                 try tree.regenerate(self);
 
                 for (tree.leaves.toSlice()) |leaf| {
                     var input_set = self.input_map.get(leaf) orelse unreachable;
-                    _ = try input_set.value.put(entry.key.position, {});
+                    _ = try input_set.value.put(entry.key, {});
                 }
             }
         }
@@ -302,7 +296,7 @@ pub const State = struct {
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
-    pub fn on_key_up(self: *State, keysym: sdl.Keysym) void {
+    pub fn on_key_up(self: *State, keysym: sdl.Keysym) !void {
         switch (keysym.sym) {
             sdl.K_0,
             sdl.K_1,
@@ -329,7 +323,7 @@ pub const State = struct {
                 self.get_entity_ptr().set_direction(self.entity_ghost_dir);
             },
             sdl.K_SPACE => {
-                self.sim.update(self);
+                try self.sim.update(self);
             },
             else => {},
         }

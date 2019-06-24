@@ -114,8 +114,6 @@ pub const LightTree = struct {
     rays: ArrayList(LightRay),
     leaves: ArrayList(Vec2i),
 
-    is_visible: bool,
-
     pub fn new(
         origin: Vec2i,
         direction: Direction,
@@ -127,7 +125,6 @@ pub const LightTree = struct {
             .bounding_box = Rect.new(origin, Vec2i.new(1, 1)),
             .rays = ArrayList(LightRay).init(allocator),
             .leaves = ArrayList(Vec2i).init(allocator),
-            .is_visible = true,
         };
     }
 
@@ -170,8 +167,7 @@ pub const LightTree = struct {
         // Avoid recursive loops. If the ray being propagated is already in
         // the list of rays, don't visit it again.
         for (self.rays.toSlice()) |light_ray| {
-            if (light_ray.origin.equals(origin)
-                and light_ray.direction == direction) {
+            if (light_ray.origin.equals(origin) and light_ray.direction == direction) {
                 return;
             }
         }
