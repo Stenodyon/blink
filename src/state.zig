@@ -62,10 +62,11 @@ pub const State = struct {
 
     lighttrees: TreeMap,
     input_map: IOMap,
+    to_update: EntitySet,
     update_map: UpdateMap,
 
     pub fn new(allocator: *Allocator) State {
-        var new_state = State{
+        return State{
             .viewpos = Vec2i.new(0, 0),
 
             .entities = EntityMap.init(allocator),
@@ -86,9 +87,9 @@ pub const State = struct {
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
+            .to_update = EntitySet.init(allocator),
             .update_map = UpdateMap.init(allocator),
         };
-        return new_state;
     }
 
     pub fn destroy(self: *State) void {
@@ -98,6 +99,7 @@ pub const State = struct {
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
         self.input_map.deinit();
+        self.to_update.deinit();
         self.update_map.deinit();
     }
 
