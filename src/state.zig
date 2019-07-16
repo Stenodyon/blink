@@ -56,6 +56,7 @@ pub const State = struct {
 
     lighttrees: TreeMap,
     input_map: IOMap,
+    side_input_map: IOMap,
     sim: Simulation,
 
     pub fn new(allocator: *Allocator) State {
@@ -80,6 +81,7 @@ pub const State = struct {
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
+            .side_input_map = IOMap.init(allocator),
             .sim = Simulation.init(allocator),
         };
     }
@@ -91,6 +93,11 @@ pub const State = struct {
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
         self.input_map.deinit();
+
+        var side_input_map_iter = self.side_input_map.iterator();
+        while (side_input_map_iter.next()) |input_set| input_set.value.deinit();
+        self.side_input_map.deinit();
+
         self.sim.deinit();
     }
 
@@ -177,6 +184,7 @@ pub const State = struct {
 
         _ = try self.entities.put(pos, entity);
         _ = try self.input_map.put(pos, EntitySet.init(self.input_map.allocator));
+        _ = try self.side_input_map.put(pos, EntitySet.init(self.side_input_map.allocator));
         switch (entity) {
             .Block,
             .Mirror,
@@ -197,6 +205,8 @@ pub const State = struct {
         const entry = self.entities.remove(pos) orelse return null;
         const input_set = self.input_map.remove(pos) orelse unreachable;
         input_set.value.deinit();
+        const side_input_set = self.side_input_map.remove(pos) orelse unreachable;
+        side_input_set.value.deinit();
 
         switch (entry.value) {
             .Block,
@@ -225,16 +235,33 @@ pub const State = struct {
             const input_entry = self.input_map.get(output_pos) orelse unreachable;
             _ = try input_entry.value.put(pos, {});
         }
+
+        var side_output_iterator = tree.side_leaves.iterator();
+        while (side_output_iterator.next()) |output_pos| {
+            try self.sim.queue_update(output_pos);
+            const input_entry = self.side_input_map.get(output_pos) orelse unreachable;
+            _ = try input_entry.value.put(pos, {});
+        }
     }
 
     pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) !void {
-        const tree_entry = self.lighttrees.remove(pos) orelse unreachable;
+        var tree_entry = self.lighttrees.remove(pos) orelse unreachable;
+
         var output_iterator = tree_entry.value.leaves.iterator();
         while (output_iterator.next()) |output_pos| {
             try self.sim.queue_update(output_pos);
             const input_entry = self.input_map.get(output_pos) orelse unreachable;
             _ = input_entry.value.remove(pos);
         }
+
+        var side_output_iterator = tree_entry.value.side_leaves.iterator();
+        while (side_output_iterator.next()) |output_pos| {
+            try self.sim.queue_update(output_pos);
+            const input_entry = self.side_input_map.get(output_pos) orelse unreachable;
+            _ = input_entry.value.remove(pos);
+        }
+
+        tree_entry.value.destroy();
     }
 
     pub fn get_tree(
@@ -260,11 +287,19 @@ pub const State = struct {
                         var input_set = self.input_map.get(leaf) orelse continue;
                         _ = input_set.value.remove(entry.key);
                     }
+                    for (tree.side_leaves.toSlice()) |leaf| {
+                        var input_set = self.side_input_map.get(leaf) orelse continue;
+                        _ = input_set.value.remove(entry.key);
+                    }
 
                     try tree.regenerate(self);
 
                     for (tree.leaves.toSlice()) |leaf| {
                         var input_set = self.input_map.get(leaf) orelse unreachable;
+                        _ = try input_set.value.put(entry.key, {});
+                    }
+                    for (tree.side_leaves.toSlice()) |leaf| {
+                        var input_set = self.side_input_map.get(leaf) orelse unreachable;
                         _ = try input_set.value.put(entry.key, {});
                     }
                 }
@@ -276,11 +311,19 @@ pub const State = struct {
                     var input_set = self.input_map.get(leaf) orelse continue;
                     _ = input_set.value.remove(entry.key);
                 }
+                for (tree.side_leaves.toSlice()) |leaf| {
+                    var input_set = self.side_input_map.get(leaf) orelse continue;
+                    _ = input_set.value.remove(entry.key);
+                }
 
                 try tree.regenerate(self);
 
                 for (tree.leaves.toSlice()) |leaf| {
                     var input_set = self.input_map.get(leaf) orelse unreachable;
+                    _ = try input_set.value.put(entry.key, {});
+                }
+                for (tree.side_leaves.toSlice()) |leaf| {
+                    var input_set = self.side_input_map.get(leaf) orelse unreachable;
                     _ = try input_set.value.put(entry.key, {});
                 }
             }

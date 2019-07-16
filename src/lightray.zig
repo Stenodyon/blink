@@ -113,6 +113,7 @@ pub const LightTree = struct {
     bounding_box: ?Rect,
     rays: ArrayList(LightRay),
     leaves: ArrayList(Vec2i),
+    side_leaves: ArrayList(Vec2i),
 
     pub fn new(
         origin: Vec2i,
@@ -125,7 +126,14 @@ pub const LightTree = struct {
             .bounding_box = Rect.new(origin, Vec2i.new(1, 1)),
             .rays = ArrayList(LightRay).init(allocator),
             .leaves = ArrayList(Vec2i).init(allocator),
+            .side_leaves = ArrayList(Vec2i).init(allocator),
         };
+    }
+
+    pub fn destroy(self: *LightTree) void {
+        self.rays.deinit();
+        self.leaves.deinit();
+        self.side_leaves.deinit();
     }
 
     pub fn in_bounds(self: *const LightTree, point: Vec2i) bool {
@@ -189,8 +197,12 @@ pub const LightTree = struct {
         try self.rays.append(new_ray);
 
         const hit = hit_result orelse return;
-        if (hit.entity.is_input(direction))
+        if (hit.entity.is_input(direction)) {
             try self.leaves.append(hit.hitpos);
+        } else {
+            if (hit.entity.is_side_input(direction))
+                try self.side_leaves.append(hit.hitpos);
+        }
 
         for (hit.entity.propagated_rays(direction)) |newdir| {
             try self.propagate_lightray(
@@ -211,6 +223,7 @@ pub const LightTree = struct {
         );
         try self.rays.resize(0);
         try self.leaves.resize(0);
+        try self.side_leaves.resize(0);
         try self.generate(state);
     }
 };

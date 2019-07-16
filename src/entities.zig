@@ -149,6 +149,17 @@ pub const Entity = union(enum) {
         }
     }
 
+    pub fn is_side_input(self: *Entity, direction: Direction) bool {
+        switch (self.*) {
+            .Block,
+            .Laser,
+            .Mirror,
+            .Splitter,
+            .Delayer,
+            => return false,
+        }
+    }
+
     pub fn clockwise(self: *Entity) void {
         switch (self.*) {
             .Block => {},
