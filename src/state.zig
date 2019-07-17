@@ -296,10 +296,12 @@ pub const State = struct {
                     for (tree.leaves.toSlice()) |leaf| {
                         // If the tree updates because an entity was removed,
                         // this entity could be among the outputs
+                        try self.sim.queue_update(leaf);
                         var input_set = self.input_map.get(leaf) orelse continue;
                         _ = input_set.value.remove(entry.key);
                     }
                     for (tree.side_leaves.toSlice()) |leaf| {
+                        try self.sim.queue_update(leaf);
                         var input_set = self.side_input_map.get(leaf) orelse continue;
                         _ = input_set.value.remove(entry.key);
                     }
@@ -322,10 +324,12 @@ pub const State = struct {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
                 for (tree.leaves.toSlice()) |leaf| {
+                    try self.sim.queue_update(leaf);
                     var input_set = self.input_map.get(leaf) orelse continue;
                     _ = input_set.value.remove(entry.key);
                 }
                 for (tree.side_leaves.toSlice()) |leaf| {
+                    try self.sim.queue_update(leaf);
                     var input_set = self.side_input_map.get(leaf) orelse continue;
                     _ = input_set.value.remove(entry.key);
                 }
