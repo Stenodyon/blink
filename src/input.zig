@@ -10,11 +10,10 @@ var rmb_down = false;
 var placing = false;
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
-    if (lmb_down and placing and (x_rel * x_rel + y_rel * y_rel >= 2))
+    if (lmb_down and ((sdl.GetModState() & sdl.KMOD_LSHIFT) != 0)) {
         placing = false;
-
-    if (lmb_down and !placing)
         state.viewpos = state.viewpos.sub(Vec2i.new(x_rel, y_rel));
+    }
 }
 
 pub fn on_mouse_button_up(state: *State, button: u8, x: i32, y: i32) !void {
