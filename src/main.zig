@@ -105,7 +105,7 @@ pub fn main() !void {
     //    try gui_allocator.allocator.createOne(GUI_Button));
     //@ptrCast(*GUI_Button, display.g_gui).* = display.GUI_Button.new();
 
-    var state: State = State.new(std.debug.global_allocator);
+    var state: State = State.new(std.heap.c_allocator);
     defer state.destroy();
 
     var updates_left: f64 = 0;
