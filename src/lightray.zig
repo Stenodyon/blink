@@ -161,6 +161,11 @@ pub const LightTree = struct {
         } else {
             std.debug.warn("Tree has infinite bounding box\n");
         }
+        std.debug.warn(
+            "Leaves: {}, Side leaves: {}\n",
+            self.leaves.count(),
+            self.side_leaves.count(),
+        );
     }
 
     fn propagate_lightray(

@@ -56,6 +56,24 @@ pub const Simulation = struct {
                         try self.propagate_update(state, entity_entry.key);
                     }
                 },
+                .Switch => |*eswitch| {
+                    const input_value = self.get_input(state, update_entry.key);
+                    const side_input_value = self.get_side_input(state, update_entry.key);
+                    const new_value = input_value and !side_input_value;
+                    std.debug.warn(
+                        "switch input: {} side: {} new value: {}\n",
+                        input_value,
+                        side_input_value,
+                        new_value,
+                    );
+                    if (new_value != eswitch.is_on) {
+                        _ = try self.update_map.put(
+                            entity_entry.key,
+                            new_value,
+                        );
+                        try self.propagate_update(state, entity_entry.key);
+                    }
+                },
                 else => unreachable,
             }
         }
@@ -76,10 +94,27 @@ pub const Simulation = struct {
         return false;
     }
 
+    fn get_side_input(self: *Simulation, state: *State, entity_pos: Vec2i) bool {
+        const input_set = state.side_input_map.get(entity_pos) orelse unreachable;
+        var input_iterator = input_set.value.iterator();
+        while (input_iterator.next()) |input_entry| {
+            const input_entity_pos = input_entry.key;
+            const input_entity = state.entities.get(input_entity_pos) orelse unreachable;
+            if (input_entity.value.is_emitting())
+                return true;
+        }
+        return false;
+    }
+
     fn propagate_update(self: *Simulation, state: *State, origin: Vec2i) !void {
         var tree_entry = state.lighttrees.get(origin) orelse unreachable;
         var output_iterator = tree_entry.value.leaves.iterator();
         while (output_iterator.next()) |output_pos| {
+            _ = try self.to_update_secondary().put(output_pos, {});
+        }
+
+        var side_output_iterator = tree_entry.value.side_leaves.iterator();
+        while (side_output_iterator.next()) |output_pos| {
             _ = try self.to_update_secondary().put(output_pos, {});
         }
     }
@@ -90,6 +125,7 @@ pub const Simulation = struct {
             var entity_entry = state.entities.get(update_entry.key) orelse unreachable;
             switch (entity_entry.value) {
                 .Delayer => |*delayer| delayer.is_on = update_entry.value,
+                .Switch => |*eswitch| eswitch.is_on = update_entry.value,
                 else => unreachable,
             }
         }

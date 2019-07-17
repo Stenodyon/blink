@@ -14,6 +14,7 @@ const entities = @import("entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
 const Delayer = entities.Delayer;
+const Switch = entities.Switch;
 
 usingnamespace @import("lightray.zig");
 usingnamespace @import("simulation.zig");
@@ -52,7 +53,7 @@ pub const State = struct {
     entities: EntityMap,
     current_entity: usize,
     entity_ghost_dir: Direction,
-    entity_wheel: [5]Entity,
+    entity_wheel: [6]Entity,
 
     lighttrees: TreeMap,
     input_map: IOMap,
@@ -73,6 +74,12 @@ pub const State = struct {
                 Entity{ .Splitter = .UP },
                 Entity{
                     .Delayer = Delayer{
+                        .direction = .UP,
+                        .is_on = false,
+                    },
+                },
+                Entity{
+                    .Switch = Switch{
                         .direction = .UP,
                         .is_on = false,
                     },
@@ -196,6 +203,10 @@ pub const State = struct {
                 try self.add_tree(pos, delayer.direction);
                 try self.sim.queue_update(pos);
             },
+            .Switch => |*eswitch| {
+                try self.add_tree(pos, eswitch.direction);
+                try self.sim.queue_update(pos);
+            },
         }
         try self.update_trees(pos);
         return true;
@@ -215,6 +226,7 @@ pub const State = struct {
             => {},
             .Laser => |direction| try self.remove_tree(pos, direction),
             .Delayer => |*delayer| try self.remove_tree(pos, delayer.direction),
+            .Switch => |*eswitch| try self.remove_tree(pos, eswitch.direction),
         }
         try self.update_trees(pos);
 
@@ -295,10 +307,12 @@ pub const State = struct {
                     try tree.regenerate(self);
 
                     for (tree.leaves.toSlice()) |leaf| {
+                        try self.sim.queue_update(leaf);
                         var input_set = self.input_map.get(leaf) orelse unreachable;
                         _ = try input_set.value.put(entry.key, {});
                     }
                     for (tree.side_leaves.toSlice()) |leaf| {
+                        try self.sim.queue_update(leaf);
                         var input_set = self.side_input_map.get(leaf) orelse unreachable;
                         _ = try input_set.value.put(entry.key, {});
                     }
@@ -319,10 +333,12 @@ pub const State = struct {
                 try tree.regenerate(self);
 
                 for (tree.leaves.toSlice()) |leaf| {
+                    try self.sim.queue_update(leaf);
                     var input_set = self.input_map.get(leaf) orelse unreachable;
                     _ = try input_set.value.put(entry.key, {});
                 }
                 for (tree.side_leaves.toSlice()) |leaf| {
+                    try self.sim.queue_update(leaf);
                     var input_set = self.side_input_map.get(leaf) orelse unreachable;
                     _ = try input_set.value.put(entry.key, {});
                 }
@@ -373,6 +389,7 @@ pub const State = struct {
             },
             sdl.K_SPACE => {
                 try self.sim.update(self);
+                std.debug.warn("step\n");
             },
             else => {},
         }

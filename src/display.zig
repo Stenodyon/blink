@@ -76,6 +76,7 @@ var mirror_img: sdl.Texture = undefined;
 var splitter_img: sdl.Texture = undefined;
 var delayer_on_img: sdl.Texture = undefined;
 var delayer_off_img: sdl.Texture = undefined;
+var switch_img: sdl.Texture = undefined;
 
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
@@ -97,6 +98,7 @@ pub fn init() !void {
     splitter_img = try load_texture("data/entity_splitter.png");
     delayer_on_img = try load_texture("data/entity_delayer_on.png");
     delayer_off_img = try load_texture("data/entity_delayer_off.png");
+    switch_img = try load_texture("data/entity_switch.png");
 
     font = ttf.OpenFont(font_name, 25);
     if (font == null) {
@@ -283,6 +285,17 @@ fn render_entity(entity: Entity, pos: Vec2i) void {
                 srect,
                 drect,
                 dir_angle(delayer.direction),
+                &(grid_size.div(2)),
+                sdl.FLIP_NONE,
+            );
+        },
+        .Switch => |*eswitch| {
+            _ = sdl.RenderCopyEx(
+                renderer,
+                switch_img,
+                srect,
+                drect,
+                dir_angle(eswitch.direction),
                 &(grid_size.div(2)),
                 sdl.FLIP_NONE,
             );

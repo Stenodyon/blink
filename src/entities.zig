@@ -84,12 +84,18 @@ pub const Delayer = struct {
     is_on: bool,
 };
 
+pub const Switch = struct {
+    direction: Direction,
+    is_on: bool,
+};
+
 pub const Entity = union(enum) {
     Block,
     Laser: Direction,
     Mirror: Direction,
     Splitter: Direction,
     Delayer: Delayer,
+    Switch: Switch,
 
     // Returns the direction of propagated rays
     pub fn propagated_rays(
@@ -100,6 +106,7 @@ pub const Entity = union(enum) {
             .Block,
             .Laser,
             .Delayer,
+            .Switch,
             => return [_]Direction{},
 
             .Mirror => |direction| {
@@ -145,7 +152,8 @@ pub const Entity = union(enum) {
             .Mirror,
             .Splitter,
             => return false,
-            .Delayer => return true,
+            .Delayer => |*delayer| return delayer.direction == direction,
+            .Switch => |*eswitch| return eswitch.direction == direction,
         }
     }
 
@@ -157,6 +165,7 @@ pub const Entity = union(enum) {
             .Splitter,
             .Delayer,
             => return false,
+            .Switch => |*eswitch| return eswitch.direction.cclockwise() == direction,
         }
     }
 
@@ -193,6 +202,9 @@ pub const Entity = union(enum) {
             .Delayer => |*delayer| {
                 delayer.direction = new_direction;
             },
+            .Switch => |*eswitch| {
+                eswitch.direction = new_direction;
+            },
         }
     }
 
@@ -204,6 +216,7 @@ pub const Entity = union(enum) {
             => return false,
             .Laser => return true,
             .Delayer => |*delayer| return delayer.is_on,
+            .Switch => |*eswitch| return eswitch.is_on,
         }
     }
 };
