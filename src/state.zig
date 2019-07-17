@@ -277,17 +277,6 @@ pub const State = struct {
         tree_entry.value.destroy();
     }
 
-    pub fn get_tree(
-        self: *State,
-        pos: Vec2i,
-        direction: Direction,
-    ) ?*LightTree {
-        return self.lighttrees.get(RayOrigin{
-            .position = pos,
-            .direction = direction,
-        });
-    }
-
     pub fn update_trees(self: *State, pos: ?Vec2i) !void { // null means update all trees
         var tree_iterator = self.lighttrees.iterator();
         if (pos) |position| {
