@@ -229,6 +229,7 @@ pub const State = struct {
             .Switch => |*eswitch| try self.remove_tree(pos, eswitch.direction),
         }
         try self.update_trees(pos);
+        self.sim.dequeue_update(pos);
 
         return entry;
     }

@@ -38,6 +38,10 @@ pub const Simulation = struct {
         _ = try self.to_update_primary().put(entity_pos, {});
     }
 
+    pub fn dequeue_update(self: *Simulation, entity_pos: Vec2i) void {
+        _ = self.to_update_primary().remove(entity_pos);
+    }
+
     pub fn update(self: *Simulation, state: *State) !void {
         self.update_map.clear();
         self.to_update_secondary().clear();
@@ -60,12 +64,6 @@ pub const Simulation = struct {
                     const input_value = self.get_input(state, update_entry.key);
                     const side_input_value = self.get_side_input(state, update_entry.key);
                     const new_value = input_value and !side_input_value;
-                    std.debug.warn(
-                        "switch input: {} side: {} new value: {}\n",
-                        input_value,
-                        side_input_value,
-                        new_value,
-                    );
                     if (new_value != eswitch.is_on) {
                         _ = try self.update_map.put(
                             entity_entry.key,
