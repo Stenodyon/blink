@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const TailQueue = std.TailQueue;
+const BufferedAtomicFile = std.io.BufferedAtomicFile;
 
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
@@ -371,6 +372,46 @@ pub const State = struct {
                 std.debug.warn("step\n");
             },
             else => {},
+        }
+    }
+
+    pub fn save(self: *State, filename: []const u8) !void {
+        var file = BufferedAtomicFile(self.entities.allocator, filename);
+        var outstream = file.stream();
+
+        // header
+        outstream.write("BLINKSV\x00"[0..]);
+
+        // Entities
+        outstream.writeIntLittle(usize, self.entities.count());
+
+        // entity x (4B) y (4B) type (1B) [direction (1B) [is_on (1B)]]
+        var entity_iterator = self.entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            const pos = entry.key;
+            outstream.writeIntLittle(usize, pos.x);
+            outstream.writeIntLittle(usize, pos.y);
+
+            switch (entry.value) {
+                .Block => outstream.writeByte(@enumToInt(u8, @TagType(entry.value))),
+                .Mirror,
+                .Splitter,
+                .Laser,
+                => |direction| {
+                    outstream.writeByte(@enumToInt(u8, @TagType(entry.value)));
+                    outstream.writeByte(@enumToInt(u8, direction));
+                },
+                .Delayer => |*delayer| {
+                    outstream.writeByte(@enumToInt(u8, @TagType(entry.value)));
+                    outstream.writeByte(@enumToInt(u8, delayer.direction));
+                    outstream.writeByte(@enumToInt(u8, @boolToInt(delayer.is_on)));
+                },
+                .Switch => |*eswitch| {
+                    outstream.writeByte(@enumToInt(u8, @TagType(entry.value)));
+                    outstream.writeByte(@enumToInt(u8, eswitch.direction));
+                    outstream.writeByte(@enumToInt(u8, @boolToInt(eswitch.is_on)));
+                },
+            }
         }
     }
 };
