@@ -13,7 +13,7 @@ const GUI_Button = display.GUI_Button;
 const State = @import("state.zig").State;
 const Segment = @import("state.zig").Segment;
 
-const UPS: usize = 100;
+const UPS: f64 = 1;
 
 var window: sdl.Window = undefined;
 
@@ -107,6 +107,8 @@ pub fn main() !void {
     var state: State = State.new(std.debug.global_allocator);
     defer state.destroy();
 
+    var updates_left: f64 = 0;
+
     while (!quit) {
         const start_time = sdl.GetTicks();
 
@@ -161,8 +163,9 @@ pub fn main() !void {
         }
 
         display.render(&state);
-        var updates_left = UPS / 60;
-        while (updates_left > 0) : (updates_left -= 1) {
+
+        updates_left += UPS / 60.;
+        while (updates_left >= 1.) : (updates_left -= 1.) {
             try state.update();
         }
 
