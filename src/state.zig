@@ -277,65 +277,46 @@ pub const State = struct {
         tree_entry.value.destroy();
     }
 
+    fn update_tree(self: *State, pos: Vec2i, tree: *LightTree) !void {
+        for (tree.leaves.toSlice()) |leaf| {
+            // If the tree updates because an entity was removed,
+            // this entity could be among the outputs
+            var input_set = self.input_map.get(leaf) orelse continue;
+            _ = input_set.value.remove(pos);
+            try self.sim.queue_update(leaf);
+        }
+        for (tree.side_leaves.toSlice()) |leaf| {
+            var input_set = self.side_input_map.get(leaf) orelse continue;
+            _ = input_set.value.remove(pos);
+            try self.sim.queue_update(leaf);
+        }
+
+        try tree.regenerate(self);
+
+        for (tree.leaves.toSlice()) |leaf| {
+            try self.sim.queue_update(leaf);
+            var input_set = self.input_map.get(leaf) orelse unreachable;
+            _ = try input_set.value.put(pos, {});
+        }
+        for (tree.side_leaves.toSlice()) |leaf| {
+            try self.sim.queue_update(leaf);
+            var input_set = self.side_input_map.get(leaf) orelse unreachable;
+            _ = try input_set.value.put(pos, {});
+        }
+    }
+
     pub fn update_trees(self: *State, pos: ?Vec2i) !void { // null means update all trees
         var tree_iterator = self.lighttrees.iterator();
         if (pos) |position| {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
-                if (tree.in_bounds(position)) {
-                    for (tree.leaves.toSlice()) |leaf| {
-                        // If the tree updates because an entity was removed,
-                        // this entity could be among the outputs
-                        var input_set = self.input_map.get(leaf) orelse continue;
-                        _ = input_set.value.remove(entry.key);
-                        try self.sim.queue_update(leaf);
-                    }
-                    for (tree.side_leaves.toSlice()) |leaf| {
-                        var input_set = self.side_input_map.get(leaf) orelse continue;
-                        _ = input_set.value.remove(entry.key);
-                        try self.sim.queue_update(leaf);
-                    }
-
-                    try tree.regenerate(self);
-
-                    for (tree.leaves.toSlice()) |leaf| {
-                        try self.sim.queue_update(leaf);
-                        var input_set = self.input_map.get(leaf) orelse unreachable;
-                        _ = try input_set.value.put(entry.key, {});
-                    }
-                    for (tree.side_leaves.toSlice()) |leaf| {
-                        try self.sim.queue_update(leaf);
-                        var input_set = self.side_input_map.get(leaf) orelse unreachable;
-                        _ = try input_set.value.put(entry.key, {});
-                    }
-                }
+                if (tree.in_bounds(position))
+                    try self.update_tree(entry.key, tree);
             }
         } else {
             while (tree_iterator.next()) |entry| {
                 var tree = &entry.value;
-                for (tree.leaves.toSlice()) |leaf| {
-                    var input_set = self.input_map.get(leaf) orelse continue;
-                    _ = input_set.value.remove(entry.key);
-                    try self.sim.queue_update(leaf);
-                }
-                for (tree.side_leaves.toSlice()) |leaf| {
-                    var input_set = self.side_input_map.get(leaf) orelse continue;
-                    _ = input_set.value.remove(entry.key);
-                    try self.sim.queue_update(leaf);
-                }
-
-                try tree.regenerate(self);
-
-                for (tree.leaves.toSlice()) |leaf| {
-                    try self.sim.queue_update(leaf);
-                    var input_set = self.input_map.get(leaf) orelse unreachable;
-                    _ = try input_set.value.put(entry.key, {});
-                }
-                for (tree.side_leaves.toSlice()) |leaf| {
-                    try self.sim.queue_update(leaf);
-                    var input_set = self.side_input_map.get(leaf) orelse unreachable;
-                    _ = try input_set.value.put(entry.key, {});
-                }
+                try self.update_tree(entry.key, tree);
             }
         }
     }
