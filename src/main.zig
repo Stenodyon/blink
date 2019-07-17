@@ -25,7 +25,14 @@ fn init_sdl() void {
         std.os.exit(1);
     }
 
-    window = sdl.CreateWindow(c"Blink", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, display.SCREEN_WIDTH, display.SCREEN_HEIGHT, sdl.WINDOW_SHOWN);
+    window = sdl.CreateWindow(
+        c"Blink",
+        sdl.WINDOWPOS_UNDEFINED,
+        sdl.WINDOWPOS_UNDEFINED,
+        display.SCREEN_WIDTH,
+        display.SCREEN_HEIGHT,
+        sdl.WINDOW_SHOWN,
+    );
     if (window == null) {
         std.debug.warn("Could not create a window: {}\n", sdl.GetError());
         std.os.exit(1);
