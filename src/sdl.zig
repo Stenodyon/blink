@@ -175,6 +175,7 @@ pub const K_y = c.SDLK_y;
 pub const K_z = c.SDLK_z;
 
 pub const K_SPACE = c.SDLK_SPACE;
+pub const KMOD_LSHIFT: c_int = c.KMOD_LSHIFT;
 
 pub fn PollEvent(event: *Event) c_int {
     return c.SDL_PollEvent(@ptrCast(?[*]c.union_SDL_Event, event));
@@ -193,6 +194,10 @@ pub const FLIP_VERTICAL = @intToEnum(RendererFlip, c.SDL_FLIP_VERTICAL);
 pub const GetTicks = c.SDL_GetTicks;
 pub const MapRGB = c.SDL_MapRGB;
 pub const FillRect = c.SDL_FillRect;
+
+pub fn GetModState() c_int {
+    return @enumToInt(c.SDL_GetModState());
+}
 
 pub fn GetMouseState(x: *i32, y: *i32) u32 {
     return c.SDL_GetMouseState(
