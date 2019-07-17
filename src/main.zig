@@ -13,6 +13,8 @@ const GUI_Button = display.GUI_Button;
 const State = @import("state.zig").State;
 const Segment = @import("state.zig").Segment;
 
+const UPS: usize = 100;
+
 var window: sdl.Window = undefined;
 
 var quit = false;
@@ -159,6 +161,10 @@ pub fn main() !void {
         }
 
         display.render(&state);
+        var updates_left = UPS / 60;
+        while (updates_left > 0) : (updates_left -= 1) {
+            try state.update();
+        }
 
         const end_time = sdl.GetTicks();
         const delta = end_time - start_time;

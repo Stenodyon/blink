@@ -361,6 +361,10 @@ pub const State = struct {
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
+    pub fn update(self: *State) !void {
+        try self.sim.update(self);
+    }
+
     pub fn on_key_up(self: *State, keysym: sdl.Keysym) !void {
         switch (keysym.sym) {
             sdl.K_0,
