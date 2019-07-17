@@ -48,6 +48,8 @@ const IOMap = std.HashMap(
     Vec2i.equals,
 );
 
+const SAVEFILE_HEADER = "BLINKSV\x00";
+
 pub const State = struct {
     viewpos: Vec2i,
 
@@ -379,9 +381,16 @@ pub const State = struct {
         var file = try BufferedAtomicFile.create(self.entities.allocator, filename);
         var outstream = file.stream();
         defer file.destroy();
+        try self.save_to_stream(outstream);
+        try file.finish();
+    }
 
+    fn save_to_stream(
+        self: *State,
+        outstream: var,
+    ) !void {
         // header
-        try outstream.write("BLINKSV\x00"[0..]);
+        try outstream.write(SAVEFILE_HEADER[0..]);
 
         // Entities
         try outstream.writeIntLittle(usize, self.entities.count());
@@ -414,6 +423,142 @@ pub const State = struct {
                 },
             }
         }
-        try file.finish();
+    }
+
+    pub fn from_file(allocator: *Allocator, filename: []const u8) !?State {
+        var state = State.new(allocator);
+
+        var file_contents = try std.io.readFileAlloc(allocator, filename);
+    }
+
+    fn from_stream(instream: var) ?State {
+        return null;
     }
 };
+
+test "save/load" {
+    const Buffer = std.Buffer;
+    const BufferOutStream = std.io.BufferOutStream;
+    const SliceInStream = std.io.SliceInStream;
+
+    var buffer = try Buffer.initSize(std.debug.global_allocator, 8);
+    var outstream = BufferOutStream.init(&buffer);
+    var state = State.new(std.debug.global_allocator);
+
+    _ = try state.add_entity(Entity.Block, Vec2i.new(1, 1));
+    _ = try state.add_entity(Entity{ .Laser = .UP }, Vec2i.new(-10, 2));
+    _ = try state.add_entity(Entity{ .Mirror = .RIGHT }, Vec2i.new(14, 3));
+    _ = try state.add_entity(Entity{ .Splitter = .DOWN }, Vec2i.new(1, 12));
+    _ = try state.add_entity(Entity{
+        .Delayer = Delayer{
+            .direction = .LEFT,
+            .is_on = false,
+        },
+    }, Vec2i.new(-5, 4));
+    _ = try state.add_entity(Entity{
+        .Switch = Switch{
+            .direction = .UP,
+            .is_on = true,
+        },
+    }, Vec2i.new(42, 42));
+
+    try state.save_to_stream(&outstream.stream);
+
+    var save_file = buffer.toOwnedSlice();
+    defer std.debug.global_allocator.free(save_file);
+    var instream = SliceInStream.init(save_file);
+    const loaded_state = State.from_stream(&instream) orelse {
+        std.debug.panic("State.from_stream did not return a state\n");
+    };
+
+    if (loaded_state.entities.count() != state.entities.count()) {
+        std.debug.panic(
+            "loaded_state has the wrong number of entities ({} vs {})\n",
+            loaded_state.entities.count(),
+            state.entities.count(),
+        );
+    }
+
+    var entity_iterator = state.entities.iterator();
+    while (entity_iterator.next()) |entry| {
+        var loaded_entry = loaded_state.entities.get(entry.key) orelse {
+            std.debug.panic(
+                "Loaded state doesn't have an entity at ({}, {})\n",
+                entry.key.x,
+                entry.key.y,
+            );
+        };
+        if (@enumToInt(entry.value) != @enumToInt(loaded_entry.value)) {
+            std.debug.panic(
+                "Expected {} but loaded {}\n",
+                @tagName(entry.value),
+                @tagName(loaded_entry.value),
+            );
+        }
+        switch (entry.value) {
+            .Block => {},
+            .Mirror,
+            .Laser,
+            .Splitter,
+            => |direction| {
+                switch (loaded_entry.value) {
+                    .Mirror,
+                    .Laser,
+                    .Splitter,
+                    => |loaded_direction| {
+                        if (direction != loaded_direction) {
+                            std.debug.panic(
+                                "Expected direction {} but loaded {}\n",
+                                @enumToInt(direction),
+                                @enumToInt(loaded_direction),
+                            );
+                        }
+                    },
+                    else => unreachable,
+                }
+            },
+            .Delayer => |*delayer| {
+                switch (loaded_entry.value) {
+                    .Delayer => |*loaded_delayer| {
+                        if (delayer.direction != loaded_delayer.direction) {
+                            std.debug.panic(
+                                "Expected direction {} but loaded {}\n",
+                                @enumToInt(delayer.direction),
+                                @enumToInt(loaded_delayer.direction),
+                            );
+                        }
+                        if (delayer.is_on != loaded_delayer.is_on) {
+                            std.debug.panic(
+                                "Expected is_on {} but loaded {}\n",
+                                delayer.is_on,
+                                loaded_delayer.is_on,
+                            );
+                        }
+                    },
+                    else => unreachable,
+                }
+            },
+            .Switch => |*eswitch| {
+                switch (loaded_entry.value) {
+                    .Switch => |*loaded_switch| {
+                        if (eswitch.direction != loaded_switch.direction) {
+                            std.debug.panic(
+                                "Expected direction {} but loaded {}\n",
+                                @enumToInt(eswitch.direction),
+                                @enumToInt(loaded_switch.direction),
+                            );
+                        }
+                        if (eswitch.is_on != loaded_switch.is_on) {
+                            std.debug.panic(
+                                "Expected is_on {} but loaded {}\n",
+                                eswitch.is_on,
+                                loaded_switch.is_on,
+                            );
+                        }
+                    },
+                    else => unreachable,
+                }
+            },
+        }
+    }
+}
