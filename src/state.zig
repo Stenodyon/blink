@@ -11,7 +11,6 @@ const img = @import("img.zig");
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
 const Rect = vec.Rect;
-const utils = @import("utils.zig");
 
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
@@ -343,40 +342,6 @@ pub const State = struct {
 
     pub fn update(self: *State) !void {
         try self.sim.update(self);
-    }
-
-    pub fn on_key_up(self: *State, keysym: sdl.Keysym) !void {
-        switch (keysym.sym) {
-            sdl.K_0,
-            sdl.K_1,
-            sdl.K_2,
-            sdl.K_3,
-            sdl.K_4,
-            sdl.K_5,
-            sdl.K_6,
-            sdl.K_7,
-            sdl.K_8,
-            sdl.K_9,
-            => {
-                const index = @intCast(usize, utils.slot_value(keysym.sym));
-                if (index < self.entity_wheel.len) {
-                    self.set_selected_slot(index);
-                }
-            },
-            sdl.K_q => {
-                self.entity_ghost_dir = self.entity_ghost_dir.cclockwise();
-                self.get_entity_ptr().set_direction(self.entity_ghost_dir);
-            },
-            sdl.K_e => {
-                self.entity_ghost_dir = self.entity_ghost_dir.clockwise();
-                self.get_entity_ptr().set_direction(self.entity_ghost_dir);
-            },
-            sdl.K_F6 => {
-                try self.save("test.sav");
-                std.debug.warn("saved to test.sav\n");
-            },
-            else => {},
-        }
     }
 
     pub fn save(self: *State, filename: []const u8) !void {

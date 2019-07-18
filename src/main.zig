@@ -164,7 +164,7 @@ pub fn main() !void {
                 },
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
-                    try state.on_key_up(keyboard_event.keysym);
+                    try input.on_key_up(&state, keyboard_event.keysym);
                 },
                 sdl.QUIT => {
                     std.debug.warn("Quit Event!\n");
