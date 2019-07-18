@@ -3,7 +3,9 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const TailQueue = std.TailQueue;
 const BufferedAtomicFile = std.io.BufferedAtomicFile;
+const SliceInStream = std.io.SliceInStream;
 
+const lazy = @import("lazy/index.zig");
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
 const vec = @import("vec.zig");
@@ -369,7 +371,7 @@ pub const State = struct {
                 self.entity_ghost_dir = self.entity_ghost_dir.clockwise();
                 self.get_entity_ptr().set_direction(self.entity_ghost_dir);
             },
-            sdl.K_SPACE => {
+            sdl.K_F6 => {
                 try self.save("test.sav");
                 std.debug.warn("saved to test.sav\n");
             },
@@ -392,7 +394,7 @@ pub const State = struct {
         // header
         try outstream.write(SAVEFILE_HEADER[0..]);
 
-        // Entities
+        // Entity count
         try outstream.writeIntLittle(usize, self.entities.count());
 
         // entity x (4B) y (4B) type (1B) [direction (1B) [is_on (1B)]]
@@ -401,23 +403,18 @@ pub const State = struct {
             const pos = entry.key;
             try outstream.writeIntLittle(i32, pos.x);
             try outstream.writeIntLittle(i32, pos.y);
+            try outstream.writeByte(@enumToInt(entry.value));
 
             switch (entry.value) {
-                .Block => try outstream.writeByte(@enumToInt(entry.value)),
-                .Mirror,
-                .Splitter,
-                .Laser,
-                => |direction| {
-                    try outstream.writeByte(@enumToInt(entry.value));
+                .Block => {},
+                .Mirror, .Splitter, .Laser => |direction| {
                     try outstream.writeByte(@enumToInt(direction));
                 },
                 .Delayer => |*delayer| {
-                    try outstream.writeByte(@enumToInt(entry.value));
                     try outstream.writeByte(@enumToInt(delayer.direction));
                     try outstream.writeByte(@boolToInt(delayer.is_on));
                 },
                 .Switch => |*eswitch| {
-                    try outstream.writeByte(@enumToInt(entry.value));
                     try outstream.writeByte(@enumToInt(eswitch.direction));
                     try outstream.writeByte(@boolToInt(eswitch.is_on));
                 },
@@ -426,22 +423,94 @@ pub const State = struct {
     }
 
     pub fn from_file(allocator: *Allocator, filename: []const u8) !?State {
-        var state = State.new(allocator);
-
         var file_contents = try std.io.readFileAlloc(allocator, filename);
+        defer allocator.free(file_contents);
+        var instream = SliceInStream.init(file_contents);
+        return try State.from_stream(allocator, &instream.stream);
     }
 
-    fn from_stream(instream: var) ?State {
-        return null;
+    fn from_stream(allocator: *Allocator, instream: var) !?State {
+        var state = State.new(allocator);
+
+        // Header
+        var buffer: [SAVEFILE_HEADER.len]u8 = undefined;
+        if ((try instream.read(buffer[0..])) != SAVEFILE_HEADER.len) {
+            std.debug.warn("Did not read 8 bytes for the header\n");
+            return null;
+        }
+        if (std.mem.compare(u8, buffer[0..], SAVEFILE_HEADER[0..]) != .Equal) {
+            std.debug.warn(
+                "Header did not match: {} vs {}\n",
+                buffer,
+                SAVEFILE_HEADER,
+            );
+            return null;
+        }
+
+        // Entities
+        const entity_count = try instream.readIntLittle(usize);
+
+        var entity_it = lazy.range(usize(0), entity_count, 1);
+        while (entity_it.next()) |i| {
+            const pos_x = try instream.readIntLittle(i32);
+            const pos_y = try instream.readIntLittle(i32);
+            std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
+            const pos = Vec2i.new(pos_x, pos_y);
+
+            const entity_type = @intToEnum(@TagType(Entity), @intCast(u3, try instream.readByte())); // ughh
+            const entity = switch (entity_type) {
+                .Block => blk: {
+                    // Had to do this nonsense, otherwise the type of the switch
+                    // would be inferred to @TagType(Entity) for some reason
+                    const ret: Entity = Entity.Block;
+                    break :blk ret;
+                },
+                .Mirror => blk: {
+                    const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                    break :blk Entity{ .Mirror = direction };
+                },
+                .Splitter => blk: {
+                    const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                    break :blk Entity{ .Splitter = direction };
+                },
+                .Laser => blk: {
+                    const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                    break :blk Entity{ .Laser = direction };
+                },
+                .Delayer => blk: {
+                    const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                    const is_on = (try instream.readByte()) > 0;
+                    break :blk Entity{
+                        .Delayer = Delayer{
+                            .direction = direction,
+                            .is_on = is_on,
+                        },
+                    };
+                },
+                .Switch => blk: {
+                    const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                    const is_on = (try instream.readByte()) > 0;
+                    break :blk Entity{
+                        .Switch = Switch{
+                            .direction = direction,
+                            .is_on = is_on,
+                        },
+                    };
+                },
+            };
+            _ = try state.add_entity(entity, pos);
+        }
+
+        return state;
     }
 };
 
 test "save/load" {
+    // Init
     const Buffer = std.Buffer;
     const BufferOutStream = std.io.BufferOutStream;
-    const SliceInStream = std.io.SliceInStream;
 
-    var buffer = try Buffer.initSize(std.debug.global_allocator, 8);
+    var buffer = try Buffer.initSize(std.debug.global_allocator, 0);
     var outstream = BufferOutStream.init(&buffer);
     var state = State.new(std.debug.global_allocator);
 
@@ -462,15 +531,22 @@ test "save/load" {
         },
     }, Vec2i.new(42, 42));
 
+    // Saving
     try state.save_to_stream(&outstream.stream);
-
     var save_file = buffer.toOwnedSlice();
+    std.debug.warn("Save file: {}\n", save_file);
     defer std.debug.global_allocator.free(save_file);
+
+    // Loading
     var instream = SliceInStream.init(save_file);
-    const loaded_state = State.from_stream(&instream) orelse {
+    const loaded_state = (try State.from_stream(
+        std.debug.global_allocator,
+        &instream.stream,
+    )) orelse {
         std.debug.panic("State.from_stream did not return a state\n");
     };
 
+    // Checking equality
     if (loaded_state.entities.count() != state.entities.count()) {
         std.debug.panic(
             "loaded_state has the wrong number of entities ({} vs {})\n",
@@ -497,15 +573,9 @@ test "save/load" {
         }
         switch (entry.value) {
             .Block => {},
-            .Mirror,
-            .Laser,
-            .Splitter,
-            => |direction| {
+            .Mirror, .Splitter, .Laser => |direction| {
                 switch (loaded_entry.value) {
-                    .Mirror,
-                    .Laser,
-                    .Splitter,
-                    => |loaded_direction| {
+                    .Mirror, .Splitter, .Laser => |loaded_direction| {
                         if (direction != loaded_direction) {
                             std.debug.panic(
                                 "Expected direction {} but loaded {}\n",

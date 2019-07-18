@@ -150,22 +150,6 @@ pub const LightTree = struct {
             self.direction,
             state,
         );
-        if (self.bounding_box) |bounding_box| {
-            std.debug.warn(
-                "Tree bounding box is ({}, {}), ({}, {})\n",
-                bounding_box.pos.x,
-                bounding_box.pos.y,
-                bounding_box.size.x,
-                bounding_box.size.y,
-            );
-        } else {
-            std.debug.warn("Tree has infinite bounding box\n");
-        }
-        std.debug.warn(
-            "Leaves: {}, Side leaves: {}\n",
-            self.leaves.count(),
-            self.side_leaves.count(),
-        );
     }
 
     fn propagate_lightray(
