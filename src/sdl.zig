@@ -199,7 +199,19 @@ pub const K_F22 = c.SDLK_F22;
 pub const K_F23 = c.SDLK_F23;
 pub const K_F24 = c.SDLK_F24;
 
+pub const KMOD_NONE: c_int = c.KMOD_NONE;
 pub const KMOD_LSHIFT: c_int = c.KMOD_LSHIFT;
+pub const KMOD_RSHIFT: c_int = c.KMOD_RSHIFT;
+pub const KMOD_LCTRL: c_int = c.KMOD_LCTRL;
+pub const KMOD_RCTRL: c_int = c.KMOD_RCTRL;
+pub const KMOD_LALT: c_int = c.KMOD_LALT;
+pub const KMOD_RALT: c_int = c.KMOD_RALT;
+pub const KMOD_LGUI: c_int = c.KMOD_LGUI;
+pub const KMOD_RGUI: c_int = c.KMOD_RGUI;
+pub const KMOD_NUM: c_int = c.KMOD_NUM;
+pub const KMOD_CAPS: c_int = c.KMOD_CAPS;
+pub const KMOD_MODE: c_int = c.KMOD_MODE;
+pub const KMOD_RESERVED: c_int = c.KMOD_RESERVED;
 
 pub fn PollEvent(event: *Event) c_int {
     return c.SDL_PollEvent(@ptrCast(?[*]c.union_SDL_Event, event));
