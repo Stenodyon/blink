@@ -21,7 +21,10 @@ Dependencies:
   branch last time I worked on this project, I'll stop using zig master branch
   at 0.5.0)
 * `SDL2`
+* `SDL2_image`
 * `SDL2_ttf`
+* `libGL`
+* `libGLEW`
 
 Blink uses the zig build system. If the dependencies are met, you can simply run
 ```
