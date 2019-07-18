@@ -423,7 +423,13 @@ pub const State = struct {
     }
 
     pub fn from_file(allocator: *Allocator, filename: []const u8) !?State {
-        var file_contents = try std.io.readFileAlloc(allocator, filename);
+        var file_contents = std.io.readFileAlloc(allocator, filename) catch |err| {
+            if (err == error.FileNotFound) {
+                std.debug.warn("Could not find savefile '{}'\n", filename);
+                std.os.exit(1);
+            }
+            return err;
+        };
         defer allocator.free(file_contents);
         var instream = SliceInStream.init(file_contents);
         return try State.from_stream(allocator, &instream.stream);
