@@ -24,7 +24,7 @@ Dependencies:
 * `SDL2_image`
 * `SDL2_ttf`
 * `libGL`
-* `libGLEW`
+* `libepoxy`
 
 Blink uses the zig build system. If the dependencies are met, you can simply run
 ```
