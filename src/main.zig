@@ -6,6 +6,7 @@ const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
 const img = @import("img.zig");
+const c = @import("c.zig");
 const display = @import("display.zig");
 const input = @import("input.zig");
 const Vec2i = @import("vec.zig").Vec2i;
@@ -18,6 +19,7 @@ const UPS: f64 = 100;
 
 var window: sdl.Window = undefined;
 var gl_context: sdl.GLContext = undefined;
+var vertex_buffer: c.GLuint = undefined;
 
 var quit = false;
 

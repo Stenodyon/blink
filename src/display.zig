@@ -5,6 +5,7 @@ const Buffer = std.Buffer;
 
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
+const c = @import("c.zig");
 const lazy = @import("lazy/index.zig");
 
 const ResourceManager = @import("res.zig");
@@ -91,7 +92,145 @@ fn load_texture(path: []const u8) !sdl.Texture {
     return texture;
 }
 
+const vertex_shader_src =
+    c\\#version 150 core
+    c\\
+    c\\in vec2 position;
+    c\\
+    c\\void main() {
+    c\\  gl_Position = vec4(position, 0.0, 1.0);
+    c\\}
+;
+
+const fragment_shader_src =
+    c\\#version 150 core
+    c\\
+    c\\out vec4 outColor;
+    c\\
+    c\\void main() {
+    c\\  outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    c\\}
+;
+
+//const sprite_vertices = [_]c.GLfloat{
+//    -1, -1,
+//    -1, 1,
+//    1,  -1,
+//    -1, 1,
+//    1,  1,
+//    1,  -1,
+//};
+
+const sprite_vertices = [_]c.GLfloat{
+    0,    0.5,
+    0.5,  -0.5,
+    -0.5, -0.5,
+};
+
+var sprite_vao: c.GLuint = undefined;
+var sprite_vbo: c.GLuint = undefined;
+var vertex_shader: c.GLuint = undefined;
+var fragment_shader: c.GLuint = undefined;
+var shader_program: c.GLuint = undefined;
+
+var world_matrix: [16]f32 = undefined;
+
+fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
+    for (dest[0..]) |*index| index.* = 0;
+    dest[0] = 2 / width;
+    dest[5] = 2 / height;
+    dest[15] = 1;
+}
+
+const LOG_BUFFER_SIZE = 512;
+
+fn check_shader(shader: c.GLuint) void {
+    var status: c.GLuint = undefined;
+    c.glGetShaderiv(
+        shader,
+        c.GL_COMPILE_STATUS,
+        @ptrCast([*c]c_int, &status),
+    );
+
+    if (status != c.GL_TRUE) {
+        var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
+        c.glGetShaderInfoLog(shader, LOG_BUFFER_SIZE, null, &log_buffer);
+        _ = c.printf(
+            c"%s\n",
+            &log_buffer,
+        );
+        std.process.exit(255);
+    }
+}
+
+fn check_program(program: c.GLuint) void {
+    var status: c.GLuint = undefined;
+    c.glGetProgramiv(
+        program,
+        c.GL_LINK_STATUS,
+        @ptrCast([*c]c_int, &status),
+    );
+
+    if (status != c.GL_TRUE) {
+        var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
+        c.glGetProgramInfoLog(program, LOG_BUFFER_SIZE, null, &log_buffer);
+        _ = c.printf(
+            c"%s\n",
+            &log_buffer,
+        );
+        std.process.exit(255);
+    }
+}
+
 pub fn init() void {
+    c.glGenVertexArrays(1, &sprite_vao);
+    c.glBindVertexArray(sprite_vao);
+
+    c.glGenBuffers(1, &sprite_vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(c.GLfloat) * sprite_vertices.len,
+        &sprite_vertices,
+        c.GL_STATIC_DRAW,
+    );
+
+    vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
+    c.glShaderSource(vertex_shader, 1, &vertex_shader_src, null);
+    c.glCompileShader(vertex_shader);
+    check_shader(vertex_shader);
+
+    fragment_shader = c.glCreateShader(c.GL_FRAGMENT_SHADER);
+    c.glShaderSource(fragment_shader, 1, &fragment_shader_src, null);
+    c.glCompileShader(fragment_shader);
+    check_shader(fragment_shader);
+
+    shader_program = c.glCreateProgram();
+    c.glAttachShader(shader_program, vertex_shader);
+    c.glAttachShader(shader_program, fragment_shader);
+
+    c.glBindFragDataLocation(shader_program, 0, c"outColor");
+
+    c.glLinkProgram(shader_program);
+    check_program(shader_program);
+
+    c.glUseProgram(shader_program);
+
+    var pos_attrib = @intCast(c_uint, c.glGetAttribLocation(
+        shader_program,
+        c"position",
+    ));
+    c.glVertexAttribPointer(pos_attrib, 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+    c.glEnableVertexAttribArray(pos_attrib);
+
+    otho_matrix(
+        @intToFloat(f32, SCREEN_WIDTH),
+        @intToFloat(f32, SCREEN_HEIGHT),
+        &world_matrix,
+    );
+
+    std.debug.warn("OpenGL initialized\n");
+
     //block_img = try load_texture("data/entity_block.png");
     //laser_img = try load_texture("data/entity_laser.png");
     //mirror_img = try load_texture("data/entity_mirror.png");
@@ -112,10 +251,20 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-    ttf.CloseFont(font);
+    c.glDeleteProgram(shader_program);
+    c.glDeleteShader(fragment_shader);
+    c.glDeleteShader(vertex_shader);
+    c.glDeleteBuffers(1, &sprite_vbo);
+    c.glDeleteVertexArrays(1, &sprite_vao);
+    //ttf.CloseFont(font);
 }
 
 pub fn render(state: *const State) void {
+    c.glClearColor(0.43, 0.47, 0.53, 1);
+    c.glClear(c.GL_COLOR_BUFFER_BIT);
+
+    c.glDrawArrays(c.GL_TRIANGLES, 0, 3);
+
     //_ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
     //_ = sdl.RenderClear(renderer);
 
