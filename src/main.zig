@@ -105,7 +105,23 @@ pub fn main() !void {
     //    try gui_allocator.allocator.createOne(GUI_Button));
     //@ptrCast(*GUI_Button, display.g_gui).* = display.GUI_Button.new();
 
-    var state: State = State.new(std.heap.c_allocator);
+    const args = try std.process.argsAlloc(std.heap.c_allocator);
+    defer std.process.argsFree(std.heap.c_allocator, args);
+
+    var state: State = switch (args.len) {
+        1 => State.new(std.heap.c_allocator),
+        2 => blk: {
+            const filename = args[1];
+            break :blk (try State.from_file(std.heap.c_allocator, filename)) orelse {
+                std.debug.warn("Could not read the file\n");
+                std.process.exit(255);
+            };
+        },
+        else => {
+            std.debug.warn("Usage: {} [save-file]\n", args[0]);
+            std.process.exit(255);
+        },
+    };
     defer state.destroy();
 
     var updates_left: f64 = 0;

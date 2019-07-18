@@ -30,12 +30,19 @@ zig build
 
 The makefile calls the zig build system if you prefer GNU make.
 
+## Usage
+
+```bash
+./blink [save-file]
+```
+
 ## Controls
 
 * Left click to place an item, right click to remove
 * Hold left click to pan around
 * Mouse wheel and 1-9 numbers to select an item
 * Q and E to rotate the item
+* F6 to save to "test.sav" (saving and loading is experimental)
 
 ## Available items
 

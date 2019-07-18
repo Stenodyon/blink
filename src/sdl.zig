@@ -175,6 +175,30 @@ pub const K_y = c.SDLK_y;
 pub const K_z = c.SDLK_z;
 
 pub const K_SPACE = c.SDLK_SPACE;
+
+pub const K_F1 = c.SDLK_F1;
+pub const K_F2 = c.SDLK_F2;
+pub const K_F3 = c.SDLK_F3;
+pub const K_F4 = c.SDLK_F4;
+pub const K_F5 = c.SDLK_F5;
+pub const K_F6 = c.SDLK_F6;
+pub const K_F7 = c.SDLK_F7;
+pub const K_F8 = c.SDLK_F8;
+pub const K_F9 = c.SDLK_F9;
+pub const K_F11 = c.SDLK_F11;
+pub const K_F12 = c.SDLK_F12;
+pub const K_F13 = c.SDLK_F13;
+pub const K_F14 = c.SDLK_F14;
+pub const K_F15 = c.SDLK_F15;
+pub const K_F16 = c.SDLK_F16;
+pub const K_F17 = c.SDLK_F17;
+pub const K_F18 = c.SDLK_F18;
+pub const K_F19 = c.SDLK_F19;
+pub const K_F21 = c.SDLK_F21;
+pub const K_F22 = c.SDLK_F22;
+pub const K_F23 = c.SDLK_F23;
+pub const K_F24 = c.SDLK_F24;
+
 pub const KMOD_LSHIFT: c_int = c.KMOD_LSHIFT;
 
 pub fn PollEvent(event: *Event) c_int {
