@@ -1,9 +1,4 @@
-pub const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-    @cInclude("SDL2/SDL_opengl.h");
-});
-
+const c = @import("c.zig");
 const vec = @import("vec.zig");
 
 pub const INIT_VIDEO = c.SDL_INIT_VIDEO;
