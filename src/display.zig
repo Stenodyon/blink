@@ -91,24 +91,24 @@ fn load_texture(path: []const u8) !sdl.Texture {
     return texture;
 }
 
-pub fn init() !void {
-    block_img = try load_texture("data/entity_block.png");
-    laser_img = try load_texture("data/entity_laser.png");
-    mirror_img = try load_texture("data/entity_mirror.png");
-    splitter_img = try load_texture("data/entity_splitter.png");
-    delayer_on_img = try load_texture("data/entity_delayer_on.png");
-    delayer_off_img = try load_texture("data/entity_delayer_off.png");
-    switch_img = try load_texture("data/entity_switch.png");
+pub fn init() void {
+    //block_img = try load_texture("data/entity_block.png");
+    //laser_img = try load_texture("data/entity_laser.png");
+    //mirror_img = try load_texture("data/entity_mirror.png");
+    //splitter_img = try load_texture("data/entity_splitter.png");
+    //delayer_on_img = try load_texture("data/entity_delayer_on.png");
+    //delayer_off_img = try load_texture("data/entity_delayer_off.png");
+    //switch_img = try load_texture("data/entity_switch.png");
 
-    font = ttf.OpenFont(font_name, 25);
-    if (font == null) {
-        std.debug.warn(
-            "Failed to load font \"{}\"\n",
-            utils.c_to_slice(font_name),
-        );
-        std.os.exit(1);
-    }
-    std.debug.warn("Textures loaded\n");
+    //font = ttf.OpenFont(font_name, 25);
+    //if (font == null) {
+    //    std.debug.warn(
+    //        "Failed to load font \"{}\"\n",
+    //        utils.c_to_slice(font_name),
+    //    );
+    //    std.os.exit(1);
+    //}
+    //std.debug.warn("Textures loaded\n");
 }
 
 pub fn deinit() void {
@@ -116,18 +116,18 @@ pub fn deinit() void {
 }
 
 pub fn render(state: *const State) void {
-    _ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
-    _ = sdl.RenderClear(renderer);
+    //_ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
+    //_ = sdl.RenderClear(renderer);
 
-    //g_gui.draw(g_gui, renderer);
+    ////g_gui.draw(g_gui, renderer);
 
-    _ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
-    render_grid(state);
-    render_lightrays(state);
-    render_entities(state);
-    render_grid_sel(state);
+    //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
+    //render_grid(state);
+    //render_lightrays(state);
+    //render_entities(state);
+    //render_grid_sel(state);
 
-    sdl.RenderPresent(renderer);
+    //sdl.RenderPresent(renderer);
 }
 
 fn render_grid_sel(state: *const State) void {
