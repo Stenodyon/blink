@@ -109,21 +109,22 @@ const geometry_shader_src =
     c\\
     c\\uniform mat4 projection;
     c\\
+    c\\void add_point(vec2 displacement) {
+    c\\    vec4 point = gl_in[0].gl_Position + vec4(displacement, 0.0, 0.0);
+    c\\    point = projection * point;
+    c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
+    c\\    EmitVertex();
+    c\\}
+    c\\
     c\\void main() {
-    c\\    gl_Position = projection * gl_in[0].gl_Position;
-    c\\    EmitVertex();
-    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, -64.0, 0.0, 0.0));
-    c\\    EmitVertex();
-    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(0.0, -64.0, 0.0, 0.0));
-    c\\    EmitVertex();
+    c\\    add_point(vec2(0.0, 0.0));
+    c\\    add_point(vec2(64.0, -64.0));
+    c\\    add_point(vec2(0.0, -64.0));
     c\\    EndPrimitive();
     c\\
-    c\\    gl_Position = projection * gl_in[0].gl_Position;
-    c\\    EmitVertex();
-    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, 0.0, 0.0, 0.0));
-    c\\    EmitVertex();
-    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, -64.0, 0.0, 0.0));
-    c\\    EmitVertex();
+    c\\    add_point(vec2(0.0, 0.0));
+    c\\    add_point(vec2(64.0, 0.0));
+    c\\    add_point(vec2(64.0, -64.0));
     c\\    EndPrimitive();
     c\\}
 ;
