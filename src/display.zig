@@ -424,12 +424,6 @@ fn render_entities(state: *const State) void {
     );
 
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 2));
-
-    //var entity_it = state.entities.iterator();
-    //while (entity_it.next()) |entry| {
-    //    const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
-    //    render_entity(entry.value, pos);
-    //}
 }
 
 // pos in screen coordinates
