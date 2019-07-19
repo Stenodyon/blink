@@ -15,6 +15,7 @@ pub fn build(b: *Builder) void {
     exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("epoxy");
+    exe.linkSystemLibrary("SOIL");
 
     exe.setOutputDir(".");
 
