@@ -93,49 +93,67 @@ fn load_texture(path: []const u8) !sdl.Texture {
 }
 
 const vertex_shader_src =
-    c\\#version 150 core
+    c\\#version 330 core
     c\\
-    c\\in vec2 position;
+    c\\layout (location = 0) in vec2 position;
+    c\\layout (location = 1) in vec2 texture_uv;
+    c\\
+    c\\out UV_PASSTHROUGH {
+    c\\    vec2 uv;
+    c\\} uv_passthrough;
     c\\
     c\\void main() {
     c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
+    c\\    uv_passthrough.uv = texture_uv;
     c\\}
 ;
 
 const geometry_shader_src =
-    c\\#version 150 core
+    c\\#version 330 core
+    c\\
     c\\layout (points) in;
     c\\layout (triangle_strip, max_vertices = 6) out;
     c\\
+    c\\in UV_PASSTHROUGH {
+    c\\    vec2 uv;
+    c\\} uv_passthrough[];
+    c\\
     c\\uniform mat4 projection;
     c\\
+    c\\out vec2 _texture_uv;
+    c\\
     c\\void add_point(vec2 displacement) {
-    c\\    vec4 point = gl_in[0].gl_Position + vec4(displacement, 0.0, 0.0);
+    c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(displacement, 0.0, 0.0);
     c\\    point = projection * point;
     c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
+    c\\    _texture_uv = uv_passthrough[0].uv / 128.0 + vec2(displacement.x, -displacement.y) / 8.0;
     c\\    EmitVertex();
     c\\}
     c\\
     c\\void main() {
     c\\    add_point(vec2(0.0, 0.0));
-    c\\    add_point(vec2(64.0, -64.0));
-    c\\    add_point(vec2(0.0, -64.0));
+    c\\    add_point(vec2(0.0, -1.0));
+    c\\    add_point(vec2(1.0, -1.0));
     c\\    EndPrimitive();
     c\\
     c\\    add_point(vec2(0.0, 0.0));
-    c\\    add_point(vec2(64.0, 0.0));
-    c\\    add_point(vec2(64.0, -64.0));
+    c\\    add_point(vec2(1.0, -1.0));
+    c\\    add_point(vec2(1.0, 0.0));
     c\\    EndPrimitive();
     c\\}
 ;
 
 const fragment_shader_src =
-    c\\#version 150 core
+    c\\#version 330 core
+    c\\
+    c\\in vec2 _texture_uv;
+    c\\
+    c\\uniform sampler2D atlas;
     c\\
     c\\out vec4 outColor;
     c\\
     c\\void main() {
-    c\\  outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    c\\  outColor = texture(atlas, _texture_uv);
     c\\}
 ;
 
@@ -151,6 +169,7 @@ var vertex_shader: c.GLuint = undefined;
 var geometry_shader: c.GLuint = undefined;
 var fragment_shader: c.GLuint = undefined;
 var shader_program: c.GLuint = undefined;
+var texture_atlas: c.GLuint = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
@@ -201,7 +220,48 @@ fn check_program(program: c.GLuint) void {
     }
 }
 
+fn get_texture_id(entity: *Entity) usize {
+    switch (entity.*) {
+        .Block => return 1,
+        .Laser => return 2,
+        .Mirror => return 3,
+        .Splitter => return 4,
+        .Switch => return 5,
+        .Delayer => |*delayer| blk: {
+            switch (delayer.is_on) {
+                false => return 6,
+                true => return 7,
+            }
+        },
+    }
+}
+
+inline fn get_texture_offset(entity: *Entity) Vec2i {
+    const texture_id = get_texture_id(entity);
+    var x: i32 = @intCast(i32, 16 * (texture_id % 8));
+    var y: i32 = @intCast(i32, 16 * ((texture_id % 32) / 8));
+    const direction = switch (entity.*) {
+        .Block => .UP,
+        .Laser, .Mirror, .Splitter => |direction| direction,
+        .Delayer => |*delayer| delayer.direction,
+        .Switch => |*eswitch| eswitch.direction,
+    };
+    switch (direction) {
+        .UP => {},
+        .DOWN => {
+            x = -x - 16;
+            y = -y - 16;
+        },
+        .RIGHT => x = -x - 16,
+        .LEFT => y = -y - 16,
+    }
+    return Vec2i.new(x, y);
+}
+
 pub fn init() void {
+    c.glEnable(c.GL_BLEND);
+    c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
+
     c.glGenVertexArrays(1, &sprite_vao);
     c.glBindVertexArray(sprite_vao);
 
@@ -235,12 +295,26 @@ pub fn init() void {
 
     c.glUseProgram(shader_program);
 
-    var pos_attrib = @intCast(c_uint, c.glGetAttribLocation(
-        shader_program,
-        c"position",
-    ));
-    c.glVertexAttribPointer(pos_attrib, 2, c.GL_FLOAT, c.GL_FALSE, 0, null);
+    const pos_attrib = 0;
+    const uv_attrib = 1;
     c.glEnableVertexAttribArray(pos_attrib);
+    c.glEnableVertexAttribArray(uv_attrib);
+    c.glVertexAttribPointer(
+        pos_attrib,
+        2,
+        c.GL_FLOAT,
+        c.GL_FALSE,
+        4 * @sizeOf(f32),
+        @intToPtr(?*const c_void, 0),
+    );
+    c.glVertexAttribPointer(
+        uv_attrib,
+        2,
+        c.GL_FLOAT,
+        c.GL_FALSE,
+        4 * @sizeOf(f32),
+        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
+    );
 
     otho_matrix(
         @intToFloat(f32, SCREEN_WIDTH),
@@ -259,6 +333,39 @@ pub fn init() void {
         &projection_matrix,
     );
 
+    c.glGenTextures(1, &texture_atlas);
+    c.glBindTexture(c.GL_TEXTURE_2D, texture_atlas);
+
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_MIRRORED_REPEAT);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_MIRRORED_REPEAT);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
+    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
+
+    var width: c_int = undefined;
+    var height: c_int = undefined;
+    var image_data = c.SOIL_load_image(
+        c"data/entity_atlas.png",
+        &width,
+        &height,
+        null,
+        c.SOIL_LOAD_RGBA,
+    ) orelse {
+        std.debug.warn("Could not load data/entity_atlas.png\n");
+        std.process.exit(1);
+    };
+    c.glTexImage2D(
+        c.GL_TEXTURE_2D,
+        0,
+        c.GL_RGBA,
+        width,
+        height,
+        0,
+        c.GL_RGBA,
+        c.GL_UNSIGNED_BYTE,
+        image_data,
+    );
+    defer c.SOIL_free_image_data(image_data);
+
     std.debug.warn("OpenGL initialized\n");
 
     //font = ttf.OpenFont(font_name, 25);
@@ -273,6 +380,7 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
+    c.glDeleteTextures(1, &texture_atlas);
     c.glDeleteProgram(shader_program);
     c.glDeleteShader(fragment_shader);
     c.glDeleteShader(vertex_shader);
@@ -397,7 +505,7 @@ fn render_entities(state: *const State) void {
     const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
 
     var pos_buffer_counter: usize = 0;
-    var pos_buffer: [view_width * view_height * 2]f32 = undefined;
+    var pos_buffer: [view_width * view_height * 4]f32 = undefined;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
@@ -408,7 +516,10 @@ fn render_entities(state: *const State) void {
             const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
             pos_buffer[pos_buffer_counter] = @intToFloat(f32, pixel_pos.x);
             pos_buffer[pos_buffer_counter + 1] = @intToFloat(f32, pixel_pos.y);
-            pos_buffer_counter += 2;
+            const texture_pos = get_texture_offset(&entry.value);
+            pos_buffer[pos_buffer_counter + 2] = @intToFloat(f32, texture_pos.x);
+            pos_buffer[pos_buffer_counter + 3] = @intToFloat(f32, texture_pos.y);
+            pos_buffer_counter += 4;
         }
     }
 
@@ -423,7 +534,7 @@ fn render_entities(state: *const State) void {
         c.GL_STREAM_DRAW,
     );
 
-    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 2));
+    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 4));
 }
 
 // pos in screen coordinates
