@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const c = @import("c.zig");
+const c = @import("../c.zig");
 
 const LOG_BUFFER_SIZE = 512;
 

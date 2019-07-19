@@ -8,8 +8,9 @@ const ttf = @import("ttf.zig");
 const c = @import("c.zig");
 const lazy = @import("lazy/index.zig");
 
-const TextureAtlas = @import("atlas.zig").TextureAtlas;
-const ShaderProgram = @import("shader.zig").ShaderProgram;
+const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
+const ShaderProgram = @import("render/shader.zig").ShaderProgram;
+const entity_renderer = @import("render/entity_renderer.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -76,106 +77,6 @@ pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
-const vertex_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (location = 0) in vec2 position;
-    c\\layout (location = 1) in vec2 texture_uv;
-    c\\layout (location = 2) in float rotation;
-    c\\
-    c\\out PASSTHROUGH {
-    c\\    vec2 uv;
-    c\\    float rotation;
-    c\\} passthrough;
-    c\\
-    c\\void main() {
-    c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
-    c\\    passthrough.uv = texture_uv;
-    c\\    passthrough.rotation = rotation;
-    c\\}
-;
-
-const geometry_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (points) in;
-    c\\layout (triangle_strip, max_vertices = 6) out;
-    c\\
-    c\\in PASSTHROUGH {
-    c\\    vec2 uv;
-    c\\    float rotation;
-    c\\} passthrough[];
-    c\\
-    c\\uniform mat4 projection;
-    c\\
-    c\\out vec2 _texture_uv;
-    c\\
-    c\\vec2 vertices[6] = vec2[](
-    c\\    vec2(0.0, 0.0),
-    c\\    vec2(0.0, -1.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(0.0, 0.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(1.0, 0.0)
-    c\\);
-    c\\
-    c\\vec2 rotate(vec2 displacement) {
-    c\\    float angle = passthrough[0].rotation;
-    c\\    vec2 centered = displacement - vec2(0.5, -0.5);
-    c\\    centered = vec2(
-    c\\        centered.x * cos(angle) - centered.y * sin(angle),
-    c\\        centered.x * sin(angle) + centered.y * cos(angle));
-    c\\    return centered + vec2(0.5, -0.5);
-    c\\}
-    c\\
-    c\\void add_point(vec2 displacement) {
-    c\\    vec2 rotated = rotate(displacement);
-    c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(rotated, 0.0, 0.0);
-    c\\    point = projection * point;
-    c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
-    c\\    _texture_uv = passthrough[0].uv + vec2(displacement.x, -displacement.y) / 8.0;
-    c\\    EmitVertex();
-    c\\}
-    c\\
-    c\\void main() {
-    c\\    for (int i = 0; i < 3; ++i) {
-    c\\        add_point(vertices[i]);
-    c\\    }
-    c\\    EndPrimitive();
-    c\\
-    c\\    for (int i = 3; i < 6; ++i) {
-    c\\        add_point(vertices[i]);
-    c\\    }
-    c\\    EndPrimitive();
-    c\\}
-;
-
-const fragment_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\in vec2 _texture_uv;
-    c\\
-    c\\uniform sampler2D atlas;
-    c\\
-    c\\out vec4 outColor;
-    c\\
-    c\\void main() {
-    c\\    outColor = texture(atlas, _texture_uv);
-    c\\}
-;
-
-const sprite_vertices = [_]c.GLfloat{
-    0,   0,
-    128, 128,
-    128, 0,
-};
-
-var sprite_vao: c.GLuint = undefined;
-var sprite_vbo: c.GLuint = undefined;
-
-var entity_atlas: TextureAtlas = undefined;
-var entity_shader: ShaderProgram = undefined;
-
 var projection_matrix: [16]f32 = undefined;
 
 fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
@@ -185,55 +86,11 @@ fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
     dest[15] = 1;
 }
 
-pub fn init() void {
+pub fn init(allocator: *Allocator) void {
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
-    c.glGenVertexArrays(1, &sprite_vao);
-    c.glBindVertexArray(sprite_vao);
-
-    c.glGenBuffers(1, &sprite_vbo);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
-
-    entity_shader = ShaderProgram.new(
-        &vertex_shader_src,
-        &geometry_shader_src,
-        &fragment_shader_src,
-    );
-    c.glBindFragDataLocation(entity_shader.handle, 0, c"outColor");
-    entity_shader.link();
-    entity_shader.set_active();
-
-    const pos_attrib = 0;
-    const uv_attrib = 1;
-    const rotation = 2;
-    c.glEnableVertexAttribArray(pos_attrib);
-    c.glEnableVertexAttribArray(uv_attrib);
-    c.glEnableVertexAttribArray(rotation);
-    c.glVertexAttribPointer(
-        pos_attrib,
-        2,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(?*const c_void, 0),
-    );
-    c.glVertexAttribPointer(
-        uv_attrib,
-        2,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
-    );
-    c.glVertexAttribPointer(
-        rotation,
-        1,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(*const c_void, 4 * @sizeOf(f32)),
-    );
+    entity_renderer.init(allocator);
 
     otho_matrix(
         @intToFloat(f32, SCREEN_WIDTH),
@@ -241,15 +98,13 @@ pub fn init() void {
         &projection_matrix,
     );
 
-    var projection_location = entity_shader.uniform_location(c"projection");
+    var projection_location = entity_renderer.shader.uniform_location(c"projection");
     c.glUniformMatrix4fv(
         projection_location,
         1,
         c.GL_FALSE,
         &projection_matrix,
     );
-
-    entity_atlas = TextureAtlas.load(c"data/entity_atlas.png", 16, 16);
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -265,15 +120,12 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-    entity_atlas.deinit();
-    entity_shader.deinit();
-    c.glDeleteBuffers(1, &sprite_vbo);
-    c.glDeleteVertexArrays(1, &sprite_vao);
+    entity_renderer.deinit();
 
     //ttf.CloseFont(font);
 }
 
-pub fn render(state: *const State) void {
+pub fn render(state: *const State) !void {
     c.glClearColor(0.43, 0.47, 0.53, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
@@ -282,27 +134,28 @@ pub fn render(state: *const State) void {
     //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     //render_grid(state);
     //render_lightrays(state);
-    render_entities(state);
-    //render_grid_sel(state);
+    try render_grid_sel(state);
+    try entity_renderer.render(state);
 
     //sdl.RenderPresent(renderer);
 }
 
-fn render_grid_sel(state: *const State) void {
+fn render_grid_sel(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
     const world_pos = pos.add(state.viewpos);
-    const grid_pos = world_pos.div(GRID_SIZE).muli(GRID_SIZE).subi(state.viewpos);
+    const grid_pos = world_pos.div(GRID_SIZE);
+    try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
 
-    _ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
-    render_entity(state.get_current_entity(), grid_pos);
+    //_ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
+    //render_entity(state.get_current_entity(), grid_pos);
 
-    const current_cell_area = Rect{
-        .pos = grid_pos,
-        .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
-    };
-    _ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
-    _ = sdl.RenderDrawRect(renderer, current_cell_area);
+    //const current_cell_area = Rect{
+    //    .pos = grid_pos,
+    //    .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
+    //};
+    //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
+    //_ = sdl.RenderDrawRect(renderer, current_cell_area);
 }
 
 fn render_grid(state: *const State) void {
@@ -380,63 +233,6 @@ fn render_lightrays(state: *const State) void {
         //            std.debug.warn("Failed to render debug text\n");
         //        };
     }
-}
-
-fn get_entity_texture(entity: *Entity) Vec2f {
-    switch (entity.*) {
-        .Block => return entity_atlas.get_offset(1),
-        .Laser => |direction| return entity_atlas.get_offset(2),
-        .Mirror => |direction| return entity_atlas.get_offset(3),
-        .Splitter => |direction| return entity_atlas.get_offset(4),
-        .Switch => |*eswitch| return entity_atlas.get_offset(5),
-        .Delayer => |*delayer| {
-            if (delayer.is_on) {
-                return entity_atlas.get_offset(7);
-            } else {
-                return entity_atlas.get_offset(6);
-            }
-        },
-    }
-}
-
-fn render_entities(state: *const State) void {
-    const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1;
-    const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
-
-    var pos_buffer_counter: usize = 0;
-    var pos_buffer: [view_width * view_height * 5]f32 = undefined;
-
-    var grid_y: i32 = min_pos.y;
-    while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
-        var grid_x: i32 = min_pos.x;
-        while (grid_x < min_pos.x + view_width) : (grid_x += 1) {
-            const grid_pos = Vec2i.new(grid_x, grid_y);
-            const entry = state.entities.get(grid_pos) orelse continue;
-            const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
-            pos_buffer[pos_buffer_counter] = @intToFloat(f32, pixel_pos.x);
-            pos_buffer[pos_buffer_counter + 1] = @intToFloat(f32, pixel_pos.y);
-            const texture_pos = get_entity_texture(&entry.value);
-            pos_buffer[pos_buffer_counter + 2] = texture_pos.x;
-            pos_buffer[pos_buffer_counter + 3] = texture_pos.y;
-            const angle = entry.value.get_direction().to_rad();
-            pos_buffer[pos_buffer_counter + 4] = angle;
-            pos_buffer_counter += 5;
-        }
-    }
-
-    if (pos_buffer_counter == 0)
-        return;
-
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
-    c.glBufferData(
-        c.GL_ARRAY_BUFFER,
-        @sizeOf(f32) * @intCast(c_long, pos_buffer_counter),
-        &pos_buffer,
-        c.GL_STREAM_DRAW,
-    );
-
-    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 5));
 }
 
 pub fn debug_write(

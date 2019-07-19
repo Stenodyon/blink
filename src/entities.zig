@@ -218,7 +218,7 @@ pub const Entity = union(enum) {
         }
     }
 
-    pub fn get_direction(self: *Entity) Direction {
+    pub fn get_direction(self: *const Entity) Direction {
         switch (self.*) {
             .Block => return .UP,
             .Laser, .Mirror, .Splitter => |direction| return direction,

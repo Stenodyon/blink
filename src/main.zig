@@ -95,7 +95,7 @@ pub fn main() !void {
     ResourceManager.init(&resource_allocator.allocator);
     defer ResourceManager.deinit();
 
-    display.init();
+    display.init(std.heap.c_allocator);
     defer display.deinit();
 
     //var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
@@ -179,7 +179,7 @@ pub fn main() !void {
             try input.tick_held_mouse_buttons(&state, mouse_pos);
         }
 
-        display.render(&state);
+        try display.render(&state);
         sdl.GL_SwapWindow(window);
 
         updates_left += UPS / 60.;

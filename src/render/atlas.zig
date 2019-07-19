@@ -1,8 +1,8 @@
 const std = @import("std");
 
-const c = @import("c.zig");
-const Direction = @import("entities.zig").Direction;
-const Vec2f = @import("vec.zig").Vec2f;
+const c = @import("../c.zig");
+const Direction = @import("../entities.zig").Direction;
+const Vec2f = @import("../vec.zig").Vec2f;
 
 pub const TextureAtlas = struct {
     handle: c.GLuint,
