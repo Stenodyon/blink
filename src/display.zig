@@ -9,6 +9,7 @@ const c = @import("c.zig");
 const lazy = @import("lazy/index.zig");
 
 const TextureAtlas = @import("atlas.zig").TextureAtlas;
+const ShaderProgram = @import("shader.zig").ShaderProgram;
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
