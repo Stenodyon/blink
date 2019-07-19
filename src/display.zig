@@ -107,20 +107,22 @@ const geometry_shader_src =
     c\\layout (points) in;
     c\\layout (triangle_strip, max_vertices = 6) out;
     c\\
+    c\\uniform mat4 projection;
+    c\\
     c\\void main() {
-    c\\    gl_Position = gl_in[0].gl_Position;
+    c\\    gl_Position = projection * gl_in[0].gl_Position;
     c\\    EmitVertex();
-    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, -0.1, 0.0, 0.0);
+    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, -64.0, 0.0, 0.0));
     c\\    EmitVertex();
-    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.0, -0.1, 0.0, 0.0);
+    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(0.0, -64.0, 0.0, 0.0));
     c\\    EmitVertex();
     c\\    EndPrimitive();
     c\\
-    c\\    gl_Position = gl_in[0].gl_Position;
+    c\\    gl_Position = projection * gl_in[0].gl_Position;
     c\\    EmitVertex();
-    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, 0.0, 0.0, 0.0);
+    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, 0.0, 0.0, 0.0));
     c\\    EmitVertex();
-    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, -0.1, 0.0, 0.0);
+    c\\    gl_Position = projection * (gl_in[0].gl_Position + vec4(64.0, -64.0, 0.0, 0.0));
     c\\    EmitVertex();
     c\\    EndPrimitive();
     c\\}
@@ -146,9 +148,9 @@ const fragment_shader_src =
 //};
 
 const sprite_vertices = [_]c.GLfloat{
-    0,    0.5,
-    0.5,  -0.5,
-    -0.5, -0.5,
+    0,   0,
+    128, 128,
+    128, 0,
 };
 
 var sprite_vao: c.GLuint = undefined;
@@ -158,7 +160,7 @@ var geometry_shader: c.GLuint = undefined;
 var fragment_shader: c.GLuint = undefined;
 var shader_program: c.GLuint = undefined;
 
-var world_matrix: [16]f32 = undefined;
+var projection_matrix: [16]f32 = undefined;
 
 fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
     for (dest[0..]) |*index| index.* = 0;
@@ -257,7 +259,18 @@ pub fn init() void {
     otho_matrix(
         @intToFloat(f32, SCREEN_WIDTH),
         @intToFloat(f32, SCREEN_HEIGHT),
-        &world_matrix,
+        &projection_matrix,
+    );
+
+    var projection_location = c.glGetUniformLocation(
+        shader_program,
+        c"projection",
+    );
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_FALSE,
+        &projection_matrix,
     );
 
     std.debug.warn("OpenGL initialized\n");
