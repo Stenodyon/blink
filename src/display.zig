@@ -399,11 +399,11 @@ fn render_entities(state: *const State) void {
     var pos_buffer_counter: usize = 0;
     var pos_buffer: [view_width * view_height * 2]f32 = undefined;
 
-    var y_iter = lazy.range(min_pos.y, min_pos.y + view_height, 1);
-    while (y_iter.next()) |grid_y| {
-        var x_iter = lazy.range(min_pos.x, min_pos.x + view_width, 1);
-        while (x_iter.next()) |grid_x| {
-            const grid_pos = Vec2i.new(grid_y, grid_x);
+    var grid_y: i32 = min_pos.y;
+    while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
+        var grid_x: i32 = min_pos.x;
+        while (grid_x < min_pos.x + view_width) : (grid_x += 1) {
+            const grid_pos = Vec2i.new(grid_x, grid_y);
             const entry = state.entities.get(grid_pos) orelse continue;
             const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
             pos_buffer[pos_buffer_counter] = @intToFloat(f32, pixel_pos.x);
