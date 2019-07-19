@@ -170,7 +170,6 @@ var vertex_shader: c.GLuint = undefined;
 var geometry_shader: c.GLuint = undefined;
 var fragment_shader: c.GLuint = undefined;
 var shader_program: c.GLuint = undefined;
-var texture_atlas: c.GLuint = undefined;
 var entity_atlas: TextureAtlas = undefined;
 
 var projection_matrix: [16]f32 = undefined;
@@ -220,47 +219,6 @@ fn check_program(program: c.GLuint) void {
         );
         std.process.exit(255);
     }
-}
-
-fn get_texture_id(entity: *Entity) usize {
-    switch (entity.*) {
-        .Block => return 1,
-        .Laser => return 2,
-        .Mirror => return 3,
-        .Splitter => return 4,
-        .Switch => return 5,
-        .Delayer => |*delayer| blk: {
-            switch (delayer.is_on) {
-                false => return 6,
-                true => return 7,
-            }
-        },
-    }
-}
-
-inline fn get_texture_offset(entity: *Entity) Vec2f {
-    const texture_id = get_texture_id(entity);
-    var x: i32 = @intCast(i32, 16 * (texture_id % 8));
-    var y: i32 = @intCast(i32, 16 * ((texture_id % 32) / 8));
-    const direction = switch (entity.*) {
-        .Block => .UP,
-        .Laser, .Mirror, .Splitter => |direction| direction,
-        .Delayer => |*delayer| delayer.direction,
-        .Switch => |*eswitch| eswitch.direction,
-    };
-    switch (direction) {
-        .UP => {},
-        .DOWN => {
-            x = -x - 16;
-            y = -y - 16;
-        },
-        .RIGHT => x = -x - 16,
-        .LEFT => y = -y - 16,
-    }
-    return Vec2f.new(
-        @intToFloat(f32, x) / 128,
-        @intToFloat(f32, y) / 128,
-    );
 }
 
 pub fn init() void {
@@ -354,7 +312,7 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-    c.glDeleteTextures(1, &texture_atlas);
+    entity_atlas.deinit();
     c.glDeleteProgram(shader_program);
     c.glDeleteShader(fragment_shader);
     c.glDeleteShader(vertex_shader);

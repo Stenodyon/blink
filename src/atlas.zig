@@ -58,6 +58,10 @@ pub const TextureAtlas = struct {
         return atlas;
     }
 
+    pub fn deinit(self: *TextureAtlas) void {
+        c.glDeleteTextures(1, &self.handle);
+    }
+
     pub fn get_offset(
         self: *TextureAtlas,
         texture_id: usize,
