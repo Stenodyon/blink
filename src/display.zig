@@ -167,11 +167,9 @@ const sprite_vertices = [_]c.GLfloat{
 
 var sprite_vao: c.GLuint = undefined;
 var sprite_vbo: c.GLuint = undefined;
-var vertex_shader: c.GLuint = undefined;
-var geometry_shader: c.GLuint = undefined;
-var fragment_shader: c.GLuint = undefined;
-var shader_program: c.GLuint = undefined;
+
 var entity_atlas: TextureAtlas = undefined;
+var entity_shader: ShaderProgram = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
@@ -180,46 +178,6 @@ fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
     dest[0] = 2 / width;
     dest[5] = 2 / height;
     dest[15] = 1;
-}
-
-const LOG_BUFFER_SIZE = 512;
-
-fn check_shader(shader: c.GLuint) void {
-    var status: c.GLuint = undefined;
-    c.glGetShaderiv(
-        shader,
-        c.GL_COMPILE_STATUS,
-        @ptrCast([*c]c_int, &status),
-    );
-
-    if (status != c.GL_TRUE) {
-        var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
-        c.glGetShaderInfoLog(shader, LOG_BUFFER_SIZE, null, &log_buffer);
-        _ = c.printf(
-            c"%s\n",
-            &log_buffer,
-        );
-        std.process.exit(255);
-    }
-}
-
-fn check_program(program: c.GLuint) void {
-    var status: c.GLuint = undefined;
-    c.glGetProgramiv(
-        program,
-        c.GL_LINK_STATUS,
-        @ptrCast([*c]c_int, &status),
-    );
-
-    if (status != c.GL_TRUE) {
-        var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
-        c.glGetProgramInfoLog(program, LOG_BUFFER_SIZE, null, &log_buffer);
-        _ = c.printf(
-            c"%s\n",
-            &log_buffer,
-        );
-        std.process.exit(255);
-    }
 }
 
 pub fn init() void {
@@ -232,32 +190,14 @@ pub fn init() void {
     c.glGenBuffers(1, &sprite_vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
 
-    vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
-    c.glShaderSource(vertex_shader, 1, &vertex_shader_src, null);
-    c.glCompileShader(vertex_shader);
-    check_shader(vertex_shader);
-
-    fragment_shader = c.glCreateShader(c.GL_FRAGMENT_SHADER);
-    c.glShaderSource(fragment_shader, 1, &fragment_shader_src, null);
-    c.glCompileShader(fragment_shader);
-    check_shader(fragment_shader);
-
-    geometry_shader = c.glCreateShader(c.GL_GEOMETRY_SHADER);
-    c.glShaderSource(geometry_shader, 1, &geometry_shader_src, null);
-    c.glCompileShader(geometry_shader);
-    check_shader(geometry_shader);
-
-    shader_program = c.glCreateProgram();
-    c.glAttachShader(shader_program, vertex_shader);
-    c.glAttachShader(shader_program, geometry_shader);
-    c.glAttachShader(shader_program, fragment_shader);
-
-    c.glBindFragDataLocation(shader_program, 0, c"outColor");
-
-    c.glLinkProgram(shader_program);
-    check_program(shader_program);
-
-    c.glUseProgram(shader_program);
+    entity_shader = ShaderProgram.new(
+        &vertex_shader_src,
+        &geometry_shader_src,
+        &fragment_shader_src,
+    );
+    c.glBindFragDataLocation(entity_shader.handle, 0, c"outColor");
+    entity_shader.link();
+    entity_shader.set_active();
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -286,10 +226,7 @@ pub fn init() void {
         &projection_matrix,
     );
 
-    var projection_location = c.glGetUniformLocation(
-        shader_program,
-        c"projection",
-    );
+    var projection_location = entity_shader.uniform_location(c"projection");
     c.glUniformMatrix4fv(
         projection_location,
         1,
@@ -314,9 +251,7 @@ pub fn init() void {
 
 pub fn deinit() void {
     entity_atlas.deinit();
-    c.glDeleteProgram(shader_program);
-    c.glDeleteShader(fragment_shader);
-    c.glDeleteShader(vertex_shader);
+    entity_shader.deinit();
     c.glDeleteBuffers(1, &sprite_vbo);
     c.glDeleteVertexArrays(1, &sprite_vao);
 

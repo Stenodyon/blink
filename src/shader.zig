@@ -2,6 +2,8 @@ const std = @import("std");
 
 const c = @import("c.zig");
 
+const LOG_BUFFER_SIZE = 512;
+
 fn check_shader(shader: c.GLuint) void {
     var status: c.GLuint = undefined;
     c.glGetShaderiv(
@@ -40,27 +42,28 @@ fn check_program(program: c.GLuint) void {
     }
 }
 
-fn compile_shader(shader: c.GLuint, source: [*c]const u8) void {
+fn compile_shader(shader: c.GLuint, source: [*c]const [*c]const u8) void {
     c.glShaderSource(shader, 1, source, null);
     c.glCompileShader(shader);
     check_shader(shader);
 }
 
-const ShaderProgram = struct {
+pub const ShaderProgram = struct {
     vertex_shader: c.GLuint,
     geometry_shader: ?c.GLuint,
     fragment_shader: c.GLuint,
     handle: c.GLuint,
 
     pub fn new(
-        vertex_shader_src: [*c]const u8,
-        geometry_shader_src: ?[*c]const u8,
-        fragment_shader_src: [*c]const u8,
+        vertex_shader_src: [*c]const [*c]const u8,
+        geometry_shader_src: ?[*c]const [*c]const u8,
+        fragment_shader_src: [*c]const [*c]const u8,
     ) ShaderProgram {
         var shader_program = ShaderProgram{
             .vertex_shader = undefined,
             .geometry_shader = null,
             .fragment_shader = undefined,
+            .handle = undefined,
         };
         shader_program.vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
         compile_shader(shader_program.vertex_shader, vertex_shader_src);
@@ -70,7 +73,7 @@ const ShaderProgram = struct {
 
         if (geometry_shader_src) |geom_shader_source| {
             shader_program.geometry_shader = c.glCreateShader(c.GL_GEOMETRY_SHADER);
-            compile_shader(shader_program.geometry_shader, geom_shader_source);
+            compile_shader(shader_program.geometry_shader.?, geom_shader_source);
         }
 
         shader_program.handle = c.glCreateProgram();
@@ -78,6 +81,8 @@ const ShaderProgram = struct {
         if (shader_program.geometry_shader) |geom_handle|
             c.glAttachShader(shader_program.handle, geom_handle);
         c.glAttachShader(shader_program.handle, shader_program.fragment_shader);
+
+        return shader_program;
     }
 
     pub fn deinit(self: *ShaderProgram) void {
@@ -91,5 +96,16 @@ const ShaderProgram = struct {
     pub fn link(self: *ShaderProgram) void {
         c.glLinkProgram(self.handle);
         check_program(self.handle);
+    }
+
+    pub inline fn set_active(self: *ShaderProgram) void {
+        c.glUseProgram(self.handle);
+    }
+
+    pub inline fn uniform_location(
+        self: *ShaderProgram,
+        uniform_name: [*c]const u8,
+    ) c.GLint {
+        return c.glGetUniformLocation(self.handle, uniform_name);
     }
 };
