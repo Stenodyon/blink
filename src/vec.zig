@@ -29,7 +29,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn sub(a: Self, b: Self) Self {
-            return Self.new(a.x - b.x, a.y - b.y);
+            return Self.new(
+                a.x - b.x,
+                a.y - b.y,
+            );
         }
 
         pub fn subi(a: *Self, b: Self) Self {
@@ -39,11 +42,17 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn neg(a: Self) Self {
-            return Self.new(-a.x, -a.y);
+            return Self.new(
+                -a.x,
+                -a.y,
+            );
         }
 
         pub fn mul(self: Self, scalar: i32) Self {
-            return Vec2i.new(self.x * scalar, self.y * scalar);
+            return Vec2i.new(
+                self.x * scalar,
+                self.y * scalar,
+            );
         }
 
         pub fn muli(self: *Self, scalar: i32) Self {
@@ -53,7 +62,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn div(self: Self, scalar: i32) Self {
-            return Vec2i.new(@divFloor(self.x, scalar), @divFloor(self.y, scalar));
+            return Vec2i.new(
+                @divFloor(self.x, scalar),
+                @divFloor(self.y, scalar),
+            );
         }
 
         pub fn divi(self: Self, scalar: i32) Self {
@@ -63,7 +75,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn mod(self: Self, scalar: i32) Self {
-            return Vec2i.new(@mod(self.x, scalar), @mod(self.y, scalar));
+            return Vec2i.new(
+                @mod(self.x, scalar),
+                @mod(self.y, scalar),
+            );
         }
 
         pub fn modi(self: *Self, scalar: i32) Self {
