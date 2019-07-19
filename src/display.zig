@@ -98,7 +98,7 @@ const vertex_shader_src =
     c\\in vec2 position;
     c\\
     c\\void main() {
-    c\\    gl_Position = vec4(position, 0.0, 1.0);
+    c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
     c\\}
 ;
 
@@ -137,15 +137,6 @@ const fragment_shader_src =
     c\\  outColor = vec4(1.0, 0.0, 0.0, 1.0);
     c\\}
 ;
-
-//const sprite_vertices = [_]c.GLfloat{
-//    -1, -1,
-//    -1, 1,
-//    1,  -1,
-//    -1, 1,
-//    1,  1,
-//    1,  -1,
-//};
 
 const sprite_vertices = [_]c.GLfloat{
     0,   0,
@@ -215,12 +206,6 @@ pub fn init() void {
 
     c.glGenBuffers(1, &sprite_vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
-    c.glBufferData(
-        c.GL_ARRAY_BUFFER,
-        @sizeOf(c.GLfloat) * sprite_vertices.len,
-        &sprite_vertices,
-        c.GL_STATIC_DRAW,
-    );
 
     vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
     c.glShaderSource(vertex_shader, 1, &vertex_shader_src, null);
@@ -275,14 +260,6 @@ pub fn init() void {
 
     std.debug.warn("OpenGL initialized\n");
 
-    //block_img = try load_texture("data/entity_block.png");
-    //laser_img = try load_texture("data/entity_laser.png");
-    //mirror_img = try load_texture("data/entity_mirror.png");
-    //splitter_img = try load_texture("data/entity_splitter.png");
-    //delayer_on_img = try load_texture("data/entity_delayer_on.png");
-    //delayer_off_img = try load_texture("data/entity_delayer_off.png");
-    //switch_img = try load_texture("data/entity_switch.png");
-
     //font = ttf.OpenFont(font_name, 25);
     //if (font == null) {
     //    std.debug.warn(
@@ -300,6 +277,7 @@ pub fn deinit() void {
     c.glDeleteShader(vertex_shader);
     c.glDeleteBuffers(1, &sprite_vbo);
     c.glDeleteVertexArrays(1, &sprite_vao);
+
     //ttf.CloseFont(font);
 }
 
@@ -307,17 +285,12 @@ pub fn render(state: *const State) void {
     c.glClearColor(0.43, 0.47, 0.53, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    c.glDrawArrays(c.GL_POINTS, 0, 3);
-
-    //_ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
-    //_ = sdl.RenderClear(renderer);
-
     ////g_gui.draw(g_gui, renderer);
 
     //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     //render_grid(state);
     //render_lightrays(state);
-    //render_entities(state);
+    render_entities(state);
     //render_grid_sel(state);
 
     //sdl.RenderPresent(renderer);
@@ -418,11 +391,44 @@ fn render_lightrays(state: *const State) void {
 }
 
 fn render_entities(state: *const State) void {
-    var entity_it = state.entities.iterator();
-    while (entity_it.next()) |entry| {
-        const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
-        render_entity(entry.value, pos);
+    const min_pos = state.viewpos.div(GRID_SIZE);
+    const view_width = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1;
+    const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
+
+    var pos_buffer_counter: usize = 0;
+    var pos_buffer: [view_width * view_height * 2]f32 = undefined;
+
+    var y_iter = lazy.range(min_pos.y, min_pos.y + view_height, 1);
+    while (y_iter.next()) |grid_y| {
+        var x_iter = lazy.range(min_pos.x, min_pos.x + view_width, 1);
+        while (x_iter.next()) |grid_x| {
+            const grid_pos = Vec2i.new(grid_y, grid_x);
+            const entry = state.entities.get(grid_pos) orelse continue;
+            const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
+            pos_buffer[pos_buffer_counter] = @intToFloat(f32, pixel_pos.x);
+            pos_buffer[pos_buffer_counter + 1] = @intToFloat(f32, pixel_pos.y);
+            pos_buffer_counter += 2;
+        }
     }
+
+    if (pos_buffer_counter == 0)
+        return;
+
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(f32) * @intCast(c_long, pos_buffer_counter),
+        &pos_buffer,
+        c.GL_STREAM_DRAW,
+    );
+
+    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 2));
+
+    //var entity_it = state.entities.iterator();
+    //while (entity_it.next()) |entry| {
+    //    const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
+    //    render_entity(entry.value, pos);
+    //}
 }
 
 // pos in screen coordinates
