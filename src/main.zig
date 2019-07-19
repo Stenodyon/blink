@@ -5,7 +5,6 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
-const img = @import("img.zig");
 const c = @import("c.zig");
 const display = @import("display.zig");
 const input = @import("input.zig");
@@ -55,13 +54,6 @@ fn init_sdl() void {
     gl_context = sdl.GL_CreateContext(window);
 
     std.debug.warn("SDL Initialized\n");
-
-    const img_flags = img.INIT_PNG;
-    if ((img.Init(img_flags) & img_flags) == 0) {
-        std.debug.warn("Could not initialize SDL_image: {}\n", img.GetError());
-        deinit_sdl();
-        std.os.exit(1);
-    }
 }
 
 // ============================================================================

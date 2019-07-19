@@ -73,26 +73,8 @@ pub var g_gui: *GUI_Element = undefined;
 
 pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 
-var block_img: sdl.Texture = undefined;
-var laser_img: sdl.Texture = undefined;
-var mirror_img: sdl.Texture = undefined;
-var splitter_img: sdl.Texture = undefined;
-var delayer_on_img: sdl.Texture = undefined;
-var delayer_off_img: sdl.Texture = undefined;
-var switch_img: sdl.Texture = undefined;
-
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
-
-fn load_texture(path: []const u8) !sdl.Texture {
-    const surface = try ResourceManager.Get(path);
-    const texture = sdl.CreateTextureFromSurface(renderer, surface);
-    if (texture == null) {
-        std.debug.warn("Could not create texture: {}\n", sdl.GetError());
-        std.os.exit(1);
-    }
-    return texture;
-}
 
 const vertex_shader_src =
     c\\#version 330 core
