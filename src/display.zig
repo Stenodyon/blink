@@ -81,14 +81,17 @@ const vertex_shader_src =
     c\\
     c\\layout (location = 0) in vec2 position;
     c\\layout (location = 1) in vec2 texture_uv;
+    c\\layout (location = 2) in float rotation;
     c\\
-    c\\out UV_PASSTHROUGH {
+    c\\out PASSTHROUGH {
     c\\    vec2 uv;
-    c\\} uv_passthrough;
+    c\\    float rotation;
+    c\\} passthrough;
     c\\
     c\\void main() {
     c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
-    c\\    uv_passthrough.uv = texture_uv;
+    c\\    passthrough.uv = texture_uv;
+    c\\    passthrough.rotation = rotation;
     c\\}
 ;
 
@@ -98,31 +101,51 @@ const geometry_shader_src =
     c\\layout (points) in;
     c\\layout (triangle_strip, max_vertices = 6) out;
     c\\
-    c\\in UV_PASSTHROUGH {
+    c\\in PASSTHROUGH {
     c\\    vec2 uv;
-    c\\} uv_passthrough[];
+    c\\    float rotation;
+    c\\} passthrough[];
     c\\
     c\\uniform mat4 projection;
     c\\
     c\\out vec2 _texture_uv;
     c\\
+    c\\vec2 vertices[6] = vec2[](
+    c\\    vec2(0.0, 0.0),
+    c\\    vec2(0.0, -1.0),
+    c\\    vec2(1.0, -1.0),
+    c\\    vec2(0.0, 0.0),
+    c\\    vec2(1.0, -1.0),
+    c\\    vec2(1.0, 0.0)
+    c\\);
+    c\\
+    c\\vec2 rotate(vec2 displacement) {
+    c\\    float angle = passthrough[0].rotation;
+    c\\    vec2 centered = displacement - vec2(0.5, -0.5);
+    c\\    centered = vec2(
+    c\\        centered.x * cos(angle) - centered.y * sin(angle),
+    c\\        centered.x * sin(angle) + centered.y * cos(angle));
+    c\\    return centered + vec2(0.5, -0.5);
+    c\\}
+    c\\
     c\\void add_point(vec2 displacement) {
-    c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(displacement, 0.0, 0.0);
+    c\\    vec2 rotated = rotate(displacement);
+    c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(rotated, 0.0, 0.0);
     c\\    point = projection * point;
     c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
-    c\\    _texture_uv = uv_passthrough[0].uv + vec2(displacement.x, -displacement.y) / 8.0;
+    c\\    _texture_uv = passthrough[0].uv + vec2(displacement.x, -displacement.y) / 8.0;
     c\\    EmitVertex();
     c\\}
     c\\
     c\\void main() {
-    c\\    add_point(vec2(0.0, 0.0));
-    c\\    add_point(vec2(0.0, -1.0));
-    c\\    add_point(vec2(1.0, -1.0));
+    c\\    for (int i = 0; i < 3; ++i) {
+    c\\        add_point(vertices[i]);
+    c\\    }
     c\\    EndPrimitive();
     c\\
-    c\\    add_point(vec2(0.0, 0.0));
-    c\\    add_point(vec2(1.0, -1.0));
-    c\\    add_point(vec2(1.0, 0.0));
+    c\\    for (int i = 3; i < 6; ++i) {
+    c\\        add_point(vertices[i]);
+    c\\    }
     c\\    EndPrimitive();
     c\\}
 ;
@@ -137,7 +160,7 @@ const fragment_shader_src =
     c\\out vec4 outColor;
     c\\
     c\\void main() {
-    c\\  outColor = texture(atlas, _texture_uv);
+    c\\    outColor = texture(atlas, _texture_uv);
     c\\}
 ;
 
@@ -183,14 +206,16 @@ pub fn init() void {
 
     const pos_attrib = 0;
     const uv_attrib = 1;
+    const rotation = 2;
     c.glEnableVertexAttribArray(pos_attrib);
     c.glEnableVertexAttribArray(uv_attrib);
+    c.glEnableVertexAttribArray(rotation);
     c.glVertexAttribPointer(
         pos_attrib,
         2,
         c.GL_FLOAT,
         c.GL_FALSE,
-        4 * @sizeOf(f32),
+        5 * @sizeOf(f32),
         @intToPtr(?*const c_void, 0),
     );
     c.glVertexAttribPointer(
@@ -198,8 +223,16 @@ pub fn init() void {
         2,
         c.GL_FLOAT,
         c.GL_FALSE,
-        4 * @sizeOf(f32),
+        5 * @sizeOf(f32),
         @intToPtr(*const c_void, 2 * @sizeOf(f32)),
+    );
+    c.glVertexAttribPointer(
+        rotation,
+        1,
+        c.GL_FLOAT,
+        c.GL_FALSE,
+        5 * @sizeOf(f32),
+        @intToPtr(*const c_void, 4 * @sizeOf(f32)),
     );
 
     otho_matrix(
@@ -351,16 +384,16 @@ fn render_lightrays(state: *const State) void {
 
 fn get_entity_texture(entity: *Entity) Vec2f {
     switch (entity.*) {
-        .Block => return entity_atlas.get_offset(1, .UP),
-        .Laser => |direction| return entity_atlas.get_offset(2, direction),
-        .Mirror => |direction| return entity_atlas.get_offset(3, direction),
-        .Splitter => |direction| return entity_atlas.get_offset(4, direction),
-        .Switch => |*eswitch| return entity_atlas.get_offset(5, eswitch.direction),
+        .Block => return entity_atlas.get_offset(1),
+        .Laser => |direction| return entity_atlas.get_offset(2),
+        .Mirror => |direction| return entity_atlas.get_offset(3),
+        .Splitter => |direction| return entity_atlas.get_offset(4),
+        .Switch => |*eswitch| return entity_atlas.get_offset(5),
         .Delayer => |*delayer| {
             if (delayer.is_on) {
-                return entity_atlas.get_offset(7, delayer.direction);
+                return entity_atlas.get_offset(7);
             } else {
-                return entity_atlas.get_offset(6, delayer.direction);
+                return entity_atlas.get_offset(6);
             }
         },
     }
@@ -372,7 +405,7 @@ fn render_entities(state: *const State) void {
     const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
 
     var pos_buffer_counter: usize = 0;
-    var pos_buffer: [view_width * view_height * 4]f32 = undefined;
+    var pos_buffer: [view_width * view_height * 5]f32 = undefined;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
@@ -386,7 +419,9 @@ fn render_entities(state: *const State) void {
             const texture_pos = get_entity_texture(&entry.value);
             pos_buffer[pos_buffer_counter + 2] = texture_pos.x;
             pos_buffer[pos_buffer_counter + 3] = texture_pos.y;
-            pos_buffer_counter += 4;
+            const angle = entry.value.get_direction().to_rad();
+            pos_buffer[pos_buffer_counter + 4] = angle;
+            pos_buffer_counter += 5;
         }
     }
 
@@ -401,7 +436,7 @@ fn render_entities(state: *const State) void {
         c.GL_STREAM_DRAW,
     );
 
-    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 4));
+    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, pos_buffer_counter / 5));
 }
 
 pub fn debug_write(

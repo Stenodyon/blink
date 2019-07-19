@@ -62,23 +62,26 @@ pub const TextureAtlas = struct {
         c.glDeleteTextures(1, &self.handle);
     }
 
-    pub fn get_offset(
+    pub inline fn get_offset(
         self: *TextureAtlas,
         texture_id: usize,
-        direction: Direction,
+    ) Vec2f {
+        return self.get_offset_flip(texture_id, false, false);
+    }
+
+    pub fn get_offset_flip(
+        self: *TextureAtlas,
+        texture_id: usize,
+        horizontal: bool,
+        vertical: bool,
     ) Vec2f {
         const cell_per_line = @divFloor(@intCast(usize, self.width), self.cell_width);
         var x = @intCast(i32, self.cell_width * (texture_id % cell_per_line));
         var y = @intCast(i32, self.cell_height * (texture_id / cell_per_line));
-        switch (direction) {
-            .UP => {},
-            .DOWN => {
-                x = -x - @intCast(i32, self.cell_width);
-                y = -y - @intCast(i32, self.cell_height);
-            },
-            .RIGHT => x = -x - @intCast(i32, self.cell_width),
-            .LEFT => y = -y - @intCast(i32, self.cell_height),
-        }
+        if (horizontal)
+            x = -x - @intCast(i32, self.cell_width);
+        if (vertical)
+            y = -y - @intCast(i32, self.cell_height);
         return Vec2f.new(
             @intToFloat(f32, x) / @intToFloat(f32, self.width),
             @intToFloat(f32, y) / @intToFloat(f32, self.height),
