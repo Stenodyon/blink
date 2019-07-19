@@ -131,7 +131,7 @@ fn Vec2(comptime ValType: type) type {
 }
 
 pub const Vec2i = Vec2(i32);
-pub const Vec2f = Vec2(f64);
+pub const Vec2f = Vec2(f32);
 
 pub const Rect = struct {
     pos: Vec2i,

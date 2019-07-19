@@ -8,10 +8,11 @@ const ttf = @import("ttf.zig");
 const c = @import("c.zig");
 const lazy = @import("lazy/index.zig");
 
-const ResourceManager = @import("res.zig");
+const TextureAtlas = @import("atlas.zig").TextureAtlas;
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
+const Vec2f = vec.Vec2f;
 const Rect = vec.Rect;
 const utils = @import("utils.zig");
 const Entity = @import("entities.zig").Entity;
@@ -126,7 +127,7 @@ const geometry_shader_src =
     c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(displacement, 0.0, 0.0);
     c\\    point = projection * point;
     c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
-    c\\    _texture_uv = uv_passthrough[0].uv / 128.0 + vec2(displacement.x, -displacement.y) / 8.0;
+    c\\    _texture_uv = uv_passthrough[0].uv + vec2(displacement.x, -displacement.y) / 8.0;
     c\\    EmitVertex();
     c\\}
     c\\
@@ -170,6 +171,7 @@ var geometry_shader: c.GLuint = undefined;
 var fragment_shader: c.GLuint = undefined;
 var shader_program: c.GLuint = undefined;
 var texture_atlas: c.GLuint = undefined;
+var entity_atlas: TextureAtlas = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
@@ -236,7 +238,7 @@ fn get_texture_id(entity: *Entity) usize {
     }
 }
 
-inline fn get_texture_offset(entity: *Entity) Vec2i {
+inline fn get_texture_offset(entity: *Entity) Vec2f {
     const texture_id = get_texture_id(entity);
     var x: i32 = @intCast(i32, 16 * (texture_id % 8));
     var y: i32 = @intCast(i32, 16 * ((texture_id % 32) / 8));
@@ -255,7 +257,10 @@ inline fn get_texture_offset(entity: *Entity) Vec2i {
         .RIGHT => x = -x - 16,
         .LEFT => y = -y - 16,
     }
-    return Vec2i.new(x, y);
+    return Vec2f.new(
+        @intToFloat(f32, x) / 128,
+        @intToFloat(f32, y) / 128,
+    );
 }
 
 pub fn init() void {
@@ -333,38 +338,7 @@ pub fn init() void {
         &projection_matrix,
     );
 
-    c.glGenTextures(1, &texture_atlas);
-    c.glBindTexture(c.GL_TEXTURE_2D, texture_atlas);
-
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_S, c.GL_MIRRORED_REPEAT);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_WRAP_T, c.GL_MIRRORED_REPEAT);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
-    c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
-
-    var width: c_int = undefined;
-    var height: c_int = undefined;
-    var image_data = c.SOIL_load_image(
-        c"data/entity_atlas.png",
-        &width,
-        &height,
-        null,
-        c.SOIL_LOAD_RGBA,
-    ) orelse {
-        std.debug.warn("Could not load data/entity_atlas.png\n");
-        std.process.exit(1);
-    };
-    c.glTexImage2D(
-        c.GL_TEXTURE_2D,
-        0,
-        c.GL_RGBA,
-        width,
-        height,
-        0,
-        c.GL_RGBA,
-        c.GL_UNSIGNED_BYTE,
-        image_data,
-    );
-    defer c.SOIL_free_image_data(image_data);
+    entity_atlas = TextureAtlas.load(c"data/entity_atlas.png", 16, 16);
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -499,6 +473,23 @@ fn render_lightrays(state: *const State) void {
     }
 }
 
+fn get_entity_texture(entity: *Entity) Vec2f {
+    switch (entity.*) {
+        .Block => return entity_atlas.get_offset(1, .UP),
+        .Laser => |direction| return entity_atlas.get_offset(2, direction),
+        .Mirror => |direction| return entity_atlas.get_offset(3, direction),
+        .Splitter => |direction| return entity_atlas.get_offset(4, direction),
+        .Switch => |*eswitch| return entity_atlas.get_offset(5, eswitch.direction),
+        .Delayer => |*delayer| {
+            if (delayer.is_on) {
+                return entity_atlas.get_offset(7, delayer.direction);
+            } else {
+                return entity_atlas.get_offset(6, delayer.direction);
+            }
+        },
+    }
+}
+
 fn render_entities(state: *const State) void {
     const min_pos = state.viewpos.div(GRID_SIZE);
     const view_width = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1;
@@ -516,9 +507,9 @@ fn render_entities(state: *const State) void {
             const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
             pos_buffer[pos_buffer_counter] = @intToFloat(f32, pixel_pos.x);
             pos_buffer[pos_buffer_counter + 1] = @intToFloat(f32, pixel_pos.y);
-            const texture_pos = get_texture_offset(&entry.value);
-            pos_buffer[pos_buffer_counter + 2] = @intToFloat(f32, texture_pos.x);
-            pos_buffer[pos_buffer_counter + 3] = @intToFloat(f32, texture_pos.y);
+            const texture_pos = get_entity_texture(&entry.value);
+            pos_buffer[pos_buffer_counter + 2] = texture_pos.x;
+            pos_buffer[pos_buffer_counter + 3] = texture_pos.y;
             pos_buffer_counter += 4;
         }
     }
