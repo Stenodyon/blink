@@ -98,7 +98,31 @@ const vertex_shader_src =
     c\\in vec2 position;
     c\\
     c\\void main() {
-    c\\  gl_Position = vec4(position, 0.0, 1.0);
+    c\\    gl_Position = vec4(position, 0.0, 1.0);
+    c\\}
+;
+
+const geometry_shader_src =
+    c\\#version 150 core
+    c\\layout (points) in;
+    c\\layout (triangle_strip, max_vertices = 6) out;
+    c\\
+    c\\void main() {
+    c\\    gl_Position = gl_in[0].gl_Position;
+    c\\    EmitVertex();
+    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, -0.1, 0.0, 0.0);
+    c\\    EmitVertex();
+    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.0, -0.1, 0.0, 0.0);
+    c\\    EmitVertex();
+    c\\    EndPrimitive();
+    c\\
+    c\\    gl_Position = gl_in[0].gl_Position;
+    c\\    EmitVertex();
+    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, 0.0, 0.0, 0.0);
+    c\\    EmitVertex();
+    c\\    gl_Position = gl_in[0].gl_Position + vec4(0.1, -0.1, 0.0, 0.0);
+    c\\    EmitVertex();
+    c\\    EndPrimitive();
     c\\}
 ;
 
@@ -130,6 +154,7 @@ const sprite_vertices = [_]c.GLfloat{
 var sprite_vao: c.GLuint = undefined;
 var sprite_vbo: c.GLuint = undefined;
 var vertex_shader: c.GLuint = undefined;
+var geometry_shader: c.GLuint = undefined;
 var fragment_shader: c.GLuint = undefined;
 var shader_program: c.GLuint = undefined;
 
@@ -205,8 +230,14 @@ pub fn init() void {
     c.glCompileShader(fragment_shader);
     check_shader(fragment_shader);
 
+    geometry_shader = c.glCreateShader(c.GL_GEOMETRY_SHADER);
+    c.glShaderSource(geometry_shader, 1, &geometry_shader_src, null);
+    c.glCompileShader(geometry_shader);
+    check_shader(geometry_shader);
+
     shader_program = c.glCreateProgram();
     c.glAttachShader(shader_program, vertex_shader);
+    c.glAttachShader(shader_program, geometry_shader);
     c.glAttachShader(shader_program, fragment_shader);
 
     c.glBindFragDataLocation(shader_program, 0, c"outColor");
@@ -263,7 +294,7 @@ pub fn render(state: *const State) void {
     c.glClearColor(0.43, 0.47, 0.53, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    c.glDrawArrays(c.GL_TRIANGLES, 0, 3);
+    c.glDrawArrays(c.GL_POINTS, 0, 3);
 
     //_ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
     //_ = sdl.RenderClear(renderer);
