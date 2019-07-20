@@ -140,13 +140,10 @@ pub fn render(state: *const State) !void {
 
     ////g_gui.draw(g_gui, renderer);
 
-    //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     grid_renderer.render(state);
     try lightray_renderer.render(state);
     try render_grid_sel(state);
     try entity_renderer.render(state);
-
-    //sdl.RenderPresent(renderer);
 }
 
 fn render_grid_sel(state: *const State) !void {
@@ -162,26 +159,6 @@ fn render_grid_sel(state: *const State) !void {
     //};
     //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
     //_ = sdl.RenderDrawRect(renderer, current_cell_area);
-}
-
-fn render_grid(state: *const State) void {
-    const top_left = state.viewpos.div(GRID_SIZE);
-    const cell_count = Vec2i{
-        .x = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1,
-        .y = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1,
-    };
-
-    var x_it = lazy.range(i32(0), cell_count.x, 1);
-    while (x_it.next()) |x| {
-        const x_pos = (top_left.x + x) * GRID_SIZE - state.viewpos.x;
-        _ = sdl.RenderDrawLine(renderer, x_pos, 0, x_pos, SCREEN_HEIGHT);
-    }
-
-    var y_it = lazy.range(i32(0), cell_count.y, 1);
-    while (y_it.next()) |y| {
-        const y_pos = (top_left.y + y) * GRID_SIZE - state.viewpos.y;
-        _ = sdl.RenderDrawLine(renderer, 0, y_pos, SCREEN_WIDTH, y_pos);
-    }
 }
 
 pub fn debug_write(
