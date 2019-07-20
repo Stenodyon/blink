@@ -30,7 +30,7 @@ const vertex_shader_src =
     c\\} passthrough;
     c\\
     c\\void main() {
-    c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
+    c\\    gl_Position = vec4(position.xy, 0.0, 1.0);
     c\\    passthrough.length = length;
     c\\    passthrough.rotation = rotation;
     c\\}
@@ -53,10 +53,10 @@ const geometry_shader_src =
     c\\
     c\\vec2 vertices[6] = vec2[](
     c\\    vec2(-1.0, 0.0),
-    c\\    vec2(-1.0, 1.0),
-    c\\    vec2(1.0, 1.0),
+    c\\    vec2(-1.0, -1.0),
+    c\\    vec2(1.0, -1.0),
     c\\    vec2(-1.0, 0.0),
-    c\\    vec2(1.0, 1.0),
+    c\\    vec2(1.0, -1.0),
     c\\    vec2(1.0, 0.0)
     c\\);
     c\\
@@ -74,9 +74,8 @@ const geometry_shader_src =
     c\\void add_point(vec2 displacement) {
     c\\    vec2 rotated = rotate(displacement);
     c\\    vec4 point = gl_in[0].gl_Position + vec4(rotated, 0.0, 0.0);
-    c\\    point = projection * point;
-    c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
-    c\\    texture_uv = vec2(displacement.x, -displacement.y);
+    c\\    gl_Position = projection * point;
+    c\\    texture_uv = displacement;
     c\\    EmitVertex();
     c\\}
     c\\
@@ -185,7 +184,7 @@ pub fn queue_ray(
     const pixel_pos = ray.origin.mul(GRID_SIZE).addi(Vec2i.new(
         GRID_SIZE / 2,
         GRID_SIZE / 2,
-    )).subi(state.viewpos);
+    ));
     const angle = ray.direction.to_rad();
     const length = blk: {
         if (ray.length) |grid_length|

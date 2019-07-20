@@ -37,10 +37,12 @@ var font: ttf.Font = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
-fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
+fn otho_matrix(viewpos: Vec2i, width: f32, height: f32, dest: *[16]f32) void {
     for (dest[0..]) |*index| index.* = 0;
     dest[0] = 2 / width;
-    dest[5] = 2 / height;
+    dest[3] = @intToFloat(f32, -viewpos.x) * dest[0] - 1;
+    dest[5] = -2 / height;
+    dest[7] = @intToFloat(f32, -viewpos.y) * dest[5] + 1;
     dest[15] = 1;
 }
 
@@ -49,13 +51,14 @@ pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
     c.glUniformMatrix4fv(
         projection_location,
         1,
-        c.GL_FALSE,
+        c.GL_TRUE,
         &projection_matrix,
     );
 }
 
-pub fn update_projection_matrix() void {
+pub fn update_projection_matrix(viewpos: Vec2i) void {
     otho_matrix(
+        viewpos,
         @intToFloat(f32, window_width),
         @intToFloat(f32, window_height),
         &projection_matrix,
@@ -70,7 +73,7 @@ pub fn init(allocator: *Allocator) void {
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
 
-    update_projection_matrix();
+    update_projection_matrix(Vec2i.new(0, 0));
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -96,6 +99,8 @@ pub fn deinit() void {
 pub fn render(state: *const State) !void {
     c.glClearColor(0, 0, 0, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
+
+    update_projection_matrix(state.viewpos);
 
     ////g_gui.draw(g_gui, renderer);
 
@@ -133,14 +138,6 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
             window_height = new_height;
 
             c.glViewport(0, 0, window_width, window_height);
-
-            update_projection_matrix();
-            grid_renderer.update_vertices();
-            std.debug.warn(
-                "Window resized {}, {}\n",
-                window_width,
-                window_height,
-            );
 
             _ = state.viewpos.subi(Vec2i.new(recenter_x, recenter_y));
         },

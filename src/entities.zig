@@ -59,8 +59,8 @@ pub const Direction = enum {
         switch (self) {
             .UP => return 0.,
             .DOWN => return M_PI,
-            .LEFT => return M_PI / 2.,
-            .RIGHT => return 3. * M_PI / 2.,
+            .RIGHT => return M_PI / 2.,
+            .LEFT => return 3. * M_PI / 2.,
         }
     }
 };
