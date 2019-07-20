@@ -87,8 +87,8 @@ pub fn update_vertices(state: *const State) void {
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     const x = @intToFloat(f32, state.viewpos.x);
     const y = @intToFloat(f32, state.viewpos.y);
-    const width = @intToFloat(f32, display.window_width);
-    const height = @intToFloat(f32, display.window_height);
+    const width = @intToFloat(f32, state.viewport.x);
+    const height = @intToFloat(f32, state.viewport.y);
     const new_vertices = [_]f32{
         x,         y,
         x + width, y,

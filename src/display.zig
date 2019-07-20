@@ -37,11 +37,11 @@ var font: ttf.Font = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
-fn otho_matrix(viewpos: Vec2i, width: f32, height: f32, dest: *[16]f32) void {
+fn otho_matrix(viewpos: Vec2i, size: Vec2i, dest: *[16]f32) void {
     for (dest[0..]) |*index| index.* = 0;
-    dest[0] = 2 / width;
+    dest[0] = 2 / @intToFloat(f32, size.x);
     dest[3] = @intToFloat(f32, -viewpos.x) * dest[0] - 1;
-    dest[5] = -2 / height;
+    dest[5] = -2. / @intToFloat(f32, size.y);
     dest[7] = @intToFloat(f32, -viewpos.y) * dest[5] + 1;
     dest[15] = 1;
 }
@@ -56,11 +56,10 @@ pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
     );
 }
 
-pub fn update_projection_matrix(viewpos: Vec2i) void {
+pub fn update_projection_matrix(viewpos: Vec2i, viewport: Vec2i) void {
     otho_matrix(
         viewpos,
-        @intToFloat(f32, window_width),
-        @intToFloat(f32, window_height),
+        viewport,
         &projection_matrix,
     );
 }
@@ -73,7 +72,7 @@ pub fn init(allocator: *Allocator) void {
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
 
-    update_projection_matrix(Vec2i.new(0, 0));
+    update_projection_matrix(Vec2i.new(0, 0), Vec2i.new(1, 1));
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -100,7 +99,7 @@ pub fn render(state: *const State) !void {
     c.glClearColor(0, 0, 0, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    update_projection_matrix(state.viewpos);
+    update_projection_matrix(state.viewpos, state.viewport);
 
     ////g_gui.draw(g_gui, renderer);
 
@@ -130,16 +129,16 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
         //sdl.WINDOWEVENT_MAXIMIZED,
         //sdl.WINDOWEVENT_RESIZED,
         sdl.WINDOWEVENT_SIZE_CHANGED => {
-            const new_width = event.data1;
-            const new_height = event.data2;
-            const recenter_x = @divFloor(new_width - window_width, 2);
-            const recenter_y = @divFloor(new_height - window_height, 2);
-            window_width = new_width;
-            window_height = new_height;
+            const new_size = Vec2i.new(event.data1, event.data2);
+            const current_size = Vec2i.new(window_width, window_height);
+            const difference = new_size.sub(current_size);
+            window_width = new_size.x;
+            window_height = new_size.y;
 
             c.glViewport(0, 0, window_width, window_height);
 
-            _ = state.viewpos.subi(Vec2i.new(recenter_x, recenter_y));
+            _ = state.viewpos.subi(difference.div(2));
+            _ = state.viewport.addi(difference);
         },
         else => {},
     }

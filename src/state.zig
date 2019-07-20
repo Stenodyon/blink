@@ -11,6 +11,7 @@ const img = @import("img.zig");
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
 const Rect = vec.Rect;
+const display = @import("display.zig");
 
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
@@ -53,6 +54,7 @@ const SAVEFILE_HEADER = "BLINKSV\x00";
 
 pub const State = struct {
     viewpos: Vec2i,
+    viewport: Vec2i,
 
     entities: EntityMap,
     current_entity: usize,
@@ -67,6 +69,7 @@ pub const State = struct {
     pub fn new(allocator: *Allocator) State {
         return State{
             .viewpos = Vec2i.new(0, 0),
+            .viewport = Vec2i.new(display.window_width, display.window_height),
 
             .entities = EntityMap.init(allocator),
             .current_entity = 0,
