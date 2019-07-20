@@ -66,6 +66,11 @@ pub const State = struct {
     side_input_map: IOMap,
     sim: Simulation,
 
+    const zoom_factors = [_]f32{
+        0.5, 0.75, 1, 1.5, 2, 3, 5, 10,
+    };
+    zoom_index: usize,
+
     pub fn new(allocator: *Allocator) State {
         return State{
             .viewpos = Vec2i.new(0, 0),
@@ -97,6 +102,8 @@ pub const State = struct {
             .input_map = IOMap.init(allocator),
             .side_input_map = IOMap.init(allocator),
             .sim = Simulation.init(allocator),
+
+            .zoom_index = 2,
         };
     }
 
@@ -334,14 +341,30 @@ pub const State = struct {
         }
     }
 
+    fn set_zoom_factor(self: *State, index: usize) void {
+        const factor = State.zoom_factors[index];
+        const default_viewport = Vec2i.new(
+            display.window_width,
+            display.window_height,
+        );
+        const new_viewport = default_viewport.mulf(factor);
+        const difference = new_viewport.sub(self.viewport).divi(2);
+        self.viewport = new_viewport;
+        _ = self.viewpos.subi(difference);
+    }
+
     pub fn on_wheel_down(self: *State, amount: u32) void {
-        const slot = @mod(self.current_entity + amount, @intCast(u32, self.entity_wheel.len));
-        self.set_selected_slot(slot);
+        if (self.zoom_index + 1 < State.zoom_factors.len) {
+            self.zoom_index += 1;
+            self.set_zoom_factor(self.zoom_index);
+        }
     }
 
     pub fn on_wheel_up(self: *State, amount: u32) void {
-        const slot = @mod((self.current_entity + self.entity_wheel.len) -% amount, @intCast(u32, self.entity_wheel.len));
-        self.set_selected_slot(slot);
+        if (self.zoom_index > 0) {
+            self.zoom_index -= 1;
+            self.set_zoom_factor(self.zoom_index);
+        }
     }
 
     pub fn set_selected_slot(self: *State, slot: usize) void {
