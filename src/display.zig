@@ -181,63 +181,6 @@ fn render_grid(state: *const State) void {
     }
 }
 
-fn render_lightrays(state: *const State) void {
-    _ = sdl.SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    const viewarea = Rect.new(
-        screen2grid(state.viewpos),
-        Vec2i.new(
-            SCREEN_WIDTH / GRID_SIZE + 1,
-            SCREEN_HEIGHT / GRID_SIZE + 1,
-        ),
-    );
-    var tree_iterator = state.lighttrees.iterator();
-    while (tree_iterator.next()) |entry| {
-        const tree = &entry.value;
-        const entity_entry = state.entities.get(entry.key) orelse unreachable;
-        if (!entity_entry.value.is_emitting())
-            continue;
-
-        var count: usize = 0;
-        for (tree.rays.toSlice()) |lightray| {
-            if (!(lightray.intersects(viewarea)))
-                continue;
-            count += 1;
-
-            var start = grid2screen(lightray.origin).subi(state.viewpos);
-            _ = start.addi(GRID_CENTER);
-            var end = end: {
-                if (lightray.get_endpoint()) |endpoint| {
-                    break :end grid2screen(endpoint).subi(state.viewpos).addi(GRID_CENTER);
-                } else {
-                    switch (lightray.direction) {
-                        .UP => break :end Vec2i.new(start.x, 0),
-                        .DOWN => break :end Vec2i.new(start.x, SCREEN_HEIGHT),
-                        .LEFT => break :end Vec2i.new(0, start.y),
-                        .RIGHT => break :end Vec2i.new(SCREEN_WIDTH, start.y),
-                        else => unreachable,
-                    }
-                }
-            };
-
-            utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
-            utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
-            utils.clamp(i32, &end.x, 0, SCREEN_WIDTH);
-            utils.clamp(i32, &end.y, 0, SCREEN_HEIGHT);
-
-            _ = sdl.RenderDrawLine(
-                renderer,
-                start.x,
-                start.y,
-                end.x,
-                end.y,
-            );
-        }
-        //        debug_write("{} rays rendered", count) catch {
-        //            std.debug.warn("Failed to render debug text\n");
-        //        };
-    }
-}
-
 pub fn debug_write(
     comptime fmt: []const u8,
     args: ...,
