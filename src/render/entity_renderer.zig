@@ -253,6 +253,8 @@ pub fn render(state: *const State) !void {
     );
 
     c.glBindVertexArray(vao);
+    shader.set_active();
+    display.set_proj_matrix_uniform(&shader);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }

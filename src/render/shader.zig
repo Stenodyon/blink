@@ -103,7 +103,7 @@ pub const ShaderProgram = struct {
     }
 
     pub inline fn uniform_location(
-        self: *ShaderProgram,
+        self: *const ShaderProgram,
         uniform_name: [*c]const u8,
     ) c.GLint {
         return c.glGetUniformLocation(self.handle, uniform_name);

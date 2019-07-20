@@ -11,6 +11,7 @@ const lazy = @import("lazy/index.zig");
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;
 const entity_renderer = @import("render/entity_renderer.zig");
+const lightray_renderer = @import("render/lightray_renderer.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -86,23 +87,26 @@ fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
     dest[15] = 1;
 }
 
+pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
+    const projection_location = program.uniform_location(c"projection");
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_FALSE,
+        &projection_matrix,
+    );
+}
+
 pub fn init(allocator: *Allocator) void {
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
     entity_renderer.init(allocator);
+    lightray_renderer.init();
 
     otho_matrix(
         @intToFloat(f32, SCREEN_WIDTH),
         @intToFloat(f32, SCREEN_HEIGHT),
-        &projection_matrix,
-    );
-
-    var projection_location = entity_renderer.shader.uniform_location(c"projection");
-    c.glUniformMatrix4fv(
-        projection_location,
-        1,
-        c.GL_FALSE,
         &projection_matrix,
     );
 
@@ -120,6 +124,7 @@ pub fn init(allocator: *Allocator) void {
 }
 
 pub fn deinit() void {
+    lightray_renderer.deinit();
     entity_renderer.deinit();
 
     //ttf.CloseFont(font);
