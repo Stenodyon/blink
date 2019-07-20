@@ -6,10 +6,13 @@ const ShaderProgram = @import("shader.zig").ShaderProgram;
 const c = @import("../c.zig");
 const entities = @import("../entities.zig");
 const Direction = entities.Direction;
+const LightRay = @import("../lightray.zig").LightRay;
 const State = @import("../state.zig").State;
 const vec = @import("../vec.zig");
 const Vec2i = vec.Vec2i;
 const Vec2f = vec.Vec2f;
+const Rect = vec.Rect;
+const pVec2f = @import("utils.zig").pVec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
@@ -20,14 +23,17 @@ const vertex_shader_src =
     c\\#version 330 core
     c\\
     c\\layout (location = 0) in vec2 position;
-    c\\layout (location = 1) in float rotation;
+    c\\layout (location = 1) in float length;
+    c\\layout (location = 2) in float rotation;
     c\\
     c\\out PASSTHROUGH {
+    c\\    float length;
     c\\    float rotation;
     c\\} passthrough;
     c\\
     c\\void main() {
     c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
+    c\\    passthrough.length = length;
     c\\    passthrough.rotation = rotation;
     c\\}
 ;
@@ -39,6 +45,7 @@ const geometry_shader_src =
     c\\layout (triangle_strip, max_vertices = 6) out;
     c\\
     c\\in PASSTHROUGH {
+    c\\    float length;
     c\\    float rotation;
     c\\} passthrough[];
     c\\
@@ -47,15 +54,15 @@ const geometry_shader_src =
     c\\out vec2 texture_uv;
     c\\
     c\\vec2 vertices[6] = vec2[](
-    c\\    vec2(0.0, 0.0),
-    c\\    vec2(0.0, -1.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(0.0, 0.0),
-    c\\    vec2(1.0, -1.0),
+    c\\    vec2(-1.0, 0.0),
+    c\\    vec2(-1.0, 1.0),
+    c\\    vec2(1.0, 1.0),
+    c\\    vec2(-1.0, 0.0),
+    c\\    vec2(1.0, 1.0),
     c\\    vec2(1.0, 0.0)
     c\\);
     c\\
-    c\\const vec2 rotation_center = vec2(0.5, 0.0);
+    c\\const vec2 rotation_center = vec2(0.0, 0.0);
     c\\
     c\\vec2 rotate(vec2 displacement) {
     c\\    float angle = passthrough[0].rotation;
@@ -68,7 +75,7 @@ const geometry_shader_src =
     c\\
     c\\void add_point(vec2 displacement) {
     c\\    vec2 rotated = rotate(displacement);
-    c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(rotated, 0.0, 0.0);
+    c\\    vec4 point = gl_in[0].gl_Position + vec4(rotated, 0.0, 0.0);
     c\\    point = projection * point;
     c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
     c\\    texture_uv = vec2(displacement.x, -displacement.y);
@@ -76,13 +83,14 @@ const geometry_shader_src =
     c\\}
     c\\
     c\\void main() {
+    c\\    vec2 scale = vec2(2.0, passthrough[0].length);
     c\\    for (int i = 0; i < 3; ++i) {
-    c\\        add_point(vertices[i]);
+    c\\        add_point(vertices[i] * scale);
     c\\    }
     c\\    EndPrimitive();
     c\\
     c\\    for (int i = 3; i < 6; ++i) {
-    c\\        add_point(vertices[i]);
+    c\\        add_point(vertices[i] * scale);
     c\\    }
     c\\    EndPrimitive();
     c\\}
@@ -103,11 +111,20 @@ const fragment_shader_src =
     c\\}
 ;
 
+const BufferData = packed struct {
+    pos: pVec2f,
+    length: f32,
+    rotation: f32,
+};
+
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
 var shader: ShaderProgram = undefined;
+var queued_rays: ArrayList(BufferData) = undefined;
 
-pub fn init() void {
+pub fn init(allocator: *Allocator) void {
+    queued_rays = ArrayList(BufferData).init(allocator);
+
     c.glGenVertexArrays(1, &vao);
     c.glBindVertexArray(vao);
 
@@ -123,26 +140,36 @@ pub fn init() void {
     shader.link();
     shader.set_active();
 
-    // 2B pos | 1B rotation
+    // 2B pos | 1B length | 1B rotation
     const pos_attrib = 0;
-    const rotation_attrib = 1;
+    const length_attrib = 1;
+    const rotation_attrib = 2;
     c.glEnableVertexAttribArray(pos_attrib);
+    c.glEnableVertexAttribArray(length_attrib);
     c.glEnableVertexAttribArray(rotation_attrib);
     c.glVertexAttribPointer(
         pos_attrib,
         2,
         c.GL_FLOAT,
         c.GL_FALSE,
-        3 * @sizeOf(f32),
+        4 * @sizeOf(f32),
         @intToPtr(?*const c_void, 0),
+    );
+    c.glVertexAttribPointer(
+        length_attrib,
+        1,
+        c.GL_FLOAT,
+        c.GL_FALSE,
+        4 * @sizeOf(f32),
+        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
     );
     c.glVertexAttribPointer(
         rotation_attrib,
         1,
         c.GL_FLOAT,
         c.GL_FALSE,
-        3 * @sizeOf(f32),
-        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
+        4 * @sizeOf(f32),
+        @intToPtr(*const c_void, 3 * @sizeOf(f32)),
     );
 }
 
@@ -150,4 +177,79 @@ pub fn deinit() void {
     shader.deinit();
     c.glDeleteBuffers(1, &vbo);
     c.glDeleteVertexArrays(1, &vao);
+    queued_rays.deinit();
+}
+
+pub fn queue_ray(
+    state: *const State,
+    ray: *const LightRay,
+) !void {
+    const pixel_pos = ray.origin.mul(GRID_SIZE).addi(Vec2i.new(
+        GRID_SIZE / 2,
+        GRID_SIZE / 2,
+    )).subi(state.viewpos);
+    const angle = ray.direction.to_rad();
+    const length = blk: {
+        if (ray.length) |grid_length|
+            break :blk @intCast(i32, grid_length) * GRID_SIZE;
+        switch (ray.direction) {
+            .UP => break :blk pixel_pos.y,
+            .DOWN => break :blk SCREEN_HEIGHT - pixel_pos.y,
+            .RIGHT => break :blk pixel_pos.x,
+            .LEFT => break :blk SCREEN_WIDTH - pixel_pos.x,
+        }
+    };
+
+    const queued = BufferData{
+        .pos = pVec2f{
+            .x = @intToFloat(f32, pixel_pos.x),
+            .y = @intToFloat(f32, pixel_pos.y),
+        },
+        .length = @intToFloat(f32, length),
+        .rotation = angle,
+    };
+
+    try queued_rays.append(queued);
+}
+
+pub fn render(state: *const State) !void {
+    // Collect
+    const viewarea = Rect.new(
+        display.screen2grid(state.viewpos),
+        Vec2i.new(
+            SCREEN_WIDTH / GRID_SIZE + 1,
+            SCREEN_HEIGHT / GRID_SIZE + 1,
+        ),
+    );
+
+    var tree_iterator = state.lighttrees.iterator();
+    while (tree_iterator.next()) |entry| {
+        const tree = &entry.value;
+        const entity_entry = state.entities.get(entry.key) orelse unreachable;
+        if (!entity_entry.value.is_emitting())
+            continue;
+
+        for (tree.rays.toSlice()) |*lightray| {
+            if (!(lightray.intersects(viewarea)))
+                continue;
+
+            try queue_ray(state, lightray);
+        }
+    }
+
+    // Draw
+    const ray_data = queued_rays.toSlice();
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(BufferData) * @intCast(c_long, ray_data.len),
+        @ptrCast(?*const c_void, ray_data.ptr),
+        c.GL_STREAM_DRAW,
+    );
+
+    c.glBindVertexArray(vao);
+    shader.set_active();
+    display.set_proj_matrix_uniform(&shader);
+    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, ray_data.len));
+    try queued_rays.resize(0);
 }

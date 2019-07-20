@@ -49,7 +49,7 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn mul(self: Self, scalar: i32) Self {
-            return Vec2i.new(
+            return Self.new(
                 self.x * scalar,
                 self.y * scalar,
             );
@@ -62,7 +62,7 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn div(self: Self, scalar: i32) Self {
-            return Vec2i.new(
+            return Self.new(
                 @divFloor(self.x, scalar),
                 @divFloor(self.y, scalar),
             );
@@ -75,7 +75,7 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn mod(self: Self, scalar: i32) Self {
-            return Vec2i.new(
+            return Self.new(
                 @mod(self.x, scalar),
                 @mod(self.y, scalar),
             );
@@ -109,6 +109,13 @@ fn Vec2(comptime ValType: type) type {
 
         pub fn to_sdl(self: Self) sdl.Point {
             return sdl.Point{ .x = self.x, .y = self.y };
+        }
+
+        pub fn to_float(self: Self, comptime FT: type) Vec2(FT) {
+            return Vec2(FT).new(
+                @intToFloat(FT, self.x),
+                @intToFloat(FT, self.y),
+            );
         }
 
         pub fn distanceInt(self: Self, other: Vec2i) u32 {

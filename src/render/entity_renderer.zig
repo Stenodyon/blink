@@ -13,6 +13,7 @@ const State = @import("../state.zig").State;
 const vec = @import("../vec.zig");
 const Vec2i = vec.Vec2i;
 const Vec2f = vec.Vec2f;
+const pVec2f = @import("utils.zig").pVec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
@@ -112,11 +113,6 @@ var vbo: c.GLuint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
-
-const pVec2f = packed struct {
-    x: f32,
-    y: f32,
-};
 
 const BufferData = packed struct {
     pos: pVec2f,

@@ -20,6 +20,7 @@ const Rect = vec.Rect;
 const utils = @import("utils.zig");
 const Entity = @import("entities.zig").Entity;
 const dir_angle = @import("entities.zig").dir_angle;
+const LightRay = @import("lightray.zig").LightRay;
 
 pub var renderer: sdl.Renderer = undefined;
 
@@ -102,7 +103,7 @@ pub fn init(allocator: *Allocator) void {
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
     entity_renderer.init(allocator);
-    lightray_renderer.init();
+    lightray_renderer.init(allocator);
 
     otho_matrix(
         @intToFloat(f32, SCREEN_WIDTH),
@@ -138,7 +139,7 @@ pub fn render(state: *const State) !void {
 
     //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
     //render_grid(state);
-    //render_lightrays(state);
+    try lightray_renderer.render(state);
     try render_grid_sel(state);
     try entity_renderer.render(state);
 
@@ -151,9 +152,6 @@ fn render_grid_sel(state: *const State) !void {
     const world_pos = pos.add(state.viewpos);
     const grid_pos = world_pos.div(GRID_SIZE);
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
-
-    //_ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
-    //render_entity(state.get_current_entity(), grid_pos);
 
     //const current_cell_area = Rect{
     //    .pos = grid_pos,
