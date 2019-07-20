@@ -267,14 +267,20 @@ pub const State = struct {
         var output_iterator = tree_entry.value.leaves.iterator();
         while (output_iterator.next()) |output_pos| {
             try self.sim.queue_update(output_pos);
-            const input_entry = self.input_map.get(output_pos) orelse unreachable;
+            const input_entry = self.input_map.get(output_pos) orelse {
+                std.debug.assert(output_pos.equals(pos));
+                continue;
+            };
             _ = input_entry.value.remove(pos);
         }
 
         var side_output_iterator = tree_entry.value.side_leaves.iterator();
         while (side_output_iterator.next()) |output_pos| {
             try self.sim.queue_update(output_pos);
-            const input_entry = self.side_input_map.get(output_pos) orelse unreachable;
+            const input_entry = self.side_input_map.get(output_pos) orelse {
+                std.debug.assert(output_pos.equals(pos));
+                continue;
+            };
             _ = input_entry.value.remove(pos);
         }
 
