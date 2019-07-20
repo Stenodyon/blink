@@ -190,10 +190,10 @@ pub fn queue_ray(
         if (ray.length) |grid_length|
             break :blk @intCast(i32, grid_length) * GRID_SIZE;
         switch (ray.direction) {
-            .UP => break :blk pixel_pos.y,
-            .DOWN => break :blk display.window_height - pixel_pos.y,
-            .LEFT => break :blk pixel_pos.x,
-            .RIGHT => break :blk display.window_width - pixel_pos.x,
+            .UP => break :blk pixel_pos.y + state.viewpos.y,
+            .DOWN => break :blk display.window_height - pixel_pos.y + state.viewpos.y,
+            .LEFT => break :blk pixel_pos.x + state.viewpos.x,
+            .RIGHT => break :blk display.window_width - pixel_pos.x + state.viewpos.x,
         }
     };
 
