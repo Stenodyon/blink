@@ -107,8 +107,8 @@ const fragment_shader_src =
     c\\}
 ;
 
-var sprite_vao: c.GLuint = undefined;
-var sprite_vbo: c.GLuint = undefined;
+var vao: c.GLuint = undefined;
+var vbo: c.GLuint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
@@ -129,11 +129,11 @@ var queued_entities: ArrayList(BufferData) = undefined;
 pub fn init(allocator: *Allocator) void {
     queued_entities = ArrayList(BufferData).init(allocator);
 
-    c.glGenVertexArrays(1, &sprite_vao);
-    c.glBindVertexArray(sprite_vao);
+    c.glGenVertexArrays(1, &vao);
+    c.glBindVertexArray(vao);
 
-    c.glGenBuffers(1, &sprite_vbo);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
+    c.glGenBuffers(1, &vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
     shader = ShaderProgram.new(
         &vertex_shader_src,
@@ -183,8 +183,8 @@ pub fn deinit() void {
     shader.deinit();
     queued_entities.deinit();
 
-    c.glDeleteBuffers(1, &sprite_vbo);
-    c.glDeleteVertexArrays(1, &sprite_vao);
+    c.glDeleteBuffers(1, &vbo);
+    c.glDeleteVertexArrays(1, &vao);
 }
 
 fn get_entity_texture(entity: *const Entity) Vec2f {
@@ -244,7 +244,7 @@ pub fn render(state: *const State) !void {
     }
 
     const entity_data = queued_entities.toSlice();
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, sprite_vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
         c.GL_ARRAY_BUFFER,
         @sizeOf(BufferData) * @intCast(c_long, entity_data.len),
@@ -252,6 +252,7 @@ pub fn render(state: *const State) !void {
         c.GL_STREAM_DRAW,
     );
 
+    c.glBindVertexArray(vao);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }
