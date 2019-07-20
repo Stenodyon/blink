@@ -225,8 +225,8 @@ pub fn queue_entity(
 
 pub fn render(state: *const State) !void {
     const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(display.window_width, GRID_SIZE) + 2;
-    const view_height = @divFloor(display.window_height, GRID_SIZE) + 2;
+    const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
+    const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
