@@ -16,8 +16,6 @@ const pVec2f = @import("utils.zig").pVec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
-const SCREEN_WIDTH = display.SCREEN_WIDTH;
-const SCREEN_HEIGHT = display.SCREEN_HEIGHT;
 
 const vertex_shader_src =
     c\\#version 330 core
@@ -194,9 +192,9 @@ pub fn queue_ray(
             break :blk @intCast(i32, grid_length) * GRID_SIZE;
         switch (ray.direction) {
             .UP => break :blk pixel_pos.y,
-            .DOWN => break :blk SCREEN_HEIGHT - pixel_pos.y,
+            .DOWN => break :blk display.window_height - pixel_pos.y,
             .LEFT => break :blk pixel_pos.x,
-            .RIGHT => break :blk SCREEN_WIDTH - pixel_pos.x,
+            .RIGHT => break :blk display.window_width - pixel_pos.x,
         }
     };
 
@@ -217,8 +215,8 @@ pub fn render(state: *const State) !void {
     const viewarea = Rect.new(
         display.screen2grid(state.viewpos),
         Vec2i.new(
-            SCREEN_WIDTH / GRID_SIZE + 1,
-            SCREEN_HEIGHT / GRID_SIZE + 1,
+            @divFloor(display.window_width, GRID_SIZE) + 1,
+            @divFloor(display.window_height, GRID_SIZE) + 1,
         ),
     );
 

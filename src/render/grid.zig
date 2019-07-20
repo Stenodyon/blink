@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const c = @import("../c.zig");
 const ShaderProgram = @import("shader.zig").ShaderProgram;
 const State = @import("../state.zig").State;
@@ -7,8 +9,6 @@ const Vec2f = vec.Vec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
-const SCREEN_WIDTH = display.SCREEN_WIDTH;
-const SCREEN_HEIGHT = display.SCREEN_HEIGHT;
 
 const vertex_shader_src =
     c\\#version 330 core
@@ -50,28 +50,14 @@ const fragment_shader_src =
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
 var shader: ShaderProgram = undefined;
-
-const vertices = [_]f32{
-    0.0,          SCREEN_HEIGHT,
-    0.0,          0.0,
-    SCREEN_WIDTH, 0.0,
-    0.0,          SCREEN_HEIGHT,
-    SCREEN_WIDTH, 0.0,
-    SCREEN_WIDTH, SCREEN_HEIGHT,
-};
+var vertices: [12]f32 = undefined;
 
 pub fn init() void {
     c.glGenVertexArrays(1, &vao);
     c.glBindVertexArray(vao);
 
     c.glGenBuffers(1, &vbo);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-    c.glBufferData(
-        c.GL_ARRAY_BUFFER,
-        @sizeOf(f32) * @intCast(c_long, vertices.len),
-        @ptrCast(?*const c_void, &vertices),
-        c.GL_STATIC_DRAW,
-    );
+    update_vertices();
 
     shader = ShaderProgram.new(
         &vertex_shader_src,
@@ -98,6 +84,30 @@ pub fn deinit() void {
     shader.deinit();
     c.glDeleteBuffers(1, &vbo);
     c.glDeleteVertexArrays(1, &vao);
+}
+
+// 0.0,                  display.window_height,
+// 0.0,                  0.0,
+// display.window_width, 0.0,
+// 0.0,                  display.window_height,
+// display.window_width, 0.0,
+// display.window_width, display.window_height,
+
+pub fn update_vertices() void {
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    for (vertices) |*vertex| vertex.* = 0.0;
+    vertices[1] = @intToFloat(f32, display.window_height);
+    vertices[4] = @intToFloat(f32, display.window_width);
+    vertices[7] = @intToFloat(f32, display.window_height);
+    vertices[8] = @intToFloat(f32, display.window_width);
+    vertices[10] = @intToFloat(f32, display.window_width);
+    vertices[11] = @intToFloat(f32, display.window_height);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(f32) * @intCast(c_long, vertices.len),
+        @ptrCast(?*const c_void, &vertices),
+        c.GL_STATIC_DRAW,
+    );
 }
 
 pub fn render(state: *const State) void {

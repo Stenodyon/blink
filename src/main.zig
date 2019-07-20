@@ -42,9 +42,9 @@ fn init_sdl() void {
         c"Blink",
         sdl.WINDOWPOS_UNDEFINED,
         sdl.WINDOWPOS_UNDEFINED,
-        display.SCREEN_WIDTH,
-        display.SCREEN_HEIGHT,
-        sdl.WINDOW_OPENGL,
+        display.window_width,
+        display.window_height,
+        sdl.WINDOW_OPENGL | sdl.WINDOW_RESIZABLE,
     );
     if (window == null) {
         std.debug.warn("Could not create a window: {}\n", sdl.GetError());
@@ -164,6 +164,9 @@ pub fn main() !void {
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
                     try input.on_key_up(&state, keyboard_event.keysym);
+                },
+                sdl.WINDOWEVENT => {
+                    display.on_window_event(&state, &event.window);
                 },
                 sdl.QUIT => {
                     std.debug.warn("Quit Event!\n");

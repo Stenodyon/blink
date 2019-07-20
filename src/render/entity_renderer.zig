@@ -17,8 +17,6 @@ const pVec2f = @import("utils.zig").pVec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
-const SCREEN_WIDTH = display.SCREEN_WIDTH;
-const SCREEN_HEIGHT = display.SCREEN_HEIGHT;
 
 const vertex_shader_src =
     c\\#version 330 core
@@ -226,8 +224,8 @@ pub fn queue_entity(
 
 pub fn render(state: *const State) !void {
     const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1;
-    const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
+    const view_width = @divFloor(display.window_width, GRID_SIZE) + 1;
+    const view_height = @divFloor(display.window_height, GRID_SIZE) + 1;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
