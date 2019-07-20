@@ -71,6 +71,7 @@ fn Vec2(comptime ValType: type) type {
         pub fn mulfi(self: *Self, scalar: f32) Self {
             self.x = @floatToInt(i32, @intToFloat(f32, self.x) * scalar);
             self.y = @floatToInt(i32, @intToFloat(f32, self.y) * scalar);
+            return self.*;
         }
 
         pub fn div(self: Self, scalar: i32) Self {

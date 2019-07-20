@@ -112,8 +112,7 @@ pub fn render(state: *const State) !void {
 fn render_grid_sel(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
-    const world_pos = pos.add(state.viewpos);
-    const grid_pos = world_pos.div(GRID_SIZE);
+    const grid_pos = screen2grid(state, pos);
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
 
     //const current_cell_area = Rect{
@@ -179,8 +178,8 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub fn screen2grid(point: Vec2i) Vec2i {
-    return point.div(GRID_SIZE);
+pub fn screen2grid(state: *const State, point: Vec2i) Vec2i {
+    return point.mulf(state.get_zoom_factor()).addi(state.viewpos).divi(GRID_SIZE);
 }
 
 pub fn grid2screen(point: Vec2i) Vec2i {

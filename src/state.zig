@@ -341,6 +341,10 @@ pub const State = struct {
         }
     }
 
+    pub fn get_zoom_factor(self: *const State) f32 {
+        return State.zoom_factors[self.zoom_index];
+    }
+
     fn set_zoom_factor(self: *State, index: usize) void {
         const factor = State.zoom_factors[index];
         const default_viewport = Vec2i.new(

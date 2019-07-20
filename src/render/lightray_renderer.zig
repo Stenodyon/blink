@@ -212,7 +212,7 @@ pub fn queue_ray(
 pub fn render(state: *const State) !void {
     // Collect
     const viewarea = Rect.new(
-        display.screen2grid(state.viewpos),
+        display.screen2grid(state, state.viewpos),
         Vec2i.new(
             @divFloor(display.window_width, GRID_SIZE) + 1,
             @divFloor(display.window_height, GRID_SIZE) + 1,

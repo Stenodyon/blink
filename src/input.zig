@@ -12,7 +12,8 @@ var last_grid_action: ?Vec2i = null;
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
     if (lmb_down and ((sdl.GetModState() & sdl.KMOD_LSHIFT) != 0)) {
-        state.viewpos = state.viewpos.sub(Vec2i.new(x_rel, y_rel));
+        const change = Vec2i.new(x_rel, y_rel).mulfi(state.get_zoom_factor());
+        _ = state.viewpos.subi(change);
     }
 }
 
@@ -41,8 +42,7 @@ pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void {
 }
 
 pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2i) !void {
-    const adjusted_mouse_pos = Vec2i.new(mouse_pos.x, mouse_pos.y).addi(state.viewpos);
-    const grid_pos = display.screen2grid(adjusted_mouse_pos);
+    const grid_pos = display.screen2grid(state, mouse_pos);
 
     if (last_grid_action == null or !last_grid_action.?.equals(grid_pos)) {
         last_grid_action = grid_pos;
