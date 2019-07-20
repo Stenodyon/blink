@@ -101,7 +101,7 @@ const fragment_shader_src =
     c\\
     c\\in vec2 texture_uv;
     c\\
-    c\\uniform sampler2D atlas;
+    c\\//uniform sampler2D atlas;
     c\\
     c\\out vec4 outColor;
     c\\

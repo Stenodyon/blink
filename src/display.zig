@@ -12,6 +12,7 @@ const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;
 const entity_renderer = @import("render/entity_renderer.zig");
 const lightray_renderer = @import("render/lightray_renderer.zig");
+const grid_renderer = @import("render/grid.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -102,6 +103,7 @@ pub fn init(allocator: *Allocator) void {
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
+    grid_renderer.init();
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
 
@@ -127,18 +129,19 @@ pub fn init(allocator: *Allocator) void {
 pub fn deinit() void {
     lightray_renderer.deinit();
     entity_renderer.deinit();
+    grid_renderer.deinit();
 
     //ttf.CloseFont(font);
 }
 
 pub fn render(state: *const State) !void {
-    c.glClearColor(0.43, 0.47, 0.53, 1);
+    c.glClearColor(0, 0, 0, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
     ////g_gui.draw(g_gui, renderer);
 
     //_ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
-    //render_grid(state);
+    grid_renderer.render(state);
     try lightray_renderer.render(state);
     try render_grid_sel(state);
     try entity_renderer.render(state);
