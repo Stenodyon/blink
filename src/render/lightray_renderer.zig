@@ -195,8 +195,8 @@ pub fn queue_ray(
         switch (ray.direction) {
             .UP => break :blk pixel_pos.y,
             .DOWN => break :blk SCREEN_HEIGHT - pixel_pos.y,
-            .RIGHT => break :blk pixel_pos.x,
-            .LEFT => break :blk SCREEN_WIDTH - pixel_pos.x,
+            .LEFT => break :blk pixel_pos.x,
+            .RIGHT => break :blk SCREEN_WIDTH - pixel_pos.x,
         }
     };
 
