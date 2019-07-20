@@ -212,11 +212,8 @@ pub fn queue_ray(
 pub fn render(state: *const State) !void {
     // Collect
     const viewarea = Rect.new(
-        display.screen2grid(state, state.viewpos),
-        Vec2i.new(
-            @divFloor(display.window_width, GRID_SIZE) + 1,
-            @divFloor(display.window_height, GRID_SIZE) + 1,
-        ),
+        state.viewpos.div(GRID_SIZE),
+        state.viewport.div(GRID_SIZE).addi(Vec2i.new(1, 1)),
     );
 
     var tree_iterator = state.lighttrees.iterator();
