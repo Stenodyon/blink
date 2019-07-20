@@ -1,4 +1,4 @@
-const c = @import("sdl.zig").c;
+const c = @import("c.zig");
 
 pub const Init = c.TTF_Init;
 pub const GetError = c.TTF_GetError;

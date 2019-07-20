@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Vec2i = @import("vec.zig").Vec2i;
+const M_PI = @import("utils.zig").M_PI;
 
 pub const Direction = enum {
     UP,
@@ -51,6 +52,15 @@ pub const Direction = enum {
             .LEFT => return "LEFT",
             .RIGHT => return "RIGHT",
             else => unreachable,
+        }
+    }
+
+    pub fn to_rad(self: Direction) f32 {
+        switch (self) {
+            .UP => return 0.,
+            .DOWN => return M_PI,
+            .LEFT => return M_PI / 2.,
+            .RIGHT => return 3. * M_PI / 2.,
         }
     }
 };
@@ -205,6 +215,15 @@ pub const Entity = union(enum) {
             .Switch => |*eswitch| {
                 eswitch.direction = new_direction;
             },
+        }
+    }
+
+    pub fn get_direction(self: *const Entity) Direction {
+        switch (self.*) {
+            .Block => return .UP,
+            .Laser, .Mirror, .Splitter => |direction| return direction,
+            .Delayer => |*delayer| return delayer.direction,
+            .Switch => |*eswitch| return eswitch.direction,
         }
     }
 

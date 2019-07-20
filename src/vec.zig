@@ -29,7 +29,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn sub(a: Self, b: Self) Self {
-            return Self.new(a.x - b.x, a.y - b.y);
+            return Self.new(
+                a.x - b.x,
+                a.y - b.y,
+            );
         }
 
         pub fn subi(a: *Self, b: Self) Self {
@@ -39,11 +42,17 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn neg(a: Self) Self {
-            return Self.new(-a.x, -a.y);
+            return Self.new(
+                -a.x,
+                -a.y,
+            );
         }
 
         pub fn mul(self: Self, scalar: i32) Self {
-            return Vec2i.new(self.x * scalar, self.y * scalar);
+            return Self.new(
+                self.x * scalar,
+                self.y * scalar,
+            );
         }
 
         pub fn muli(self: *Self, scalar: i32) Self {
@@ -53,7 +62,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn div(self: Self, scalar: i32) Self {
-            return Vec2i.new(@divFloor(self.x, scalar), @divFloor(self.y, scalar));
+            return Self.new(
+                @divFloor(self.x, scalar),
+                @divFloor(self.y, scalar),
+            );
         }
 
         pub fn divi(self: Self, scalar: i32) Self {
@@ -63,7 +75,10 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn mod(self: Self, scalar: i32) Self {
-            return Vec2i.new(@mod(self.x, scalar), @mod(self.y, scalar));
+            return Self.new(
+                @mod(self.x, scalar),
+                @mod(self.y, scalar),
+            );
         }
 
         pub fn modi(self: *Self, scalar: i32) Self {
@@ -96,6 +111,13 @@ fn Vec2(comptime ValType: type) type {
             return sdl.Point{ .x = self.x, .y = self.y };
         }
 
+        pub fn to_float(self: Self, comptime FT: type) Vec2(FT) {
+            return Vec2(FT).new(
+                @intToFloat(FT, self.x),
+                @intToFloat(FT, self.y),
+            );
+        }
+
         pub fn distanceInt(self: Self, other: Vec2i) u32 {
             const distance = abs: {
                 if (self.x == other.x) {
@@ -116,7 +138,7 @@ fn Vec2(comptime ValType: type) type {
 }
 
 pub const Vec2i = Vec2(i32);
-pub const Vec2f = Vec2(f64);
+pub const Vec2f = Vec2(f32);
 
 pub const Rect = struct {
     pos: Vec2i,

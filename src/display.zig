@@ -5,16 +5,23 @@ const Buffer = std.Buffer;
 
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
+const c = @import("c.zig");
 const lazy = @import("lazy/index.zig");
 
-const ResourceManager = @import("res.zig");
+const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
+const ShaderProgram = @import("render/shader.zig").ShaderProgram;
+const entity_renderer = @import("render/entity_renderer.zig");
+const lightray_renderer = @import("render/lightray_renderer.zig");
+const grid_renderer = @import("render/grid.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
+const Vec2f = vec.Vec2f;
 const Rect = vec.Rect;
 const utils = @import("utils.zig");
 const Entity = @import("entities.zig").Entity;
 const dir_angle = @import("entities.zig").dir_angle;
+const LightRay = @import("lightray.zig").LightRay;
 
 pub var renderer: sdl.Renderer = undefined;
 
@@ -70,237 +77,88 @@ pub var g_gui: *GUI_Element = undefined;
 
 pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
 
-var block_img: sdl.Texture = undefined;
-var laser_img: sdl.Texture = undefined;
-var mirror_img: sdl.Texture = undefined;
-var splitter_img: sdl.Texture = undefined;
-var delayer_on_img: sdl.Texture = undefined;
-var delayer_off_img: sdl.Texture = undefined;
-var switch_img: sdl.Texture = undefined;
-
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
-fn load_texture(path: []const u8) !sdl.Texture {
-    const surface = try ResourceManager.Get(path);
-    const texture = sdl.CreateTextureFromSurface(renderer, surface);
-    if (texture == null) {
-        std.debug.warn("Could not create texture: {}\n", sdl.GetError());
-        std.os.exit(1);
-    }
-    return texture;
+var projection_matrix: [16]f32 = undefined;
+
+fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
+    for (dest[0..]) |*index| index.* = 0;
+    dest[0] = 2 / width;
+    dest[5] = 2 / height;
+    dest[15] = 1;
 }
 
-pub fn init() !void {
-    block_img = try load_texture("data/entity_block.png");
-    laser_img = try load_texture("data/entity_laser.png");
-    mirror_img = try load_texture("data/entity_mirror.png");
-    splitter_img = try load_texture("data/entity_splitter.png");
-    delayer_on_img = try load_texture("data/entity_delayer_on.png");
-    delayer_off_img = try load_texture("data/entity_delayer_off.png");
-    switch_img = try load_texture("data/entity_switch.png");
+pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
+    const projection_location = program.uniform_location(c"projection");
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_FALSE,
+        &projection_matrix,
+    );
+}
 
-    font = ttf.OpenFont(font_name, 25);
-    if (font == null) {
-        std.debug.warn(
-            "Failed to load font \"{}\"\n",
-            utils.c_to_slice(font_name),
-        );
-        std.os.exit(1);
-    }
-    std.debug.warn("Textures loaded\n");
+pub fn init(allocator: *Allocator) void {
+    c.glEnable(c.GL_BLEND);
+    c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
+
+    grid_renderer.init();
+    entity_renderer.init(allocator);
+    lightray_renderer.init(allocator);
+
+    otho_matrix(
+        @intToFloat(f32, SCREEN_WIDTH),
+        @intToFloat(f32, SCREEN_HEIGHT),
+        &projection_matrix,
+    );
+
+    std.debug.warn("OpenGL initialized\n");
+
+    //font = ttf.OpenFont(font_name, 25);
+    //if (font == null) {
+    //    std.debug.warn(
+    //        "Failed to load font \"{}\"\n",
+    //        utils.c_to_slice(font_name),
+    //    );
+    //    std.os.exit(1);
+    //}
+    //std.debug.warn("Textures loaded\n");
 }
 
 pub fn deinit() void {
-    ttf.CloseFont(font);
+    lightray_renderer.deinit();
+    entity_renderer.deinit();
+    grid_renderer.deinit();
+
+    //ttf.CloseFont(font);
 }
 
-pub fn render(state: *const State) void {
-    _ = sdl.SetRenderDrawColor(renderer, 0x6E, 0x78, 0x89, 0xFF);
-    _ = sdl.RenderClear(renderer);
+pub fn render(state: *const State) !void {
+    c.glClearColor(0, 0, 0, 1);
+    c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    //g_gui.draw(g_gui, renderer);
+    ////g_gui.draw(g_gui, renderer);
 
-    _ = sdl.SetRenderDrawColor(renderer, 0x39, 0x3B, 0x45, 0xFF);
-    render_grid(state);
-    render_lightrays(state);
-    render_entities(state);
-    render_grid_sel(state);
-
-    sdl.RenderPresent(renderer);
+    grid_renderer.render(state);
+    try lightray_renderer.render(state);
+    try render_grid_sel(state);
+    try entity_renderer.render(state);
 }
 
-fn render_grid_sel(state: *const State) void {
+fn render_grid_sel(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
     const world_pos = pos.add(state.viewpos);
-    const grid_pos = world_pos.div(GRID_SIZE).muli(GRID_SIZE).subi(state.viewpos);
+    const grid_pos = world_pos.div(GRID_SIZE);
+    try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
 
-    _ = sdl.SetRenderDrawColor(renderer, 0x58, 0x48, 0x48, 0x3F);
-    render_entity(state.get_current_entity(), grid_pos);
-
-    const current_cell_area = Rect{
-        .pos = grid_pos,
-        .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
-    };
-    _ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
-    _ = sdl.RenderDrawRect(renderer, current_cell_area);
-}
-
-fn render_grid(state: *const State) void {
-    const top_left = state.viewpos.div(GRID_SIZE);
-    const cell_count = Vec2i{
-        .x = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1,
-        .y = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1,
-    };
-
-    var x_it = lazy.range(i32(0), cell_count.x, 1);
-    while (x_it.next()) |x| {
-        const x_pos = (top_left.x + x) * GRID_SIZE - state.viewpos.x;
-        _ = sdl.RenderDrawLine(renderer, x_pos, 0, x_pos, SCREEN_HEIGHT);
-    }
-
-    var y_it = lazy.range(i32(0), cell_count.y, 1);
-    while (y_it.next()) |y| {
-        const y_pos = (top_left.y + y) * GRID_SIZE - state.viewpos.y;
-        _ = sdl.RenderDrawLine(renderer, 0, y_pos, SCREEN_WIDTH, y_pos);
-    }
-}
-
-fn render_lightrays(state: *const State) void {
-    _ = sdl.SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    const viewarea = Rect.new(
-        screen2grid(state.viewpos),
-        Vec2i.new(
-            SCREEN_WIDTH / GRID_SIZE + 1,
-            SCREEN_HEIGHT / GRID_SIZE + 1,
-        ),
-    );
-    var tree_iterator = state.lighttrees.iterator();
-    while (tree_iterator.next()) |entry| {
-        const tree = &entry.value;
-        const entity_entry = state.entities.get(entry.key) orelse unreachable;
-        if (!entity_entry.value.is_emitting())
-            continue;
-
-        var count: usize = 0;
-        for (tree.rays.toSlice()) |lightray| {
-            if (!(lightray.intersects(viewarea)))
-                continue;
-            count += 1;
-
-            var start = grid2screen(lightray.origin).subi(state.viewpos);
-            _ = start.addi(GRID_CENTER);
-            var end = end: {
-                if (lightray.get_endpoint()) |endpoint| {
-                    break :end grid2screen(endpoint).subi(state.viewpos).addi(GRID_CENTER);
-                } else {
-                    switch (lightray.direction) {
-                        .UP => break :end Vec2i.new(start.x, 0),
-                        .DOWN => break :end Vec2i.new(start.x, SCREEN_HEIGHT),
-                        .LEFT => break :end Vec2i.new(0, start.y),
-                        .RIGHT => break :end Vec2i.new(SCREEN_WIDTH, start.y),
-                        else => unreachable,
-                    }
-                }
-            };
-
-            utils.clamp(i32, &start.x, 0, SCREEN_WIDTH);
-            utils.clamp(i32, &start.y, 0, SCREEN_HEIGHT);
-            utils.clamp(i32, &end.x, 0, SCREEN_WIDTH);
-            utils.clamp(i32, &end.y, 0, SCREEN_HEIGHT);
-
-            _ = sdl.RenderDrawLine(
-                renderer,
-                start.x,
-                start.y,
-                end.x,
-                end.y,
-            );
-        }
-        //        debug_write("{} rays rendered", count) catch {
-        //            std.debug.warn("Failed to render debug text\n");
-        //        };
-    }
-}
-
-fn render_entities(state: *const State) void {
-    var entity_it = state.entities.iterator();
-    while (entity_it.next()) |entry| {
-        const pos = entry.key.mul(GRID_SIZE).subi(state.viewpos);
-        render_entity(entry.value, pos);
-    }
-}
-
-// pos in screen coordinates
-fn render_entity(entity: Entity, pos: Vec2i) void {
-    const zero = Vec2i.new(0, 0);
-    const grid_size = Vec2i.new(GRID_SIZE, GRID_SIZE);
-    const srect = Rect.new(zero, grid_size);
-    const drect = Rect.new(pos, grid_size);
-    switch (entity) {
-        .Block => {
-            _ = sdl.RenderCopy(renderer, block_img, srect, drect);
-        },
-        .Laser => |direction| {
-            _ = sdl.RenderCopyEx(
-                renderer,
-                laser_img,
-                srect,
-                drect,
-                dir_angle(direction),
-                &(grid_size.div(2)),
-                sdl.FLIP_NONE,
-            );
-        },
-        .Mirror => |direction| {
-            _ = sdl.RenderCopyEx(
-                renderer,
-                mirror_img,
-                srect,
-                drect,
-                dir_angle(direction),
-                &(grid_size.div(2)),
-                sdl.FLIP_NONE,
-            );
-        },
-        .Splitter => |direction| {
-            _ = sdl.RenderCopyEx(
-                renderer,
-                splitter_img,
-                srect,
-                drect,
-                dir_angle(direction),
-                &(grid_size.div(2)),
-                sdl.FLIP_NONE,
-            );
-        },
-        .Delayer => |*delayer| {
-            _ = sdl.RenderCopyEx(
-                renderer,
-                switch (delayer.is_on) {
-                    true => delayer_on_img,
-                    false => delayer_off_img,
-                },
-                srect,
-                drect,
-                dir_angle(delayer.direction),
-                &(grid_size.div(2)),
-                sdl.FLIP_NONE,
-            );
-        },
-        .Switch => |*eswitch| {
-            _ = sdl.RenderCopyEx(
-                renderer,
-                switch_img,
-                srect,
-                drect,
-                dir_angle(eswitch.direction),
-                &(grid_size.div(2)),
-                sdl.FLIP_NONE,
-            );
-        },
-    }
+    //const current_cell_area = Rect{
+    //    .pos = grid_pos,
+    //    .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
+    //};
+    //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
+    //_ = sdl.RenderDrawRect(renderer, current_cell_area);
 }
 
 pub fn debug_write(

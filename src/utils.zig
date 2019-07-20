@@ -4,6 +4,8 @@ const assert = std.debug.assert;
 
 const sdl = @import("sdl.zig");
 
+pub const M_PI = 3.1415926535897932384626433832795;
+
 // Ensures a < b
 pub fn min_order(a: var, b: @typeOf(a)) void {
     if (b.* < a.*) {

@@ -1,8 +1,4 @@
-pub const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
-});
-
+const c = @import("c.zig");
 const vec = @import("vec.zig");
 
 pub const INIT_VIDEO = c.SDL_INIT_VIDEO;
@@ -18,6 +14,7 @@ pub const Surface = ?*c.struct_SDL_Surface;
 
 pub const WINDOWPOS_UNDEFINED = c.SDL_WINDOWPOS_UNDEFINED_MASK | 0;
 pub const WINDOW_SHOWN = c.SDL_WINDOW_SHOWN;
+pub const WINDOW_OPENGL = c.SDL_WINDOW_OPENGL;
 
 pub fn FreeSurface(surface: Surface) void {
     c.SDL_FreeSurface(@ptrCast(?[*]c.struct_SDL_Surface, surface));
@@ -241,3 +238,18 @@ pub fn GetMouseState(x: *i32, y: *i32) u32 {
         @ptrCast(?[*]c_int, y),
     );
 }
+
+// OpenGL
+pub const GLContext = c.SDL_GLContext;
+
+pub const GLattr = c.SDL_GLattr;
+pub const GL_CONTEXT_PROFILE_MASK = @intToEnum(GLattr, c.SDL_GL_CONTEXT_PROFILE_MASK);
+pub const GL_CONTEXT_PROFILE_CORE = @intToEnum(GLattr, c.SDL_GL_CONTEXT_PROFILE_CORE);
+pub const GL_CONTEXT_MAJOR_VERSION = @intToEnum(GLattr, c.SDL_GL_CONTEXT_MAJOR_VERSION);
+pub const GL_CONTEXT_MINOR_VERSION = @intToEnum(GLattr, c.SDL_GL_CONTEXT_MINOR_VERSION);
+pub const GL_STENCIL_SIZE = @intToEnum(GLattr, c.SDL_GL_STENCIL_SIZE);
+
+pub const GL_SetAttribute = c.SDL_GL_SetAttribute;
+pub const GL_CreateContext = c.SDL_GL_CreateContext;
+pub const GL_DeleteContext = c.SDL_GL_DeleteContext;
+pub const GL_SwapWindow = c.SDL_GL_SwapWindow;
