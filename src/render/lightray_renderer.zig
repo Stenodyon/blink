@@ -181,26 +181,29 @@ pub fn queue_ray(
     state: *const State,
     ray: *const LightRay,
 ) !void {
-    const pixel_pos = ray.origin.mul(GRID_SIZE).addi(Vec2i.new(
+    const half_grid = Vec2i.new(
         GRID_SIZE / 2,
         GRID_SIZE / 2,
-    ));
-    const angle = ray.direction.to_rad();
+    );
+    const world_pos = ray.origin.mul(GRID_SIZE).addi(half_grid);
+    const viewport_pos = world_pos.sub(state.viewpos);
     const length = blk: {
         if (ray.length) |grid_length|
             break :blk @intCast(i32, grid_length) * GRID_SIZE;
         switch (ray.direction) {
-            .UP => break :blk pixel_pos.y + state.viewpos.y,
-            .DOWN => break :blk display.window_height - pixel_pos.y + state.viewpos.y,
-            .LEFT => break :blk pixel_pos.x + state.viewpos.x,
-            .RIGHT => break :blk display.window_width - pixel_pos.x + state.viewpos.x,
+            .UP => break :blk viewport_pos.y,
+            .DOWN => break :blk state.viewport.y - viewport_pos.y,
+            .LEFT => break :blk viewport_pos.x,
+            .RIGHT => break :blk state.viewport.x - viewport_pos.x,
         }
     };
+    //const length = @intToFloat(f32, base_length) * state.get_zoom_factor();
+    const angle = ray.direction.to_rad();
 
     const queued = BufferData{
         .pos = pVec2f{
-            .x = @intToFloat(f32, pixel_pos.x),
-            .y = @intToFloat(f32, pixel_pos.y),
+            .x = @intToFloat(f32, world_pos.x),
+            .y = @intToFloat(f32, world_pos.y),
         },
         .length = @intToFloat(f32, length),
         .rotation = angle,

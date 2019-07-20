@@ -182,6 +182,6 @@ pub fn screen2grid(state: *const State, point: Vec2i) Vec2i {
     return point.mulf(state.get_zoom_factor()).addi(state.viewpos).divi(GRID_SIZE);
 }
 
-pub fn grid2screen(point: Vec2i) Vec2i {
-    return point.mul(GRID_SIZE);
+pub fn grid2screen(state: *const State, point: Vec2i) Vec2i {
+    return point.mul(GRID_SIZE).subi(state.viewpos).divfi(state.get_zoom_factor());
 }
