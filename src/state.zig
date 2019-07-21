@@ -384,17 +384,17 @@ pub const State = struct {
 
     pub fn on_wheel_down(self: *State, amount: u32) void {
         if (sdl.GetModState() & sdl.KMOD_LCTRL != 0) {
-            self.entity_wheel_down(amount);
-        } else {
             self.zoom_out();
+        } else {
+            self.entity_wheel_down(amount);
         }
     }
 
     pub fn on_wheel_up(self: *State, amount: u32) void {
         if (sdl.GetModState() & sdl.KMOD_LCTRL != 0) {
-            self.entity_wheel_up(amount);
-        } else {
             self.zoom_in();
+        } else {
+            self.entity_wheel_up(amount);
         }
     }
 
