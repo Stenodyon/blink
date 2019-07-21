@@ -98,12 +98,15 @@ const fragment_shader_src =
     c\\
     c\\in vec2 _texture_uv;
     c\\
+    c\\uniform float transparency;
     c\\uniform sampler2D atlas;
     c\\
     c\\out vec4 outColor;
     c\\
     c\\void main() {
-    c\\    outColor = texture(atlas, _texture_uv);
+    c\\    vec4 color = texture(atlas, _texture_uv);
+    c\\    color.a *= 1.0 - transparency;
+    c\\    outColor = color;
     c\\}
 ;
 
@@ -248,7 +251,7 @@ pub fn collect(state: *const State) !void {
     }
 }
 
-pub fn draw() !void {
+pub fn draw(transparency: f32) !void {
     const entity_data = queued_entities.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
@@ -261,6 +264,8 @@ pub fn draw() !void {
     c.glBindVertexArray(vao);
     shader.set_active();
     display.set_proj_matrix_uniform(&shader);
+    const trans_uniform_loc = shader.uniform_location(c"transparency");
+    c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }

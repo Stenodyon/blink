@@ -105,8 +105,8 @@ pub fn render(state: *const State) !void {
 
     grid_renderer.render(state);
     try lightray_renderer.render(state);
-    try render_grid_sel(state);
     try render_entities(state);
+    try render_grid_sel(state);
 }
 
 fn render_grid_sel(state: *const State) !void {
@@ -114,6 +114,7 @@ fn render_grid_sel(state: *const State) !void {
     _ = sdl.GetMouseState(&pos.x, &pos.y);
     const grid_pos = screen2grid(state, pos);
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
+    try entity_renderer.draw(0.5);
 
     //const current_cell_area = Rect{
     //    .pos = grid_pos,
@@ -125,7 +126,7 @@ fn render_grid_sel(state: *const State) !void {
 
 fn render_entities(state: *const State) !void {
     try entity_renderer.collect(state);
-    try entity_renderer.draw();
+    try entity_renderer.draw(0.0);
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
@@ -183,10 +184,14 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub fn screen2grid(state: *const State, point: Vec2i) Vec2i {
-    return point.mulf(state.get_zoom_factor()).addi(state.viewpos).divi(GRID_SIZE);
+pub inline fn screen2world(state: *const State, point: Vec2i) Vec2i {
+    return point.mulf(state.get_zoom_factor()).addi(state.viewpos);
 }
 
-pub fn grid2screen(state: *const State, point: Vec2i) Vec2i {
+pub inline fn screen2grid(state: *const State, point: Vec2i) Vec2i {
+    return screen2world(state, point).divi(GRID_SIZE);
+}
+
+pub inline fn grid2screen(state: *const State, point: Vec2i) Vec2i {
     return point.mul(GRID_SIZE).subi(state.viewpos).divfi(state.get_zoom_factor());
 }
