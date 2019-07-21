@@ -1,11 +1,11 @@
 [X] Save/Load
 [X] Zoom in and out
+[X] Flip switches
 [ ] Selection
     [ ] Move
     [ ] Clone
     [ ] Delete
 [ ] Lamps
-[ ] Flip switches
 [ ] Two-sided mirrors
 [ ] Pause & Step
 [ ] Change UPS at runtime
