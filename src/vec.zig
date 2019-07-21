@@ -144,6 +144,12 @@ fn Vec2(comptime ValType: type) type {
             );
         }
 
+        pub fn length_sq(self: Self) f32 {
+            const x = @intToFloat(f32, self.x);
+            const y = @intToFloat(f32, self.y);
+            return x * x + y * y;
+        }
+
         pub fn distanceInt(self: Self, other: Vec2i) u32 {
             const distance = abs: {
                 if (self.x == other.x) {

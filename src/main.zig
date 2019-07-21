@@ -143,7 +143,8 @@ pub fn main() !void {
                 },
                 sdl.MOUSEBUTTONUP => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
-                    input.on_mouse_button_up(mouse_event.button);
+                    const mouse_pos = Vec2i.new(mouse_event.x, mouse_event.y);
+                    try input.on_mouse_button_up(&state, mouse_event.button, mouse_pos);
                 },
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
