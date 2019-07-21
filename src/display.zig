@@ -106,7 +106,7 @@ pub fn render(state: *const State) !void {
     grid_renderer.render(state);
     try lightray_renderer.render(state);
     try render_grid_sel(state);
-    try entity_renderer.render(state);
+    try render_entities(state);
 }
 
 fn render_grid_sel(state: *const State) !void {
@@ -121,6 +121,11 @@ fn render_grid_sel(state: *const State) !void {
     //};
     //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
     //_ = sdl.RenderDrawRect(renderer, current_cell_area);
+}
+
+fn render_entities(state: *const State) !void {
+    try entity_renderer.collect(state);
+    try entity_renderer.draw();
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {

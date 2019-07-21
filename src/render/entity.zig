@@ -232,7 +232,7 @@ pub fn queue_entity_float(
     try queued_entities.append(queued);
 }
 
-pub fn render(state: *const State) !void {
+pub fn collect(state: *const State) !void {
     const min_pos = state.viewpos.div(GRID_SIZE);
     const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
     const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
@@ -246,7 +246,9 @@ pub fn render(state: *const State) !void {
             try queue_entity(state, grid_pos, &entry.value);
         }
     }
+}
 
+pub fn draw() !void {
     const entity_data = queued_entities.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
