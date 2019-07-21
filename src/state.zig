@@ -94,6 +94,7 @@ pub const State = struct {
                     .Switch = Switch{
                         .direction = .UP,
                         .is_on = false,
+                        .is_flipped = false,
                     },
                 },
             },
@@ -444,6 +445,7 @@ pub const State = struct {
                 .Switch => |*eswitch| {
                     try outstream.writeByte(@enumToInt(eswitch.direction));
                     try outstream.writeByte(@boolToInt(eswitch.is_on));
+                    try outstream.writeByte(@boolToInt(eswitch.is_flipped));
                 },
             }
         }
@@ -523,10 +525,12 @@ pub const State = struct {
                 .Switch => blk: {
                     const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
                     const is_on = (try instream.readByte()) > 0;
+                    const is_flipped = (try instream.readByte()) > 0;
                     break :blk Entity{
                         .Switch = Switch{
                             .direction = direction,
                             .is_on = is_on,
+                            .is_flipped = is_flipped,
                         },
                     };
                 },
@@ -656,6 +660,13 @@ test "save/load" {
                                 "Expected is_on {} but loaded {}\n",
                                 eswitch.is_on,
                                 loaded_switch.is_on,
+                            );
+                        }
+                        if (eswitch.is_flipped != loaded_switch.is_flipped) {
+                            std.debug.panic(
+                                "Expected is_flipped {} but loaded {}\n",
+                                eswitch.is_flipped,
+                                loaded_switch.is_flipped,
                             );
                         }
                     },

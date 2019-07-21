@@ -97,6 +97,7 @@ pub const Delayer = struct {
 pub const Switch = struct {
     direction: Direction,
     is_on: bool,
+    is_flipped: bool,
 };
 
 pub const Entity = union(enum) {
@@ -169,7 +170,13 @@ pub const Entity = union(enum) {
             .Splitter,
             .Delayer,
             => return false,
-            .Switch => |*eswitch| return eswitch.direction.cclockwise() == direction,
+            .Switch => |*eswitch| {
+                if (eswitch.is_flipped) {
+                    return eswitch.direction.clockwise() == direction;
+                } else {
+                    return eswitch.direction.cclockwise() == direction;
+                }
+            },
         }
     }
 
@@ -230,6 +237,18 @@ pub const Entity = union(enum) {
             .Laser => return true,
             .Delayer => |*delayer| return delayer.is_on,
             .Switch => |*eswitch| return eswitch.is_on,
+        }
+    }
+
+    pub fn flip(self: *Entity) void {
+        switch (self.*) {
+            .Block,
+            .Laser,
+            .Mirror,
+            .Splitter,
+            .Delayer,
+            => {},
+            .Switch => |*eswitch| eswitch.is_flipped = !eswitch.is_flipped,
         }
     }
 };
