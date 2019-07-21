@@ -170,7 +170,13 @@ pub const Entity = union(enum) {
             .Splitter,
             .Delayer,
             => return false,
-            .Switch => |*eswitch| return eswitch.direction.cclockwise() == direction,
+            .Switch => |*eswitch| {
+                if (eswitch.is_flipped) {
+                    return eswitch.direction.clockwise() == direction;
+                } else {
+                    return eswitch.direction.cclockwise() == direction;
+                }
+            },
         }
     }
 
