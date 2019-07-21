@@ -10,8 +10,8 @@ const lazy = @import("lazy/index.zig");
 
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;
-const entity_renderer = @import("render/entity_renderer.zig");
-const lightray_renderer = @import("render/lightray_renderer.zig");
+const entity_renderer = @import("render/entity.zig");
+const lightray_renderer = @import("render/lightray.zig");
 const grid_renderer = @import("render/grid.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
