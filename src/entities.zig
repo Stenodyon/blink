@@ -233,4 +233,16 @@ pub const Entity = union(enum) {
             .Switch => |*eswitch| return eswitch.is_on,
         }
     }
+
+    pub fn flip(self: *Entity) void {
+        switch (self.*) {
+            .Block,
+            .Laser,
+            .Mirror,
+            .Splitter,
+            .Delayer,
+            => {},
+            .Switch => |*eswitch| eswitch.is_flipped = !eswitch.is_flipped,
+        }
+    }
 };
