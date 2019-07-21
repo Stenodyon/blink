@@ -46,6 +46,7 @@ The makefile calls the zig build system if you prefer GNU make.
 * Mouse wheel to zoom in/out.
 * Ctrl+mouse wheel or 1-9 numbers to select an item
 * Q and E to rotate the item
+* F to flip switches
 * F6 to save to "test.sav" (saving and loading is experimental)
 
 ## Available items
