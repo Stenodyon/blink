@@ -106,6 +106,9 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             state.entity_ghost_dir = state.entity_ghost_dir.clockwise();
             state.get_entity_ptr().set_direction(state.entity_ghost_dir);
         },
+        sdl.K_f => {
+            state.get_entity_ptr().flip();
+        },
         sdl.K_F6 => {
             try state.save("test.sav");
             std.debug.warn("saved to test.sav\n");
