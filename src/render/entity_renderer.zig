@@ -17,8 +17,6 @@ const pVec2f = @import("utils.zig").pVec2f;
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
-const SCREEN_WIDTH = display.SCREEN_WIDTH;
-const SCREEN_HEIGHT = display.SCREEN_HEIGHT;
 
 const vertex_shader_src =
     c\\#version 330 core
@@ -33,7 +31,7 @@ const vertex_shader_src =
     c\\} passthrough;
     c\\
     c\\void main() {
-    c\\    gl_Position = vec4(position.x, -position.y, 0.0, 1.0);
+    c\\    gl_Position = vec4(position.xy, 0.0, 1.0);
     c\\    passthrough.uv = texture_uv;
     c\\    passthrough.rotation = rotation;
     c\\}
@@ -56,28 +54,29 @@ const geometry_shader_src =
     c\\
     c\\vec2 vertices[6] = vec2[](
     c\\    vec2(0.0, 0.0),
-    c\\    vec2(0.0, -1.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(0.0, 0.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(1.0, 0.0)
+    c\\    vec2(1.0, 0.0),
+    c\\    vec2(0.0, 1.0),
+    c\\    vec2(0.0, 1.0),
+    c\\    vec2(1.0, 0.0),
+    c\\    vec2(1.0, 1.0)
     c\\);
+    c\\
+    c\\const vec2 rotation_center = vec2(0.5, 0.5);
     c\\
     c\\vec2 rotate(vec2 displacement) {
     c\\    float angle = passthrough[0].rotation;
-    c\\    vec2 centered = displacement - vec2(0.5, -0.5);
+    c\\    vec2 centered = displacement - rotation_center;
     c\\    centered = vec2(
     c\\        centered.x * cos(angle) - centered.y * sin(angle),
     c\\        centered.x * sin(angle) + centered.y * cos(angle));
-    c\\    return centered + vec2(0.5, -0.5);
+    c\\    return centered + rotation_center;
     c\\}
     c\\
     c\\void add_point(vec2 displacement) {
     c\\    vec2 rotated = rotate(displacement);
     c\\    vec4 point = gl_in[0].gl_Position + 64.0 * vec4(rotated, 0.0, 0.0);
-    c\\    point = projection * point;
-    c\\    gl_Position = point + vec4(-1.0, 1.0, 0.0, 0.0);
-    c\\    _texture_uv = passthrough[0].uv + vec2(displacement.x, -displacement.y) / 8.0;
+    c\\    gl_Position = projection * point;
+    c\\    _texture_uv = passthrough[0].uv + displacement / 8.0;
     c\\    EmitVertex();
     c\\}
     c\\
@@ -205,7 +204,7 @@ pub fn queue_entity(
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    const pixel_pos = grid_pos.mul(GRID_SIZE).subi(state.viewpos);
+    const pixel_pos = grid_pos.mul(GRID_SIZE);
     const texture_pos = get_entity_texture(entity);
     const angle = entity.get_direction().to_rad();
 
@@ -226,8 +225,8 @@ pub fn queue_entity(
 
 pub fn render(state: *const State) !void {
     const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(SCREEN_WIDTH, GRID_SIZE) + 1;
-    const view_height = @divFloor(SCREEN_HEIGHT, GRID_SIZE) + 1;
+    const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
+    const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {

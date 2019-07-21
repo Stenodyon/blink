@@ -59,8 +59,8 @@ pub const Direction = enum {
         switch (self) {
             .UP => return 0.,
             .DOWN => return M_PI,
-            .LEFT => return M_PI / 2.,
-            .RIGHT => return 3. * M_PI / 2.,
+            .RIGHT => return M_PI / 2.,
+            .LEFT => return 3. * M_PI / 2.,
         }
     }
 };
@@ -132,11 +132,6 @@ pub const Entity = union(enum) {
             },
 
             .Splitter => |direction| {
-                std.debug.warn(
-                    "dir {}, hitdir {}\n",
-                    direction.to_string(),
-                    hitdir.to_string(),
-                );
                 if (hitdir == direction or
                     hitdir == direction.opposite())
                 {
@@ -147,7 +142,6 @@ pub const Entity = union(enum) {
                     hitdir == direction.clockwise())
                 {
                     const index = @intCast(usize, @enumToInt(hitdir.cclockwise()));
-                    std.debug.warn("index is {}\n", index);
                     return splitter_directions[index .. index + 2];
                 }
                 return [_]Direction{};

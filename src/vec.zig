@@ -61,6 +61,19 @@ fn Vec2(comptime ValType: type) type {
             return self.*;
         }
 
+        pub fn mulf(self: Self, scalar: f32) Self {
+            return Self.new(
+                @floatToInt(i32, @intToFloat(f32, self.x) * scalar),
+                @floatToInt(i32, @intToFloat(f32, self.y) * scalar),
+            );
+        }
+
+        pub fn mulfi(self: *Self, scalar: f32) Self {
+            self.x = @floatToInt(i32, @intToFloat(f32, self.x) * scalar);
+            self.y = @floatToInt(i32, @intToFloat(f32, self.y) * scalar);
+            return self.*;
+        }
+
         pub fn div(self: Self, scalar: i32) Self {
             return Self.new(
                 @divFloor(self.x, scalar),
@@ -68,10 +81,23 @@ fn Vec2(comptime ValType: type) type {
             );
         }
 
-        pub fn divi(self: Self, scalar: i32) Self {
+        pub fn divi(self: *Self, scalar: i32) Self {
             self.x = @divFloor(self.x, scalar);
             self.y = @divFloor(self.y, scalar);
-            return self;
+            return self.*;
+        }
+
+        pub fn divf(self: Self, scalar: f32) Self {
+            return Self.new(
+                @floatToInt(i32, @intToFloat(f32, self.x) / scalar),
+                @floatToInt(i32, @intToFloat(f32, self.y) / scalar),
+            );
+        }
+
+        pub fn divfi(self: *Self, scalar: f32) Self {
+            self.x = @floatToInt(i32, @intToFloat(f32, self.x) / scalar);
+            self.y = @floatToInt(i32, @intToFloat(f32, self.y) / scalar);
+            return self.*;
         }
 
         pub fn mod(self: Self, scalar: i32) Self {

@@ -25,67 +25,24 @@ const LightRay = @import("lightray.zig").LightRay;
 
 pub var renderer: sdl.Renderer = undefined;
 
-pub const SCREEN_WIDTH = 1280;
-pub const SCREEN_HEIGHT = 720;
-
 pub const GRID_SIZE = 64;
 
 pub const GRID_CENTER = Vec2i.new(GRID_SIZE / 2, GRID_SIZE / 2);
 
-pub const GUI_Element = struct {
-    draw: fn (self: *GUI_Element, renderer: sdl.Renderer) void,
-    resize: fn (self: *GUI_Element) void,
-    screen_area: Rect,
-
-    hovered: bool,
-
-    pub fn compute_hovered(self: *GUI_Element, mouse_x: i32, mouse_y: i32) void {
-        self.hovered = self.screen_area.contains(Vec2i{ .x = mouse_x, .y = mouse_y });
-    }
-};
-
-pub const GUI_Button = struct {
-    base: GUI_Element,
-
-    pub fn new() GUI_Button {
-        return GUI_Button{
-            .base = GUI_Element{
-                .draw = GUI_Button.draw,
-                .resize = GUI_Button.resize,
-                .screen_area = Rect{
-                    .pos = Vec2i.new(10, 20),
-                    .size = Vec2i.new(100, 50),
-                },
-                .hovered = false,
-            },
-        };
-    }
-
-    fn draw(base: *GUI_Element, renderer: sdl.Renderer) void {
-        var self = @fieldParentPtr(GUI_Button, "base", base);
-
-        _ = sdl.SetRenderDrawColor(renderer, 0x7F, 0x7F, 0x7F, 0xFF);
-        _ = sdl.RenderFillRect(renderer, base.screen_area);
-    }
-
-    fn resize(base: *GUI_Element) void {
-        var self = @fieldParentPtr(GUI_Button, "base", base);
-    }
-};
-
-pub var g_gui: *GUI_Element = undefined;
-
-pub const tmp = Rect.new(Vec2i.new(10, 20), Vec2i.new(100, 50));
+pub var window_width: i32 = 1280;
+pub var window_height: i32 = 720;
 
 const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
 var projection_matrix: [16]f32 = undefined;
 
-fn otho_matrix(width: f32, height: f32, dest: *[16]f32) void {
+fn otho_matrix(viewpos: Vec2i, size: Vec2i, dest: *[16]f32) void {
     for (dest[0..]) |*index| index.* = 0;
-    dest[0] = 2 / width;
-    dest[5] = 2 / height;
+    dest[0] = 2 / @intToFloat(f32, size.x);
+    dest[3] = @intToFloat(f32, -viewpos.x) * dest[0] - 1;
+    dest[5] = -2. / @intToFloat(f32, size.y);
+    dest[7] = @intToFloat(f32, -viewpos.y) * dest[5] + 1;
     dest[15] = 1;
 }
 
@@ -94,7 +51,15 @@ pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
     c.glUniformMatrix4fv(
         projection_location,
         1,
-        c.GL_FALSE,
+        c.GL_TRUE,
+        &projection_matrix,
+    );
+}
+
+pub fn update_projection_matrix(viewpos: Vec2i, viewport: Vec2i) void {
+    otho_matrix(
+        viewpos,
+        viewport,
         &projection_matrix,
     );
 }
@@ -107,11 +72,7 @@ pub fn init(allocator: *Allocator) void {
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
 
-    otho_matrix(
-        @intToFloat(f32, SCREEN_WIDTH),
-        @intToFloat(f32, SCREEN_HEIGHT),
-        &projection_matrix,
-    );
+    update_projection_matrix(Vec2i.new(0, 0), Vec2i.new(1, 1));
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -138,6 +99,8 @@ pub fn render(state: *const State) !void {
     c.glClearColor(0, 0, 0, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
+    update_projection_matrix(state.viewpos, state.viewport);
+
     ////g_gui.draw(g_gui, renderer);
 
     grid_renderer.render(state);
@@ -149,8 +112,7 @@ pub fn render(state: *const State) !void {
 fn render_grid_sel(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
-    const world_pos = pos.add(state.viewpos);
-    const grid_pos = world_pos.div(GRID_SIZE);
+    const grid_pos = screen2grid(state, pos);
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
 
     //const current_cell_area = Rect{
@@ -159,6 +121,26 @@ fn render_grid_sel(state: *const State) !void {
     //};
     //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
     //_ = sdl.RenderDrawRect(renderer, current_cell_area);
+}
+
+pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
+    switch (event.event) {
+        //sdl.WINDOWEVENT_MAXIMIZED,
+        //sdl.WINDOWEVENT_RESIZED,
+        sdl.WINDOWEVENT_SIZE_CHANGED => {
+            const new_size = Vec2i.new(event.data1, event.data2);
+            const current_size = Vec2i.new(window_width, window_height);
+            const difference = new_size.sub(current_size);
+            window_width = new_size.x;
+            window_height = new_size.y;
+
+            c.glViewport(0, 0, window_width, window_height);
+
+            _ = state.viewpos.subi(difference.div(2));
+            _ = state.viewport.addi(difference);
+        },
+        else => {},
+    }
 }
 
 pub fn debug_write(
@@ -196,10 +178,10 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub fn screen2grid(point: Vec2i) Vec2i {
-    return point.div(GRID_SIZE);
+pub fn screen2grid(state: *const State, point: Vec2i) Vec2i {
+    return point.mulf(state.get_zoom_factor()).addi(state.viewpos).divi(GRID_SIZE);
 }
 
-pub fn grid2screen(point: Vec2i) Vec2i {
-    return point.mul(GRID_SIZE);
+pub fn grid2screen(state: *const State, point: Vec2i) Vec2i {
+    return point.mul(GRID_SIZE).subi(state.viewpos).divfi(state.get_zoom_factor());
 }

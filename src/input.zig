@@ -9,10 +9,27 @@ const utils = @import("utils.zig");
 var lmb_down = false;
 var rmb_down = false;
 var last_grid_action: ?Vec2i = null;
+var drag_initial_mouse: ?Vec2i = null;
+var drag_initial_viewpos: ?Vec2i = null;
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
     if (lmb_down and ((sdl.GetModState() & sdl.KMOD_LSHIFT) != 0)) {
-        state.viewpos = state.viewpos.sub(Vec2i.new(x_rel, y_rel));
+        const mouse = Vec2i.new(x, y);
+        const initial_mouse = drag_initial_mouse orelse mouse: {
+            drag_initial_mouse = mouse;
+            break :mouse mouse;
+        };
+        const initial_viewpos = drag_initial_viewpos orelse viewpos: {
+            drag_initial_viewpos = state.viewpos;
+            break :viewpos state.viewpos;
+        };
+        const movement = mouse.sub(initial_mouse).mulf(state.get_zoom_factor());
+        state.viewpos = initial_viewpos.sub(movement);
+    } else {
+        if (drag_initial_mouse != null or drag_initial_viewpos != null) {
+            drag_initial_mouse = null;
+            drag_initial_viewpos = null;
+        }
     }
 }
 
@@ -41,8 +58,7 @@ pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void {
 }
 
 pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2i) !void {
-    const adjusted_mouse_pos = Vec2i.new(mouse_pos.x, mouse_pos.y).addi(state.viewpos);
-    const grid_pos = display.screen2grid(adjusted_mouse_pos);
+    const grid_pos = display.screen2grid(state, mouse_pos);
 
     if (last_grid_action == null or !last_grid_action.?.equals(grid_pos)) {
         last_grid_action = grid_pos;
