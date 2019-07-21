@@ -44,7 +44,7 @@ The makefile calls the zig build system if you prefer GNU make.
 * Left click to place an item, right click to remove
 * Hold left click to pan around
 * Mouse wheel to zoom in/out.
-* 1-9 numbers to select an item
+* Ctrl+mouse wheel or 1-9 numbers to select an item
 * Q and E to rotate the item
 * F6 to save to "test.sav" (saving and loading is experimental)
 

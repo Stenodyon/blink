@@ -357,17 +357,43 @@ pub const State = struct {
         _ = self.viewpos.subi(difference);
     }
 
-    pub fn on_wheel_down(self: *State, amount: u32) void {
+    fn zoom_in(self: *State) void {
+        if (self.zoom_index > 0) {
+            self.zoom_index -= 1;
+            self.set_zoom_factor(self.zoom_index);
+        }
+    }
+
+    fn zoom_out(self: *State) void {
         if (self.zoom_index + 1 < State.zoom_factors.len) {
             self.zoom_index += 1;
             self.set_zoom_factor(self.zoom_index);
         }
     }
 
+    fn entity_wheel_down(self: *State, amount: u32) void {
+        const slot = @mod(self.current_entity + amount, @intCast(u32, self.entity_wheel.len));
+        self.set_selected_slot(slot);
+    }
+
+    fn entity_wheel_up(self: *State, amount: u32) void {
+        const slot = @mod((self.current_entity + self.entity_wheel.len) -% amount, @intCast(u32, self.entity_wheel.len));
+        self.set_selected_slot(slot);
+    }
+
+    pub fn on_wheel_down(self: *State, amount: u32) void {
+        if (sdl.GetModState() & sdl.KMOD_LCTRL != 0) {
+            self.entity_wheel_down(amount);
+        } else {
+            self.zoom_out();
+        }
+    }
+
     pub fn on_wheel_up(self: *State, amount: u32) void {
-        if (self.zoom_index > 0) {
-            self.zoom_index -= 1;
-            self.set_zoom_factor(self.zoom_index);
+        if (sdl.GetModState() & sdl.KMOD_LCTRL != 0) {
+            self.entity_wheel_up(amount);
+        } else {
+            self.zoom_in();
         }
     }
 
