@@ -201,12 +201,19 @@ fn get_entity_texture(entity: *const Entity) Vec2f {
     }
 }
 
-pub fn queue_entity(
+pub inline fn queue_entity(
     state: *const State,
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    const pixel_pos = grid_pos.mul(GRID_SIZE);
+    try queue_entity_float(state, grid_pos.mul(GRID_SIZE), entity);
+}
+
+pub fn queue_entity_float(
+    state: *const State,
+    pixel_pos: Vec2i,
+    entity: *const Entity,
+) !void {
     const texture_pos = get_entity_texture(entity);
     const angle = entity.get_direction().to_rad();
 
