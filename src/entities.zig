@@ -97,6 +97,7 @@ pub const Delayer = struct {
 pub const Switch = struct {
     direction: Direction,
     is_on: bool,
+    is_flipped: bool,
 };
 
 pub const Entity = union(enum) {
