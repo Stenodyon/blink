@@ -188,7 +188,9 @@ fn get_entity_texture(entity: *const Entity) Vec2f {
         .Laser => |direction| return atlas.get_offset(2),
         .Mirror => |direction| return atlas.get_offset(3),
         .Splitter => |direction| return atlas.get_offset(4),
-        .Switch => |*eswitch| return atlas.get_offset(5),
+        .Switch => |*eswitch| {
+            return atlas.get_offset_flip(5, eswitch.is_flipped, false);
+        },
         .Delayer => |*delayer| {
             if (delayer.is_on) {
                 return atlas.get_offset(7);
