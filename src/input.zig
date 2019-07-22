@@ -81,11 +81,6 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                         const pos = Vec2i.new(x, y);
                         if (!state.entities.contains(pos))
                             continue;
-                        std.debug.warn(
-                            "Selecting {}, {}\n",
-                            pos.x,
-                            pos.y,
-                        );
                         _ = try state.selected_entities.put(pos, {});
                     }
                 }
