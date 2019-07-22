@@ -98,12 +98,15 @@ const fragment_shader_src =
     c\\
     c\\in vec2 _texture_uv;
     c\\
+    c\\uniform float transparency;
     c\\uniform sampler2D atlas;
     c\\
     c\\out vec4 outColor;
     c\\
     c\\void main() {
-    c\\    outColor = texture(atlas, _texture_uv);
+    c\\    vec4 color = texture(atlas, _texture_uv);
+    c\\    color.a *= 1.0 - transparency;
+    c\\    outColor = color;
     c\\}
 ;
 
@@ -201,12 +204,19 @@ fn get_entity_texture(entity: *const Entity) Vec2f {
     }
 }
 
-pub fn queue_entity(
+pub inline fn queue_entity(
     state: *const State,
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    const pixel_pos = grid_pos.mul(GRID_SIZE);
+    try queue_entity_float(state, grid_pos.mul(GRID_SIZE), entity);
+}
+
+pub fn queue_entity_float(
+    state: *const State,
+    pixel_pos: Vec2i,
+    entity: *const Entity,
+) !void {
     const texture_pos = get_entity_texture(entity);
     const angle = entity.get_direction().to_rad();
 
@@ -225,7 +235,7 @@ pub fn queue_entity(
     try queued_entities.append(queued);
 }
 
-pub fn render(state: *const State) !void {
+pub fn collect(state: *const State) !void {
     const min_pos = state.viewpos.div(GRID_SIZE);
     const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
     const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
@@ -239,7 +249,9 @@ pub fn render(state: *const State) !void {
             try queue_entity(state, grid_pos, &entry.value);
         }
     }
+}
 
+pub fn draw(transparency: f32) !void {
     const entity_data = queued_entities.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
@@ -251,7 +263,10 @@ pub fn render(state: *const State) !void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
+    atlas.bind();
     display.set_proj_matrix_uniform(&shader);
+    const trans_uniform_loc = shader.uniform_location(c"transparency");
+    c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }

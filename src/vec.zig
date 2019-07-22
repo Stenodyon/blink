@@ -113,10 +113,10 @@ fn Vec2(comptime ValType: type) type {
             return self.*;
         }
 
-        pub fn negi(a: Self) Self {
+        pub fn negi(a: *Self) Self {
             a.x = -a.x;
             a.y = -a.y;
-            return a;
+            return a.*;
         }
 
         pub fn equals(a: Self, b: Self) bool {
@@ -216,6 +216,17 @@ pub const Rect = struct {
         } else if (point.y >= (self.pos.y + self.size.y)) {
             self.size.y = point.y - self.pos.y + 1;
         }
+    }
+
+    pub fn canonic(self: *const Rect) Rect {
+        const new_x = std.math.min(self.pos.x, self.pos.x + self.size.x);
+        const new_y = std.math.min(self.pos.y, self.pos.y + self.size.y);
+        const new_w = abs(self.size.x) catch unreachable;
+        const new_h = abs(self.size.y) catch unreachable;
+        return Rect{
+            .pos = Vec2i.new(new_x, new_y),
+            .size = Vec2i.new(new_w, new_h),
+        };
     }
 
     pub fn to_sdl(self: Rect) sdl.Rect {

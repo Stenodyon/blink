@@ -60,6 +60,9 @@ pub const State = struct {
     current_entity: usize,
     entity_ghost_dir: Direction,
     entity_wheel: [6]Entity,
+    selection_rect: ?Rect,
+    selected_entities: EntitySet,
+    copy_buffer: EntityMap,
 
     lighttrees: TreeMap,
     input_map: IOMap,
@@ -98,6 +101,9 @@ pub const State = struct {
                     },
                 },
             },
+            .selection_rect = null,
+            .selected_entities = EntitySet.init(allocator),
+            .copy_buffer = EntityMap.init(allocator),
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
@@ -111,6 +117,7 @@ pub const State = struct {
     pub fn destroy(self: *State) void {
         self.entities.deinit();
         self.lighttrees.deinit();
+        self.selected_entities.deinit();
 
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
@@ -233,6 +240,7 @@ pub const State = struct {
         input_set.value.deinit();
         const side_input_set = self.side_input_map.remove(pos) orelse unreachable;
         side_input_set.value.deinit();
+        _ = self.selected_entities.remove(pos);
 
         switch (entry.value) {
             .Block,
@@ -401,6 +409,46 @@ pub const State = struct {
     pub fn set_selected_slot(self: *State, slot: usize) void {
         self.current_entity = slot;
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
+    }
+
+    pub fn delete_selection(self: *State) !void {
+        var to_remove = ArrayList(Vec2i).init(std.heap.c_allocator);
+        defer to_remove.deinit();
+
+        var entity_iterator = self.selected_entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            try to_remove.append(entry.key);
+        }
+
+        for (to_remove.toSlice()) |pos| {
+            _ = try self.remove_entity(pos);
+        }
+        self.selected_entities.clear();
+    }
+
+    pub fn copy_selection(self: *State, center: Vec2i) !void {
+        var entity_iterator = self.selected_entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            const entity = self.entities.get(entry.key).?.value;
+            const new_pos = entry.key.sub(center);
+            _ = try self.copy_buffer.put(new_pos, entity);
+        }
+    }
+
+    pub fn place_copy(self: *State, pos: Vec2i) !void {
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            _ = try self.add_entity(entry.value, entry.key.add(pos));
+        }
+    }
+
+    pub fn place_selected_copy(self: *State, pos: Vec2i) !void {
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            const new_pos = entry.key.add(pos);
+            _ = try self.add_entity(entry.value, new_pos);
+            _ = try self.selected_entities.put(new_pos, {});
+        }
     }
 
     pub fn update(self: *State) !void {

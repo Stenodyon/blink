@@ -10,9 +10,11 @@ const lazy = @import("lazy/index.zig");
 
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;
-const entity_renderer = @import("render/entity_renderer.zig");
-const lightray_renderer = @import("render/lightray_renderer.zig");
+const entity_renderer = @import("render/entity.zig");
+const lightray_renderer = @import("render/lightray.zig");
 const grid_renderer = @import("render/grid.zig");
+const polygon_renderer = @import("render/polygon.zig");
+const ui_renderer = @import("render/ui.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -68,9 +70,11 @@ pub fn init(allocator: *Allocator) void {
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
+    polygon_renderer.init();
     grid_renderer.init();
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
+    ui_renderer.init(allocator);
 
     update_projection_matrix(Vec2i.new(0, 0), Vec2i.new(1, 1));
 
@@ -88,9 +92,11 @@ pub fn init(allocator: *Allocator) void {
 }
 
 pub fn deinit() void {
+    ui_renderer.deinit();
     lightray_renderer.deinit();
     entity_renderer.deinit();
     grid_renderer.deinit();
+    polygon_renderer.deinit();
 
     //ttf.CloseFont(font);
 }
@@ -105,22 +111,89 @@ pub fn render(state: *const State) !void {
 
     grid_renderer.render(state);
     try lightray_renderer.render(state);
-    try render_grid_sel(state);
-    try entity_renderer.render(state);
+    try render_entities(state);
+    try render_ui(state);
 }
 
-fn render_grid_sel(state: *const State) !void {
+fn render_ghost(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
     const grid_pos = screen2grid(state, pos);
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
+    try entity_renderer.draw(0.5);
 
-    //const current_cell_area = Rect{
-    //    .pos = grid_pos,
-    //    .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
+    //const world_pos = grid_pos.mul(GRID_SIZE).to_float(f32);
+    //const grid_square = [_]f32{
+    //    world_pos.x,             world_pos.y,
+    //    world_pos.x + GRID_SIZE, world_pos.y,
+    //    world_pos.x + GRID_SIZE, world_pos.y + GRID_SIZE,
+    //    world_pos.x,             world_pos.y + GRID_SIZE,
     //};
-    //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
-    //_ = sdl.RenderDrawRect(renderer, current_cell_area);
+    //polygon_renderer.draw_polygon(grid_square[0..]);
+}
+
+fn render_entities(state: *const State) !void {
+    try entity_renderer.collect(state);
+    try entity_renderer.draw(0.0);
+}
+
+fn render_ui(state: *const State) !void {
+    if (state.selection_rect) |sel_rect| {
+        {
+            const pos = sel_rect.pos.to_float(f32);
+            const size = sel_rect.size.to_float(f32);
+            const polygon = [_]f32{
+                pos.x,          pos.y,
+                pos.x + size.x, pos.y,
+                pos.x + size.x, pos.y + size.y,
+                pos.x,          pos.y + size.y,
+            };
+            polygon_renderer.draw_polygon(polygon[0..]);
+        }
+
+        const can_sel_rect = sel_rect.canonic();
+        const min_pos = can_sel_rect.pos.div(GRID_SIZE);
+        const max_pos = can_sel_rect.pos.add(
+            can_sel_rect.size,
+        ).divi(GRID_SIZE).addi(Vec2i.new(1, 1));
+        var y: i32 = min_pos.y;
+        while (y < max_pos.y) : (y += 1) {
+            var x: i32 = min_pos.x;
+            while (x < max_pos.x) : (x += 1) {
+                const pos = Vec2i.new(x, y);
+                if (!state.entities.contains(pos))
+                    continue;
+                try ui_renderer.queue_element(state, Rect{
+                    .pos = pos.mul(GRID_SIZE),
+                    .size = Vec2i.new(GRID_SIZE, GRID_SIZE),
+                }, 1);
+            }
+        }
+    }
+
+    // Selected entities
+    var entity_iterator = state.selected_entities.iterator();
+    while (entity_iterator.next()) |entry| {
+        const pos = entry.key.mul(GRID_SIZE);
+        try ui_renderer.queue_element(state, Rect{
+            .pos = pos,
+            .size = Vec2i.new(64, 64),
+        }, 1);
+    }
+    try ui_renderer.draw(0.0);
+
+    // Copy buffer
+    var copy_buffer_iter = state.copy_buffer.iterator();
+    while (copy_buffer_iter.next()) |entry| {
+        var mouse_pos: Vec2i = undefined;
+        _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
+        const pos = entry.key.add(screen2grid(state, mouse_pos)).muli(GRID_SIZE);
+        try entity_renderer.queue_entity_float(state, pos, &entry.value);
+    }
+    try entity_renderer.draw(0.5);
+
+    if (state.copy_buffer.count() == 0)
+        try render_ghost(state);
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
@@ -178,10 +251,14 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub fn screen2grid(state: *const State, point: Vec2i) Vec2i {
-    return point.mulf(state.get_zoom_factor()).addi(state.viewpos).divi(GRID_SIZE);
+pub inline fn screen2world(state: *const State, point: Vec2i) Vec2i {
+    return point.mulf(state.get_zoom_factor()).addi(state.viewpos);
 }
 
-pub fn grid2screen(state: *const State, point: Vec2i) Vec2i {
+pub inline fn screen2grid(state: *const State, point: Vec2i) Vec2i {
+    return screen2world(state, point).divi(GRID_SIZE);
+}
+
+pub inline fn grid2screen(state: *const State, point: Vec2i) Vec2i {
     return point.mul(GRID_SIZE).subi(state.viewpos).divfi(state.get_zoom_factor());
 }
