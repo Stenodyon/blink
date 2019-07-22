@@ -54,12 +54,18 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
     switch (button) {
         sdl.BUTTON_LEFT => {
             if (placing) {
-                const grid_pos = display.screen2grid(state, mouse_pos);
-                if (try state.place_entity(grid_pos)) {
-                    std.debug.warn("Placed!\n");
+                if (state.copy_buffer.count() > 0) {
+                    const pos = display.screen2grid(state, mouse_pos);
+                    try state.place_copy(pos);
                 } else {
-                    std.debug.warn("Blocked!\n");
+                    const grid_pos = display.screen2grid(state, mouse_pos);
+                    if (try state.place_entity(grid_pos)) {
+                        std.debug.warn("Placed!\n");
+                    } else {
+                        std.debug.warn("Blocked!\n");
+                    }
                 }
+                placing = false;
             }
             if (selecting) {
                 const sel_rect = state.selection_rect orelse unreachable;
@@ -155,6 +161,7 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             }
         },
         sdl.K_d => {
+            state.copy_buffer.clear();
             if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
                 try state.copy_selection();
             }

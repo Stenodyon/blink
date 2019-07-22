@@ -240,6 +240,7 @@ pub const State = struct {
         input_set.value.deinit();
         const side_input_set = self.side_input_map.remove(pos) orelse unreachable;
         side_input_set.value.deinit();
+        _ = self.selected_entities.remove(pos);
 
         switch (entry.value) {
             .Block,
@@ -428,6 +429,13 @@ pub const State = struct {
             const new_pos = entry.key.sub(center);
             std.debug.warn("Copy buffer: {}, {}\n", new_pos.x, new_pos.y);
             _ = try self.copy_buffer.put(new_pos, entity);
+        }
+    }
+
+    pub fn place_copy(self: *State, pos: Vec2i) !void {
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            _ = try self.add_entity(entry.value, entry.key.add(pos));
         }
     }
 
