@@ -49,6 +49,7 @@ The makefile calls the zig build system if you prefer GNU make.
 * Q and E to rotate the item
 * F to flip switches
 * Ctrl+left click to select
+* Delete to delete selection
 * Escape to clear selection
 * F6 to save to "test.sav" (saving and loading is experimental)
 
