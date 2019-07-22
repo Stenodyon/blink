@@ -3,7 +3,7 @@ const std = @import("std");
 const sdl = @import("sdl.zig");
 const display = @import("display.zig");
 const State = @import("state.zig").State;
-const Vec2i = @import("vec.zig").Vec2i;
+usingnamespace @import("vec.zig");
 const utils = @import("utils.zig");
 
 var lmb_down = false;
@@ -14,20 +14,33 @@ var drag_initial_viewpos: ?Vec2i = null;
 var placing = false;
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
-    if (lmb_down and ((sdl.GetModState() & sdl.KMOD_LSHIFT) == 0)) {
+    if (lmb_down) {
         const mouse = Vec2i.new(x, y);
         const initial_mouse = drag_initial_mouse orelse mouse: {
             drag_initial_mouse = mouse;
             break :mouse mouse;
         };
-        const initial_viewpos = drag_initial_viewpos orelse viewpos: {
-            drag_initial_viewpos = state.viewpos;
-            break :viewpos state.viewpos;
-        };
-        var movement = mouse.sub(initial_mouse);
-        placing = movement.length_sq() < 2;
-        _ = movement.mulfi(state.get_zoom_factor());
-        state.viewpos = initial_viewpos.sub(movement);
+        if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+            const mouse_to_world = display.screen2world(state, mouse);
+            const selection_rect = state.selection_rect orelse sel: {
+                state.selection_rect = Rect{
+                    .pos = mouse_to_world,
+                    .size = Vec2i.new(0, 0),
+                };
+                break :sel state.selection_rect.?;
+            };
+            const movement = mouse_to_world.sub(selection_rect.pos);
+            state.selection_rect.?.size = movement;
+        } else if ((sdl.GetModState() & sdl.KMOD_LSHIFT) == 0) {
+            const initial_viewpos = drag_initial_viewpos orelse viewpos: {
+                drag_initial_viewpos = state.viewpos;
+                break :viewpos state.viewpos;
+            };
+            var movement = mouse.sub(initial_mouse);
+            placing = movement.length_sq() < 2;
+            _ = movement.mulfi(state.get_zoom_factor());
+            state.viewpos = initial_viewpos.sub(movement);
+        }
     } else {
         if (drag_initial_mouse != null or drag_initial_viewpos != null) {
             drag_initial_mouse = null;
@@ -47,6 +60,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                     std.debug.warn("Blocked!\n");
                 }
             }
+            state.selection_rect = null;
             lmb_down = false;
         },
         sdl.BUTTON_RIGHT => {
@@ -59,7 +73,8 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
 pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void {
     switch (button) {
         sdl.BUTTON_LEFT => {
-            placing = true;
+            if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0)
+                placing = true;
             lmb_down = true;
         },
         sdl.BUTTON_RIGHT => {

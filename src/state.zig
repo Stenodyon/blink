@@ -60,6 +60,8 @@ pub const State = struct {
     current_entity: usize,
     entity_ghost_dir: Direction,
     entity_wheel: [6]Entity,
+    selection_rect: ?Rect,
+    selected_entities: EntitySet,
 
     lighttrees: TreeMap,
     input_map: IOMap,
@@ -98,6 +100,8 @@ pub const State = struct {
                     },
                 },
             },
+            .selection_rect = null,
+            .selected_entities = EntitySet.init(allocator),
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
@@ -111,6 +115,7 @@ pub const State = struct {
     pub fn destroy(self: *State) void {
         self.entities.deinit();
         self.lighttrees.deinit();
+        self.selected_entities.deinit();
 
         var input_map_iter = self.input_map.iterator();
         while (input_map_iter.next()) |input_set| input_set.value.deinit();
