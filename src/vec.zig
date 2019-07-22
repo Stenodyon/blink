@@ -113,10 +113,10 @@ fn Vec2(comptime ValType: type) type {
             return self.*;
         }
 
-        pub fn negi(a: Self) Self {
+        pub fn negi(a: *Self) Self {
             a.x = -a.x;
             a.y = -a.y;
-            return a;
+            return a.*;
         }
 
         pub fn equals(a: Self, b: Self) bool {
