@@ -170,7 +170,7 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
         sdl.K_f => {
             state.get_entity_ptr().flip();
         },
-        sdl.K_DELETE => {
+        sdl.K_DELETE, sdl.K_BACKSPACE => {
             var entity_iterator = state.selected_entities.iterator();
             while (entity_iterator.next()) |entry| {
                 _ = try state.remove_entity(entry.key);
@@ -178,7 +178,11 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             state.selected_entities.clear();
         },
         sdl.K_ESCAPE => {
-            state.selected_entities.clear();
+            if (state.copy_buffer.count() > 0) {
+                state.copy_buffer.clear();
+            } else {
+                state.selected_entities.clear();
+            }
         },
         sdl.K_F6 => {
             try state.save("test.sav");

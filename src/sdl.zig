@@ -216,6 +216,7 @@ pub const K_z = c.SDLK_z;
 
 pub const K_SPACE = c.SDLK_SPACE;
 pub const K_DELETE = c.SDLK_DELETE;
+pub const K_BACKSPACE = c.SDLK_BACKSPACE;
 pub const K_ESCAPE = c.SDLK_ESCAPE;
 
 pub const K_F1 = c.SDLK_F1;
