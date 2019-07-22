@@ -112,11 +112,10 @@ pub fn render(state: *const State) !void {
     grid_renderer.render(state);
     try lightray_renderer.render(state);
     try render_entities(state);
-    try render_grid_sel(state);
     try render_ui(state);
 }
 
-fn render_grid_sel(state: *const State) !void {
+fn render_ghost(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
     const grid_pos = screen2grid(state, pos);
@@ -172,6 +171,7 @@ fn render_ui(state: *const State) !void {
         }
     }
 
+    // Selected entities
     var entity_iterator = state.selected_entities.iterator();
     while (entity_iterator.next()) |entry| {
         const pos = entry.key.mul(GRID_SIZE);
@@ -180,8 +180,24 @@ fn render_ui(state: *const State) !void {
             .size = Vec2i.new(64, 64),
         }, 1);
     }
-
     try ui_renderer.draw(0.0);
+
+    // Copy buffer
+    var copy_buffer_iter = state.copy_buffer.iterator();
+    while (copy_buffer_iter.next()) |entry| {
+        var mouse_pos: Vec2i = undefined;
+        _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
+        _ = mouse_pos.subi(Vec2i.new(
+            GRID_SIZE / 2,
+            GRID_SIZE / 2,
+        ));
+        const pos = entry.key.mul(GRID_SIZE).addi(screen2world(state, mouse_pos));
+        try entity_renderer.queue_entity_float(state, pos, &entry.value);
+    }
+    try entity_renderer.draw(0.5);
+
+    if (state.copy_buffer.count() == 0)
+        try render_ghost(state);
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {

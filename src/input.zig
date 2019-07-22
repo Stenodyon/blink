@@ -136,6 +136,7 @@ pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2i) !void {
 }
 
 pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
+    const modifiers = sdl.GetModState();
     switch (keysym.sym) {
         sdl.K_0,
         sdl.K_1,
@@ -151,6 +152,11 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             const index = @intCast(usize, utils.slot_value(keysym.sym));
             if (index < state.entity_wheel.len) {
                 state.set_selected_slot(index);
+            }
+        },
+        sdl.K_d => {
+            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
+                try state.copy_selection();
             }
         },
         sdl.K_q => {

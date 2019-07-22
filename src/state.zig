@@ -62,6 +62,7 @@ pub const State = struct {
     entity_wheel: [6]Entity,
     selection_rect: ?Rect,
     selected_entities: EntitySet,
+    copy_buffer: EntityMap,
 
     lighttrees: TreeMap,
     input_map: IOMap,
@@ -102,6 +103,7 @@ pub const State = struct {
             },
             .selection_rect = null,
             .selected_entities = EntitySet.init(allocator),
+            .copy_buffer = EntityMap.init(allocator),
 
             .lighttrees = TreeMap.init(allocator),
             .input_map = IOMap.init(allocator),
@@ -406,6 +408,27 @@ pub const State = struct {
     pub fn set_selected_slot(self: *State, slot: usize) void {
         self.current_entity = slot;
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
+    }
+
+    pub fn copy_selection(self: *State) !void {
+        var min = Vec2i.new(std.math.maxInt(i32), std.math.maxInt(i32));
+        var max = Vec2i.new(0, 0);
+        var entity_iterator = self.selected_entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            min.x = std.math.min(min.x, entry.key.x);
+            min.y = std.math.min(min.y, entry.key.y);
+            max.x = std.math.max(max.x, entry.key.x);
+            max.y = std.math.max(max.y, entry.key.y);
+        }
+        const center = min.add(max).divi(2);
+
+        entity_iterator = self.selected_entities.iterator();
+        while (entity_iterator.next()) |entry| {
+            const entity = self.entities.get(entry.key).?.value;
+            const new_pos = entry.key.sub(center);
+            std.debug.warn("Copy buffer: {}, {}\n", new_pos.x, new_pos.y);
+            _ = try self.copy_buffer.put(new_pos, entity);
+        }
     }
 
     pub fn update(self: *State) !void {
