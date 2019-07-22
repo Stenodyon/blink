@@ -140,15 +140,36 @@ fn render_entities(state: *const State) !void {
 
 fn render_ui(state: *const State) !void {
     if (state.selection_rect) |sel_rect| {
-        const pos = sel_rect.pos.to_float(f32);
-        const size = sel_rect.size.to_float(f32);
-        const polygon = [_]f32{
-            pos.x,          pos.y,
-            pos.x + size.x, pos.y,
-            pos.x + size.x, pos.y + size.y,
-            pos.x,          pos.y + size.y,
-        };
-        polygon_renderer.draw_polygon(polygon[0..]);
+        {
+            const pos = sel_rect.pos.to_float(f32);
+            const size = sel_rect.size.to_float(f32);
+            const polygon = [_]f32{
+                pos.x,          pos.y,
+                pos.x + size.x, pos.y,
+                pos.x + size.x, pos.y + size.y,
+                pos.x,          pos.y + size.y,
+            };
+            polygon_renderer.draw_polygon(polygon[0..]);
+        }
+
+        const can_sel_rect = sel_rect.canonic();
+        const min_pos = can_sel_rect.pos.div(GRID_SIZE);
+        const max_pos = can_sel_rect.pos.add(
+            can_sel_rect.size,
+        ).divi(GRID_SIZE).addi(Vec2i.new(1, 1));
+        var y: i32 = min_pos.y;
+        while (y < max_pos.y) : (y += 1) {
+            var x: i32 = min_pos.x;
+            while (x < max_pos.x) : (x += 1) {
+                const pos = Vec2i.new(x, y);
+                if (!state.entities.contains(pos))
+                    continue;
+                try ui_renderer.queue_element(state, Rect{
+                    .pos = pos.mul(GRID_SIZE),
+                    .size = Vec2i.new(GRID_SIZE, GRID_SIZE),
+                }, 1);
+            }
+        }
     }
 
     var entity_iterator = state.selected_entities.iterator();

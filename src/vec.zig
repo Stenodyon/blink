@@ -218,6 +218,17 @@ pub const Rect = struct {
         }
     }
 
+    pub fn canonic(self: *const Rect) Rect {
+        const new_x = std.math.min(self.pos.x, self.pos.x + self.size.x);
+        const new_y = std.math.min(self.pos.y, self.pos.y + self.size.y);
+        const new_w = abs(self.size.x) catch unreachable;
+        const new_h = abs(self.size.y) catch unreachable;
+        return Rect{
+            .pos = Vec2i.new(new_x, new_y),
+            .size = Vec2i.new(new_w, new_h),
+        };
+    }
+
     pub fn to_sdl(self: Rect) sdl.Rect {
         return sdl.Rect{
             .x = self.pos.x,
