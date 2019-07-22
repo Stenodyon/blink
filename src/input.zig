@@ -171,6 +171,9 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             }
             state.selected_entities.clear();
         },
+        sdl.K_ESCAPE => {
+            state.selected_entities.clear();
+        },
         sdl.K_F6 => {
             try state.save("test.sav");
             std.debug.warn("saved to test.sav\n");
