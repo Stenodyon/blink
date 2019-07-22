@@ -62,6 +62,10 @@ pub const TextureAtlas = struct {
         c.glDeleteTextures(1, &self.handle);
     }
 
+    pub fn bind(self: *TextureAtlas) void {
+        c.glBindTexture(c.GL_TEXTURE_2D, self.handle);
+    }
+
     pub inline fn get_offset(
         self: *TextureAtlas,
         texture_id: usize,

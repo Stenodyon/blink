@@ -263,6 +263,7 @@ pub fn draw(transparency: f32) !void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
+    atlas.bind();
     display.set_proj_matrix_uniform(&shader);
     const trans_uniform_loc = shader.uniform_location(c"transparency");
     c.glUniform1f(trans_uniform_loc, transparency);

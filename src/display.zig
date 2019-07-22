@@ -14,6 +14,7 @@ const entity_renderer = @import("render/entity.zig");
 const lightray_renderer = @import("render/lightray.zig");
 const grid_renderer = @import("render/grid.zig");
 const polygon_renderer = @import("render/polygon.zig");
+const ui_renderer = @import("render/ui.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -73,6 +74,7 @@ pub fn init(allocator: *Allocator) void {
     grid_renderer.init();
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
+    ui_renderer.init(allocator);
 
     update_projection_matrix(Vec2i.new(0, 0), Vec2i.new(1, 1));
 
@@ -90,6 +92,7 @@ pub fn init(allocator: *Allocator) void {
 }
 
 pub fn deinit() void {
+    ui_renderer.deinit();
     lightray_renderer.deinit();
     entity_renderer.deinit();
     grid_renderer.deinit();
@@ -110,7 +113,7 @@ pub fn render(state: *const State) !void {
     try lightray_renderer.render(state);
     try render_entities(state);
     try render_grid_sel(state);
-    render_ui(state);
+    try render_ui(state);
 }
 
 fn render_grid_sel(state: *const State) !void {
@@ -135,7 +138,7 @@ fn render_entities(state: *const State) !void {
     try entity_renderer.draw(0.0);
 }
 
-fn render_ui(state: *const State) void {
+fn render_ui(state: *const State) !void {
     if (state.selection_rect) |sel_rect| {
         const pos = sel_rect.pos.to_float(f32);
         const size = sel_rect.size.to_float(f32);
@@ -147,6 +150,17 @@ fn render_ui(state: *const State) void {
         };
         polygon_renderer.draw_polygon(polygon[0..]);
     }
+
+    var entity_iterator = state.selected_entities.iterator();
+    while (entity_iterator.next()) |entry| {
+        const pos = entry.key.muli(GRID_SIZE);
+        try ui_renderer.queue_element(state, Rect{
+            .pos = pos,
+            .size = Vec2i.new(64, 64),
+        }, 1);
+    }
+
+    try ui_renderer.draw(0.0);
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
