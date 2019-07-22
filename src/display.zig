@@ -187,11 +187,7 @@ fn render_ui(state: *const State) !void {
     while (copy_buffer_iter.next()) |entry| {
         var mouse_pos: Vec2i = undefined;
         _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-        _ = mouse_pos.subi(Vec2i.new(
-            GRID_SIZE / 2,
-            GRID_SIZE / 2,
-        ));
-        const pos = entry.key.mul(GRID_SIZE).addi(screen2world(state, mouse_pos));
+        const pos = entry.key.add(screen2grid(state, mouse_pos)).muli(GRID_SIZE);
         try entity_renderer.queue_entity_float(state, pos, &entry.value);
     }
     try entity_renderer.draw(0.5);
