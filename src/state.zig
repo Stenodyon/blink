@@ -411,23 +411,26 @@ pub const State = struct {
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
-    pub fn copy_selection(self: *State) !void {
-        var min = Vec2i.new(std.math.maxInt(i32), std.math.maxInt(i32));
-        var max = Vec2i.new(0, 0);
+    pub fn delete_selection(self: *State) !void {
+        var to_remove = ArrayList(Vec2i).init(std.heap.c_allocator);
+        defer to_remove.deinit();
+
         var entity_iterator = self.selected_entities.iterator();
         while (entity_iterator.next()) |entry| {
-            min.x = std.math.min(min.x, entry.key.x);
-            min.y = std.math.min(min.y, entry.key.y);
-            max.x = std.math.max(max.x, entry.key.x);
-            max.y = std.math.max(max.y, entry.key.y);
+            try to_remove.append(entry.key);
         }
-        const center = min.add(max).divi(2);
 
-        entity_iterator = self.selected_entities.iterator();
+        for (to_remove.toSlice()) |pos| {
+            _ = try self.remove_entity(pos);
+        }
+        self.selected_entities.clear();
+    }
+
+    pub fn copy_selection(self: *State, center: Vec2i) !void {
+        var entity_iterator = self.selected_entities.iterator();
         while (entity_iterator.next()) |entry| {
             const entity = self.entities.get(entry.key).?.value;
             const new_pos = entry.key.sub(center);
-            std.debug.warn("Copy buffer: {}, {}\n", new_pos.x, new_pos.y);
             _ = try self.copy_buffer.put(new_pos, entity);
         }
     }
@@ -436,6 +439,15 @@ pub const State = struct {
         var entity_iterator = self.copy_buffer.iterator();
         while (entity_iterator.next()) |entry| {
             _ = try self.add_entity(entry.value, entry.key.add(pos));
+        }
+    }
+
+    pub fn place_selected_copy(self: *State, pos: Vec2i) !void {
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            const new_pos = entry.key.add(pos);
+            _ = try self.add_entity(entry.value, new_pos);
+            _ = try self.selected_entities.put(new_pos, {});
         }
     }
 

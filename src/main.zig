@@ -133,7 +133,7 @@ pub fn main() !void {
             switch (event.type) {
                 sdl.MOUSEMOTION => {
                     const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
-                    input.on_mouse_motion(
+                    try input.on_mouse_motion(
                         &state,
                         mouse_event.x,
                         mouse_event.y,
