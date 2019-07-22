@@ -149,6 +149,7 @@ pub fn main() !void {
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
                     input.on_mouse_button_down(
+                        &state,
                         mouse_event.button,
                         mouse_event.x,
                         mouse_event.y,

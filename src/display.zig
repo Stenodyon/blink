@@ -174,7 +174,7 @@ fn render_ui(state: *const State) !void {
 
     var entity_iterator = state.selected_entities.iterator();
     while (entity_iterator.next()) |entry| {
-        const pos = entry.key.muli(GRID_SIZE);
+        const pos = entry.key.mul(GRID_SIZE);
         try ui_renderer.queue_element(state, Rect{
             .pos = pos,
             .size = Vec2i.new(64, 64),

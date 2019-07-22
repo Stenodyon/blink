@@ -61,9 +61,26 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                     std.debug.warn("Blocked!\n");
                 }
             }
-            state.selection_rect = null;
+            if (selecting) {
+                const sel_rect = state.selection_rect orelse unreachable;
+                const min_pos = sel_rect.pos.div(display.GRID_SIZE);
+                const max_pos = sel_rect.pos.add(
+                    sel_rect.size,
+                ).divi(display.GRID_SIZE).addi(Vec2i.new(1, 1));
+                var y: i32 = min_pos.y;
+                while (y < max_pos.y) : (y += 1) {
+                    var x: i32 = min_pos.x;
+                    while (x < max_pos.x) : (x += 1) {
+                        const pos = Vec2i.new(x, y);
+                        if (!state.entities.contains(pos))
+                            continue;
+                        _ = try state.selected_entities.put(pos, {});
+                    }
+                }
+                selecting = false;
+                state.selection_rect = null;
+            }
             lmb_down = false;
-            selecting = false;
         },
         sdl.BUTTON_RIGHT => {
             rmb_down = false;
@@ -72,11 +89,17 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
     }
 }
 
-pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void {
+pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
     switch (button) {
         sdl.BUTTON_LEFT => {
             if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+                const mouse_pos = Vec2i.new(x, y);
+                state.selected_entities.clear();
                 selecting = true;
+                state.selection_rect = Rect{
+                    .pos = display.screen2world(state, mouse_pos),
+                    .size = Vec2i.new(0, 0),
+                };
             } else if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0) {
                 placing = true;
             }
