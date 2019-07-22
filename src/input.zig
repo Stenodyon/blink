@@ -164,6 +164,13 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
         sdl.K_f => {
             state.get_entity_ptr().flip();
         },
+        sdl.K_DELETE => {
+            var entity_iterator = state.selected_entities.iterator();
+            while (entity_iterator.next()) |entry| {
+                _ = try state.remove_entity(entry.key);
+            }
+            state.selected_entities.clear();
+        },
         sdl.K_F6 => {
             try state.save("test.sav");
             std.debug.warn("saved to test.sav\n");
