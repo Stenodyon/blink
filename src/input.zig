@@ -1,4 +1,5 @@
 const std = @import("std");
+const ArrayList = std.ArrayList;
 
 const sdl = @import("sdl.zig");
 const display = @import("display.zig");
@@ -68,7 +69,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                 placing = false;
             }
             if (selecting) {
-                const sel_rect = state.selection_rect orelse unreachable;
+                const sel_rect = (state.selection_rect orelse unreachable).canonic();
                 const min_pos = sel_rect.pos.div(display.GRID_SIZE);
                 const max_pos = sel_rect.pos.add(
                     sel_rect.size,
@@ -80,6 +81,11 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                         const pos = Vec2i.new(x, y);
                         if (!state.entities.contains(pos))
                             continue;
+                        std.debug.warn(
+                            "Selecting {}, {}\n",
+                            pos.x,
+                            pos.y,
+                        );
                         _ = try state.selected_entities.put(pos, {});
                     }
                 }
@@ -99,9 +105,9 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
     switch (button) {
         sdl.BUTTON_LEFT => {
             if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+                selecting = true;
                 const mouse_pos = Vec2i.new(x, y);
                 state.selected_entities.clear();
-                selecting = true;
                 state.selection_rect = Rect{
                     .pos = display.screen2world(state, mouse_pos),
                     .size = Vec2i.new(0, 0),
@@ -178,9 +184,16 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             state.get_entity_ptr().flip();
         },
         sdl.K_DELETE, sdl.K_BACKSPACE => {
+            var to_remove = ArrayList(Vec2i).init(std.heap.c_allocator);
+            defer to_remove.deinit();
+
             var entity_iterator = state.selected_entities.iterator();
             while (entity_iterator.next()) |entry| {
-                _ = try state.remove_entity(entry.key);
+                try to_remove.append(entry.key);
+            }
+
+            for (to_remove.toSlice()) |pos| {
+                _ = try state.remove_entity(pos);
             }
             state.selected_entities.clear();
         },
