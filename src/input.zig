@@ -67,7 +67,12 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
             if (placing) {
                 if (state.copy_buffer.count() > 0) {
                     const pos = display.screen2grid(state, mouse_pos);
-                    try state.place_copy(pos);
+                    if (moving and try state.place_selected_copy(pos)) {
+                        state.copy_buffer.clear();
+                        moving = false;
+                    } else {
+                        _ = try state.place_copy(pos);
+                    }
                 } else {
                     const grid_pos = display.screen2grid(state, mouse_pos);
                     if (try state.place_entity(grid_pos)) {
@@ -80,8 +85,10 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
             } else if (moving) {
                 if (state.copy_buffer.count() > 0) {
                     const pos = display.screen2grid(state, mouse_pos);
-                    try state.place_selected_copy(pos);
-                    state.copy_buffer.clear();
+                    if (try state.place_selected_copy(pos)) {
+                        state.copy_buffer.clear();
+                        moving = false;
+                    }
                 }
             } else if (selecting) {
                 const sel_rect = (state.selection_rect orelse unreachable).canonic();
@@ -103,7 +110,6 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                 state.selection_rect = null;
             }
             lmb_down = false;
-            moving = false;
         },
         sdl.BUTTON_RIGHT => {
             rmb_down = false;

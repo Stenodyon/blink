@@ -435,20 +435,36 @@ pub const State = struct {
         }
     }
 
-    pub fn place_copy(self: *State, pos: Vec2i) !void {
+    pub fn check_copy_collision(self: *State, pos: Vec2i) bool {
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            const entity_pos = entry.key.add(pos);
+            if (self.entities.contains(entity_pos))
+                return false;
+        }
+        return true;
+    }
+
+    pub fn place_copy(self: *State, pos: Vec2i) !bool {
+        if (!self.check_copy_collision(pos))
+            return false;
         var entity_iterator = self.copy_buffer.iterator();
         while (entity_iterator.next()) |entry| {
             _ = try self.add_entity(entry.value, entry.key.add(pos));
         }
+        return true;
     }
 
-    pub fn place_selected_copy(self: *State, pos: Vec2i) !void {
+    pub fn place_selected_copy(self: *State, pos: Vec2i) !bool {
+        if (!self.check_copy_collision(pos))
+            return false;
         var entity_iterator = self.copy_buffer.iterator();
         while (entity_iterator.next()) |entry| {
             const new_pos = entry.key.add(pos);
             _ = try self.add_entity(entry.value, new_pos);
             _ = try self.selected_entities.put(new_pos, {});
         }
+        return true;
     }
 
     pub fn update(self: *State) !void {
