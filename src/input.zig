@@ -11,6 +11,7 @@ var rmb_down = false;
 var last_grid_action: ?Vec2i = null;
 var drag_initial_mouse: ?Vec2i = null;
 var drag_initial_viewpos: ?Vec2i = null;
+var selecting = false;
 var placing = false;
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
@@ -20,7 +21,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) vo
             drag_initial_mouse = mouse;
             break :mouse mouse;
         };
-        if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+        if (selecting) {
             const mouse_to_world = display.screen2world(state, mouse);
             const selection_rect = state.selection_rect orelse sel: {
                 state.selection_rect = Rect{
@@ -62,6 +63,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
             }
             state.selection_rect = null;
             lmb_down = false;
+            selecting = false;
         },
         sdl.BUTTON_RIGHT => {
             rmb_down = false;
@@ -73,8 +75,11 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
 pub fn on_mouse_button_down(button: u8, x: i32, y: i32) void {
     switch (button) {
         sdl.BUTTON_LEFT => {
-            if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0)
+            if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+                selecting = true;
+            } else if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0) {
                 placing = true;
+            }
             lmb_down = true;
         },
         sdl.BUTTON_RIGHT => {
