@@ -13,6 +13,7 @@ const ShaderProgram = @import("render/shader.zig").ShaderProgram;
 const entity_renderer = @import("render/entity.zig");
 const lightray_renderer = @import("render/lightray.zig");
 const grid_renderer = @import("render/grid.zig");
+const polygon_renderer = @import("render/polygon.zig");
 const State = @import("state.zig").State;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
@@ -68,6 +69,7 @@ pub fn init(allocator: *Allocator) void {
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
+    polygon_renderer.init();
     grid_renderer.init();
     entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
@@ -91,6 +93,7 @@ pub fn deinit() void {
     lightray_renderer.deinit();
     entity_renderer.deinit();
     grid_renderer.deinit();
+    polygon_renderer.deinit();
 
     //ttf.CloseFont(font);
 }
@@ -107,6 +110,7 @@ pub fn render(state: *const State) !void {
     try lightray_renderer.render(state);
     try render_entities(state);
     try render_grid_sel(state);
+    render_ui(state);
 }
 
 fn render_grid_sel(state: *const State) !void {
@@ -116,17 +120,33 @@ fn render_grid_sel(state: *const State) !void {
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
     try entity_renderer.draw(0.5);
 
-    //const current_cell_area = Rect{
-    //    .pos = grid_pos,
-    //    .size = Vec2i.new(GRID_SIZE + 1, GRID_SIZE + 1),
+    //const world_pos = grid_pos.mul(GRID_SIZE).to_float(f32);
+    //const grid_square = [_]f32{
+    //    world_pos.x,             world_pos.y,
+    //    world_pos.x + GRID_SIZE, world_pos.y,
+    //    world_pos.x + GRID_SIZE, world_pos.y + GRID_SIZE,
+    //    world_pos.x,             world_pos.y + GRID_SIZE,
     //};
-    //_ = sdl.SetRenderDrawColor(renderer, 0xD8, 0xD9, 0xDE, 0xFF);
-    //_ = sdl.RenderDrawRect(renderer, current_cell_area);
+    //polygon_renderer.draw_polygon(grid_square[0..]);
 }
 
 fn render_entities(state: *const State) !void {
     try entity_renderer.collect(state);
     try entity_renderer.draw(0.0);
+}
+
+fn render_ui(state: *const State) void {
+    if (state.selection_rect) |sel_rect| {
+        const pos = sel_rect.pos.to_float(f32);
+        const size = sel_rect.size.to_float(f32);
+        const polygon = [_]f32{
+            pos.x,          pos.y,
+            pos.x + size.x, pos.y,
+            pos.x + size.x, pos.y + size.y,
+            pos.x,          pos.y + size.y,
+        };
+        polygon_renderer.draw_polygon(polygon[0..]);
+    }
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
