@@ -1,10 +1,10 @@
 [X] Save/Load
 [X] Zoom in and out
 [X] Flip switches
-[ ] Selection
-    [ ] Move
-    [ ] Clone
-    [ ] Delete
+[X] Selection
+    [X] Move
+    [X] Clone
+    [X] Delete
 [ ] Lamps
 [ ] Two-sided mirrors
 [ ] Pause & Step
