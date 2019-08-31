@@ -411,6 +411,25 @@ pub const State = struct {
         self.get_entity_ptr().set_direction(self.entity_ghost_dir);
     }
 
+    pub fn capture_selection_rect(self: *State) !void {
+        const sel_rect = self.selection_rect.?.canonic();
+        const min_pos = sel_rect.pos.div(display.GRID_SIZE);
+        const max_pos = sel_rect.pos.add(
+            sel_rect.size,
+        ).divi(display.GRID_SIZE).addi(Vec2i.new(1, 1));
+        var y: i32 = min_pos.y;
+        while (y < max_pos.y) : (y += 1) {
+            var x: i32 = min_pos.x;
+            while (x < max_pos.x) : (x += 1) {
+                const pos = Vec2i.new(x, y);
+                if (!self.entities.contains(pos))
+                    continue;
+                _ = try self.selected_entities.put(pos, {});
+            }
+        }
+        self.selection_rect = null;
+    }
+
     pub fn delete_selection(self: *State) !void {
         var to_remove = ArrayList(Vec2i).init(std.heap.c_allocator);
         defer to_remove.deinit();

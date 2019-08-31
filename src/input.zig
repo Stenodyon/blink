@@ -91,23 +91,8 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                     }
                 }
             } else if (selecting) {
-                const sel_rect = (state.selection_rect orelse unreachable).canonic();
-                const min_pos = sel_rect.pos.div(display.GRID_SIZE);
-                const max_pos = sel_rect.pos.add(
-                    sel_rect.size,
-                ).divi(display.GRID_SIZE).addi(Vec2i.new(1, 1));
-                var y: i32 = min_pos.y;
-                while (y < max_pos.y) : (y += 1) {
-                    var x: i32 = min_pos.x;
-                    while (x < max_pos.x) : (x += 1) {
-                        const pos = Vec2i.new(x, y);
-                        if (!state.entities.contains(pos))
-                            continue;
-                        _ = try state.selected_entities.put(pos, {});
-                    }
-                }
+                try state.capture_selection_rect();
                 selecting = false;
-                state.selection_rect = null;
             }
             lmb_down = false;
         },
