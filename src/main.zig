@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
-const ResourceManager = @import("res.zig");
+//const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
 const c = @import("c.zig");
@@ -91,9 +91,9 @@ pub fn main() !void {
         deinit_ttf();
     }
 
-    var resource_allocator = ArenaAllocator.init(std.debug.global_allocator);
-    ResourceManager.init(&resource_allocator.allocator);
-    defer ResourceManager.deinit();
+    //var resource_allocator = ArenaAllocator.init(std.debug.global_allocator);
+    //ResourceManager.init(&resource_allocator.allocator);
+    //defer ResourceManager.deinit();
 
     display.init(std.heap.c_allocator);
     defer display.deinit();
