@@ -7,6 +7,12 @@ and [OCTOPTICOM](https://store.steampowered.com/app/943190/OCTOPTICOM/).
 
 ![](blink.gif)
 
+## :warning: Important Note
+
+I am considering closing the sources until well after the 1.0 release, and
+releasing the game for a small price on Steam. As such, **I will not accept
+any contributions for the time being**.
+
 ## Cloning
 
 This project uses the [Lazy-Zig](https://github.com/BraedonWooding/Lazy-Zig)
