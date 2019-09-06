@@ -5,6 +5,8 @@ stream](https://www.twitch.tv/stenodyon). It is a puzzle game involving lasers
 and mirrors, and is heavily inspired by [Logic World](https://logicworld.net/)
 and [OCTOPTICOM](https://store.steampowered.com/app/943190/OCTOPTICOM/).
 
+![](blink.gif)
+
 ## Cloning
 
 This project uses the [Lazy-Zig](https://github.com/BraedonWooding/Lazy-Zig)
