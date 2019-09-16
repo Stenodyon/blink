@@ -572,7 +572,7 @@ pub const State = struct {
         while (entity_it.next()) |i| {
             const pos_x = try instream.readIntLittle(i32);
             const pos_y = try instream.readIntLittle(i32);
-            std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
+            //std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
             const pos = Vec2i.new(pos_x, pos_y);
 
             const entity_type = @intToEnum(@TagType(Entity), @intCast(u3, try instream.readByte())); // ughh
