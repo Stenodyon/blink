@@ -50,6 +50,11 @@ pub const Simulation = struct {
         while (update_iterator.next()) |update_entry| {
             var entity_entry = state.entities.get(update_entry.key) orelse unreachable;
             switch (entity_entry.value) {
+                .Block,
+                .Laser,
+                .Mirror,
+                .Splitter,
+                => unreachable,
                 .Delayer => |*delayer| {
                     const new_value = self.get_input(state, update_entry.key);
                     if (new_value != delayer.is_on) {
@@ -81,7 +86,6 @@ pub const Simulation = struct {
                         );
                     }
                 },
-                else => unreachable,
             }
         }
 
@@ -131,10 +135,14 @@ pub const Simulation = struct {
         while (update_iterator.next()) |update_entry| {
             var entity_entry = state.entities.get(update_entry.key) orelse unreachable;
             switch (entity_entry.value) {
+                .Block,
+                .Laser,
+                .Mirror,
+                .Splitter,
+                => unreachable,
                 .Delayer => |*delayer| delayer.is_on = update_entry.value,
                 .Switch => |*eswitch| eswitch.is_on = update_entry.value,
                 .Lamp => |*is_on| is_on.* = update_entry.value,
-                else => unreachable,
             }
         }
     }
