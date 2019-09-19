@@ -72,6 +72,15 @@ pub const Simulation = struct {
                         try self.propagate_update(state, entity_entry.key);
                     }
                 },
+                .Lamp => |is_on| {
+                    const new_value = self.get_input(state, update_entry.key);
+                    if (new_value != is_on) {
+                        _ = try self.update_map.put(
+                            entity_entry.key,
+                            new_value,
+                        );
+                    }
+                },
                 else => unreachable,
             }
         }
@@ -124,6 +133,7 @@ pub const Simulation = struct {
             switch (entity_entry.value) {
                 .Delayer => |*delayer| delayer.is_on = update_entry.value,
                 .Switch => |*eswitch| eswitch.is_on = update_entry.value,
+                .Lamp => |*is_on| is_on.* = update_entry.value,
                 else => unreachable,
             }
         }
