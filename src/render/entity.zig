@@ -201,6 +201,13 @@ fn get_entity_texture(entity: *const Entity) Vec2f {
                 return atlas.get_offset(6);
             }
         },
+        .Lamp => |is_on| {
+            if (is_on) {
+                return atlas.get_offset(9);
+            } else {
+                return atlas.get_offset(8);
+            }
+        },
     }
 }
 

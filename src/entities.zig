@@ -107,6 +107,7 @@ pub const Entity = union(enum) {
     Splitter: Direction,
     Delayer: Delayer,
     Switch: Switch,
+    Lamp: bool,
 
     // Returns the direction of propagated rays
     pub fn propagated_rays(
@@ -118,6 +119,7 @@ pub const Entity = union(enum) {
             .Laser,
             .Delayer,
             .Switch,
+            .Lamp,
             => return [_]Direction{},
 
             .Mirror => |direction| {
@@ -159,6 +161,7 @@ pub const Entity = union(enum) {
             => return false,
             .Delayer => |*delayer| return delayer.direction == direction,
             .Switch => |*eswitch| return eswitch.direction == direction,
+            .Lamp => return true,
         }
     }
 
@@ -169,6 +172,7 @@ pub const Entity = union(enum) {
             .Mirror,
             .Splitter,
             .Delayer,
+            .Lamp,
             => return false,
             .Switch => |*eswitch| {
                 if (eswitch.is_flipped) {
@@ -206,7 +210,9 @@ pub const Entity = union(enum) {
 
     pub fn set_direction(self: *Entity, new_direction: Direction) void {
         switch (self.*) {
-            .Block => {},
+            .Block,
+            .Lamp,
+            => {},
             .Laser => |*direction| direction.* = new_direction,
             .Mirror => |*direction| direction.* = new_direction,
             .Splitter => |*direction| direction.* = new_direction,
@@ -221,7 +227,9 @@ pub const Entity = union(enum) {
 
     pub fn get_direction(self: *const Entity) Direction {
         switch (self.*) {
-            .Block => return .UP,
+            .Block,
+            .Lamp,
+            => return .UP,
             .Laser, .Mirror, .Splitter => |direction| return direction,
             .Delayer => |*delayer| return delayer.direction,
             .Switch => |*eswitch| return eswitch.direction,
@@ -233,6 +241,7 @@ pub const Entity = union(enum) {
             .Block,
             .Mirror,
             .Splitter,
+            .Lamp,
             => return false,
             .Laser => return true,
             .Delayer => |*delayer| return delayer.is_on,
@@ -247,6 +256,7 @@ pub const Entity = union(enum) {
             .Mirror,
             .Splitter,
             .Delayer,
+            .Lamp,
             => {},
             .Switch => |*eswitch| eswitch.is_flipped = !eswitch.is_flipped,
         }

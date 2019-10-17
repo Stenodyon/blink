@@ -59,7 +59,7 @@ pub const State = struct {
     entities: EntityMap,
     current_entity: usize,
     entity_ghost_dir: Direction,
-    entity_wheel: [6]Entity,
+    entity_wheel: [7]Entity,
     selection_rect: ?Rect,
     selected_entities: EntitySet,
     copy_buffer: EntityMap,
@@ -100,6 +100,7 @@ pub const State = struct {
                         .is_flipped = false,
                     },
                 },
+                Entity{ .Lamp = false },
             },
             .selection_rect = null,
             .selected_entities = EntitySet.init(allocator),
@@ -229,6 +230,9 @@ pub const State = struct {
                 try self.add_tree(pos, eswitch.direction);
                 try self.sim.queue_update(pos);
             },
+            .Lamp => {
+                try self.sim.queue_update(pos);
+            },
         }
         try self.update_trees(pos);
         return true;
@@ -246,6 +250,7 @@ pub const State = struct {
             .Block,
             .Mirror,
             .Splitter,
+            .Lamp,
             => {},
             .Laser => |direction| try self.remove_tree(pos, direction),
             .Delayer => |*delayer| try self.remove_tree(pos, delayer.direction),
@@ -530,6 +535,9 @@ pub const State = struct {
                     try outstream.writeByte(@boolToInt(eswitch.is_on));
                     try outstream.writeByte(@boolToInt(eswitch.is_flipped));
                 },
+                .Lamp => |is_on| {
+                    try outstream.writeByte(@boolToInt(is_on));
+                },
             }
         }
     }
@@ -572,7 +580,7 @@ pub const State = struct {
         while (entity_it.next()) |i| {
             const pos_x = try instream.readIntLittle(i32);
             const pos_y = try instream.readIntLittle(i32);
-            std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
+            //std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
             const pos = Vec2i.new(pos_x, pos_y);
 
             const entity_type = @intToEnum(@TagType(Entity), @intCast(u3, try instream.readByte())); // ughh
@@ -616,6 +624,10 @@ pub const State = struct {
                             .is_flipped = is_flipped,
                         },
                     };
+                },
+                .Lamp => blk: {
+                    const is_on = (try instream.readByte()) > 0;
+                    break :blk Entity{ .Lamp = is_on };
                 },
             };
             _ = try state.add_entity(entity, pos);
