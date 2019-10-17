@@ -24,9 +24,7 @@ git submodule update --init --recursive
 ## Building
 Dependencies:
 
-* `zig 0.4.0+a7fd14096` (this is not the 0.4.0 release, this was the master
-  branch last time I worked on this project, I'll stop using zig master branch
-  at 0.5.0)
+* `zig 0.5.0
 * `SDL2`
 * `SDL2_ttf`
 * `libGL`
