@@ -6,7 +6,7 @@ const Buffer = std.Buffer;
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
 const c = @import("c.zig");
-const lazy = @import("lazy/index.zig");
+const lazy = @import("lazy");
 
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;

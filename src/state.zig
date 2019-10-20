@@ -5,7 +5,7 @@ const TailQueue = std.TailQueue;
 const BufferedAtomicFile = std.io.BufferedAtomicFile;
 const SliceInStream = std.io.SliceInStream;
 
-const lazy = @import("lazy/index.zig");
+const lazy = @import("lazy");
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
 const vec = @import("vec.zig");

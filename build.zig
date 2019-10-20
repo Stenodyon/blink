@@ -8,6 +8,7 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(mode);
 
     exe.addIncludeDir("/usr/include");
+    exe.addPackagePath("lazy", "lib/lazy/index.zig");
 
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("SDL2");
