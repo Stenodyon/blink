@@ -7,7 +7,6 @@ pub fn build(b: *Builder) void {
     var exe = b.addExecutable("blink", "src/main.zig");
     exe.setBuildMode(mode);
 
-    exe.addIncludeDir("/usr/include");
     exe.addPackagePath("lazy", "lib/lazy/index.zig");
 
     exe.linkSystemLibrary("c");
