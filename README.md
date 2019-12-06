@@ -24,7 +24,7 @@ git submodule update --init --recursive
 ## Building
 Dependencies:
 
-* `zig 0.5.0
+* `zig 0.5.0`
 * `SDL2`
 * `SDL2_ttf`
 * `libGL`
