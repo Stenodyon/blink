@@ -5,7 +5,7 @@ const TailQueue = std.TailQueue;
 const BufferedAtomicFile = std.io.BufferedAtomicFile;
 const SliceInStream = std.io.SliceInStream;
 
-const lazy = @import("lazy");
+//const lazy = @import("lazy");
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
 const vec = @import("vec.zig");
@@ -576,8 +576,8 @@ pub const State = struct {
         // Entities
         const entity_count = try instream.readIntLittle(usize);
 
-        var entity_it = lazy.range(usize(0), entity_count, 1);
-        while (entity_it.next()) |i| {
+        var i: usize = 0;
+        while (i < entity_count) : (i += 1) {
             const pos_x = try instream.readIntLittle(i32);
             const pos_y = try instream.readIntLittle(i32);
             //std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);

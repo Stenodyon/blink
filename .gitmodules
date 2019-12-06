@@ -1,4 +1,0 @@
-[submodule "lib/lazy"]
-	path = lib/lazy
-	url = https://github.com/BraedonWooding/Lazy-Zig.git
-	branch = 0.5.0
