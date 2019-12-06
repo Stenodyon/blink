@@ -6,7 +6,7 @@ pub fn build(b: *Builder) void {
     const windows = b.option(
         bool,
         "windows",
-        "create windows build",
+        "cross-compile to Microsoft Windows",
     ) orelse false;
 
     var exe = b.addExecutable("blink", "src/main.zig");
@@ -18,14 +18,21 @@ pub fn build(b: *Builder) void {
             builtin.Abi.gnu,
         );
         exe.addIncludeDir("/usr/include");
-    }
 
+        exe.addObjectFile("lib/libSDL2main.a");
+        exe.addObjectFile("lib/libSDL2.dll.a");
+        exe.addObjectFile("lib/libSDL2_ttf.dll.a");
+        exe.addObjectFile("lib/libSOIL.a");
+        exe.addObjectFile("lib/libopengl32.a");
+        exe.addObjectFile("lib/epoxy.lib");
+    } else {
+        exe.linkSystemLibrary("SDL2");
+        exe.linkSystemLibrary("SDL2_ttf");
+        exe.linkSystemLibrary("GL");
+        exe.linkSystemLibrary("epoxy");
+        exe.linkSystemLibrary("SOIL");
+    }
     exe.linkSystemLibrary("c");
-    exe.linkSystemLibrary("SDL2");
-    exe.linkSystemLibrary("SDL2_ttf");
-    exe.linkSystemLibrary("GL");
-    exe.linkSystemLibrary("epoxy");
-    exe.linkSystemLibrary("SOIL");
 
     exe.setOutputDir(".");
 
