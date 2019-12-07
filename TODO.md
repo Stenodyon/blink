@@ -1,3 +1,6 @@
+## TODO list
+
+[ ] Allow toggling lasers
 [X] Save/Load
 [X] Zoom in and out
 [X] Flip switches
@@ -5,7 +8,7 @@
     [X] Move
     [X] Clone
     [X] Delete
-[ ] Lamps
+[X] Lamps
 [ ] Two-sided mirrors
 [ ] Pause & Step
 [ ] Change UPS at runtime
