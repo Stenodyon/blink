@@ -1,4 +1,5 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 
 const c = @import("../c.zig");
 const Direction = @import("../entities.zig").Direction;
@@ -12,6 +13,7 @@ pub const TextureAtlas = struct {
     cell_height: usize,
 
     pub fn load(
+        allocator: *Allocator,
         path: [*c]const u8,
         cell_width: usize,
         cell_height: usize,
@@ -32,17 +34,21 @@ pub const TextureAtlas = struct {
         c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MIN_FILTER, c.GL_NEAREST);
         c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
-        const image_data = c.SOIL_load_image(
+        var image_data: [*c]u8 = undefined;
+        const err = c.lodepng_decode32_file(
+            &image_data,
+            @ptrCast([*c]c_uint, &atlas.width),
+            @ptrCast([*c]c_uint, &atlas.height),
             path,
-            &atlas.width,
-            &atlas.height,
-            null,
-            c.SOIL_LOAD_RGBA,
-        ) orelse {
-            std.debug.warn("Could not load data/entity_atlas.png\n");
+        );
+        if (err != 0) {
+            std.debug.warn(
+                "Could not load data/entity_atlas.png: {c}\n",
+                c.lodepng_error_text(err),
+            );
             std.process.exit(1);
-        };
-        defer c.SOIL_free_image_data(image_data);
+        }
+        defer c.free(image_data);
         c.glTexImage2D(
             c.GL_TEXTURE_2D,
             0,

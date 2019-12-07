@@ -1,6 +1,8 @@
 const Builder = @import("std").build.Builder;
 const builtin = @import("builtin");
 
+const CFLAGS = [_][]const u8{"-O2"};
+
 pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
     const windows = b.option(
@@ -11,6 +13,8 @@ pub fn build(b: *Builder) void {
 
     var exe = b.addExecutable("blink", "src/main.zig");
     exe.setBuildMode(mode);
+    exe.addIncludeDir("include");
+    exe.addCSourceFile("src/lodepng.c", CFLAGS[0..]);
     if (windows) {
         exe.setTarget(
             builtin.Arch.x86_64,
@@ -22,7 +26,6 @@ pub fn build(b: *Builder) void {
         exe.addObjectFile("lib/libSDL2main.a");
         exe.addObjectFile("lib/libSDL2.dll.a");
         exe.addObjectFile("lib/libSDL2_ttf.dll.a");
-        exe.addObjectFile("lib/libSOIL.a");
         exe.addObjectFile("lib/libopengl32.a");
         exe.addObjectFile("lib/epoxy.lib");
     } else {
@@ -30,7 +33,6 @@ pub fn build(b: *Builder) void {
         exe.linkSystemLibrary("SDL2_ttf");
         exe.linkSystemLibrary("GL");
         exe.linkSystemLibrary("epoxy");
-        exe.linkSystemLibrary("SOIL");
     }
     exe.linkSystemLibrary("c");
 
