@@ -17,96 +17,14 @@ const pVec2f = @import("utils.zig").pVec2f;
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
-const vertex_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (location = 0) in vec2 position;
-    c\\layout (location = 1) in float length;
-    c\\layout (location = 2) in float rotation;
-    c\\
-    c\\out PASSTHROUGH {
-    c\\    float length;
-    c\\    float rotation;
-    c\\} passthrough;
-    c\\
-    c\\void main() {
-    c\\    gl_Position = vec4(position.xy, 0.0, 1.0);
-    c\\    passthrough.length = length;
-    c\\    passthrough.rotation = rotation;
-    c\\}
-;
+const vertex_shader_src = @embedFile("lightray_vertex.glsl");
+const vertex_shader_src_list = [_][]const u8{&vertex_shader_src};
 
-const geometry_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (points) in;
-    c\\layout (triangle_strip, max_vertices = 6) out;
-    c\\
-    c\\in PASSTHROUGH {
-    c\\    float length;
-    c\\    float rotation;
-    c\\} passthrough[];
-    c\\
-    c\\uniform mat4 projection;
-    c\\
-    c\\out vec2 texture_uv;
-    c\\
-    c\\vec2 vertices[6] = vec2[](
-    c\\    vec2(-1.0, 0.0),
-    c\\    vec2(-1.0, -1.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(-1.0, 0.0),
-    c\\    vec2(1.0, -1.0),
-    c\\    vec2(1.0, 0.0)
-    c\\);
-    c\\
-    c\\const vec2 rotation_center = vec2(0.0, 0.0);
-    c\\
-    c\\vec2 rotate(vec2 displacement) {
-    c\\    float angle = passthrough[0].rotation;
-    c\\    vec2 centered = displacement - rotation_center;
-    c\\    centered = vec2(
-    c\\        centered.x * cos(angle) - centered.y * sin(angle),
-    c\\        centered.x * sin(angle) + centered.y * cos(angle));
-    c\\    return centered + rotation_center;
-    c\\}
-    c\\
-    c\\void add_point(vec2 displacement) {
-    c\\    vec2 rotated = rotate(displacement);
-    c\\    vec4 point = gl_in[0].gl_Position + vec4(rotated, 0.0, 0.0);
-    c\\    gl_Position = projection * point;
-    c\\    texture_uv = displacement;
-    c\\    EmitVertex();
-    c\\}
-    c\\
-    c\\void main() {
-    c\\    vec2 scale = vec2(2.0, passthrough[0].length);
-    c\\    for (int i = 0; i < 3; ++i) {
-    c\\        add_point(vertices[i] * scale);
-    c\\    }
-    c\\    EndPrimitive();
-    c\\
-    c\\    for (int i = 3; i < 6; ++i) {
-    c\\        add_point(vertices[i] * scale);
-    c\\    }
-    c\\    EndPrimitive();
-    c\\}
-;
+const geometry_shader_src = @embedFile("lightray_geometry.glsl");
+const geometry_shader_src_list = [_][]const u8{&geometry_shader_src};
 
-const fragment_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\in vec2 texture_uv;
-    c\\
-    c\\//uniform sampler2D atlas;
-    c\\
-    c\\out vec4 outColor;
-    c\\
-    c\\void main() {
-    c\\    //outColor = texture(atlas, texture_uv);
-    c\\    outColor = vec4(1.0, 1.0, 1.0, 1.0);
-    c\\}
-;
+const fragment_shader_src = @embedFile("lightray_fragment.glsl");
+const fragment_shader_src_list = [_][]const u8{&fragment_shader_src};
 
 const BufferData = packed struct {
     pos: pVec2f,
@@ -129,9 +47,9 @@ pub fn init(allocator: *Allocator) void {
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
     shader = ShaderProgram.new(
-        &vertex_shader_src,
-        &geometry_shader_src,
-        &fragment_shader_src,
+        @ptrCast([*c]const [*c]const u8, &vertex_shader_src_list),
+        @ptrCast([*c]const [*c]const u8, &geometry_shader_src_list),
+        @ptrCast([*c]const [*c]const u8, &fragment_shader_src_list),
     );
     c.glBindFragDataLocation(shader.handle, 0, c"outColor");
     shader.link();
