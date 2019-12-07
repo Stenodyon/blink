@@ -2,6 +2,7 @@ blink
 blink.exe
 blink.o
 zig-cache/
+saves/
 vgcore*
 .localvimrc
 *.ase
