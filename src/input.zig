@@ -179,7 +179,7 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             state.copy_buffer.clear();
             if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
                 var min = Vec2i.new(std.math.maxInt(i32), std.math.maxInt(i32));
-                var max = Vec2i.new(0, 0);
+                var max = Vec2i.new(std.math.minInt(i32), std.math.minInt(i32));
                 var entity_iterator = state.selected_entities.iterator();
                 while (entity_iterator.next()) |entry| {
                     min.x = std.math.min(min.x, entry.key.x);
