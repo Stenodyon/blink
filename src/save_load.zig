@@ -179,13 +179,13 @@ test "save/load" {
         .Switch = Switch{
             .direction = .UP,
             .is_on = true,
+            .is_flipped = true,
         },
     }, Vec2i.new(42, 42));
 
     // Saving
-    try save_to_stream(&state, &outstream.stream);
+    try save_state_to_stream(&state, &outstream.stream);
     var save_file = buffer.toOwnedSlice();
-    std.debug.warn("Save file: {}\n", save_file);
     defer std.debug.global_allocator.free(save_file);
 
     // Loading
@@ -223,7 +223,8 @@ test "save/load" {
             );
         }
         switch (entry.value) {
-            .Block => {},
+            // TODO: Test Lamp loading
+            .Block, .Lamp => {},
             .Mirror, .Splitter, .Laser => |direction| {
                 switch (loaded_entry.value) {
                     .Mirror, .Splitter, .Laser => |loaded_direction| {
