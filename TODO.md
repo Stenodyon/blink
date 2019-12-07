@@ -1,8 +1,10 @@
 ## TODO list
 
 - [ ] Allow toggling lasers
+- [ ] Improve controls
 - [X] Save/Load
 - [X] Zoom in and out
+    - [ ] Smooth zooming
 - [X] Flip switches
 - [X] Selection
     - [X] Move
@@ -10,6 +12,12 @@
     - [X] Delete
 - [X] Lamps
 - [X] Two-sided mirrors
+- [ ] Undo/Redo
+- [ ] UI
+    - [ ] Main menu
+    - [ ] Load & save menus
+    - [ ] In-game interface
+- [ ] Components (re-usable laser circuits)
+    - [ ] Load & save components
 - [ ] Pause & Step
 - [ ] Change UPS at runtime
-- [ ] Undo/Redo
