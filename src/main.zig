@@ -11,14 +11,12 @@ const input = @import("input.zig");
 const Vec2i = @import("vec.zig").Vec2i;
 const GUI_Element = display.GUI_Element;
 const GUI_Button = display.GUI_Button;
-const State = @import("state.zig").State;
-const Segment = @import("state.zig").Segment;
+usingnamespace @import("state.zig");
 
 const UPS: f64 = 100;
 
 var window: sdl.Window = undefined;
 var gl_context: sdl.GLContext = undefined;
-var vertex_buffer: c.GLuint = undefined;
 
 var quit = false;
 
@@ -107,7 +105,7 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(std.heap.c_allocator);
     defer std.process.argsFree(std.heap.c_allocator, args);
 
-    var state: State = switch (args.len) {
+    game_state = switch (args.len) {
         1 => State.new(std.heap.c_allocator),
         2 => blk: {
             const filename = args[1];
@@ -121,7 +119,7 @@ pub fn main() !void {
             std.process.exit(255);
         },
     };
-    defer state.destroy();
+    defer game_state.destroy();
 
     var updates_left: f64 = 0;
 
@@ -134,7 +132,7 @@ pub fn main() !void {
                 sdl.MOUSEMOTION => {
                     const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
                     try input.on_mouse_motion(
-                        &state,
+                        &game_state,
                         mouse_event.x,
                         mouse_event.y,
                         mouse_event.xrel,
@@ -144,12 +142,12 @@ pub fn main() !void {
                 sdl.MOUSEBUTTONUP => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
                     const mouse_pos = Vec2i.new(mouse_event.x, mouse_event.y);
-                    try input.on_mouse_button_up(&state, mouse_event.button, mouse_pos);
+                    try input.on_mouse_button_up(&game_state, mouse_event.button, mouse_pos);
                 },
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
                     input.on_mouse_button_down(
-                        &state,
+                        &game_state,
                         mouse_event.button,
                         mouse_event.x,
                         mouse_event.y,
@@ -158,17 +156,17 @@ pub fn main() !void {
                 sdl.MOUSEWHEEL => {
                     const wheel_event = @ptrCast(*sdl.MouseWheelEvent, &event);
                     if (wheel_event.y < 0) {
-                        state.on_wheel_down(@intCast(u32, -wheel_event.y));
+                        game_state.on_wheel_down(@intCast(u32, -wheel_event.y));
                     } else {
-                        state.on_wheel_up(@intCast(u32, wheel_event.y));
+                        game_state.on_wheel_up(@intCast(u32, wheel_event.y));
                     }
                 },
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
-                    try input.on_key_up(&state, keyboard_event.keysym);
+                    try input.on_key_up(&game_state, keyboard_event.keysym);
                 },
                 sdl.WINDOWEVENT => {
-                    display.on_window_event(&state, &event.window);
+                    display.on_window_event(&game_state, &event.window);
                 },
                 sdl.QUIT => {
                     std.debug.warn("Quit Event!\n");
@@ -181,15 +179,15 @@ pub fn main() !void {
         {
             var mouse_pos: Vec2i = undefined;
             _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-            try input.tick_held_mouse_buttons(&state, mouse_pos);
+            try input.tick_held_mouse_buttons(&game_state, mouse_pos);
         }
 
-        try display.render(&state);
+        try display.render(&game_state);
         sdl.GL_SwapWindow(window);
 
         updates_left += UPS / 60.;
         while (updates_left >= 1.) : (updates_left -= 1.) {
-            try state.update();
+            try game_state.update();
         }
 
         const end_time = sdl.GetTicks();

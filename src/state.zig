@@ -52,6 +52,8 @@ const IOMap = std.HashMap(
 
 const SAVEFILE_HEADER = "BLINKSV\x00";
 
+pub var game_state: State = undefined;
+
 pub const State = struct {
     viewpos: Vec2i,
     viewport: Vec2i,
