@@ -15,6 +15,9 @@ usingnamespace @import("state.zig");
 
 const SAVEFILE_HEADER = "BLINKSV\x00";
 
+// SAVE =======================================================================
+
+/// Saves a state `state` to a file at `filename`
 pub fn save_state(state: *State, filename: []const u8) !void {
     var file = try BufferedAtomicFile.create(state.entities.allocator, filename);
     var outstream = file.stream();
@@ -62,6 +65,9 @@ fn save_state_to_stream(
     }
 }
 
+// LOAD =======================================================================
+
+/// Loads a state from file `filename`
 pub fn load_state(allocator: *Allocator, filename: []const u8) !?State {
     var file_contents = std.io.readFileAlloc(allocator, filename) catch |err| {
         if (err == error.FileNotFound) {
@@ -100,10 +106,10 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
     while (i < entity_count) : (i += 1) {
         const pos_x = try instream.readIntLittle(i32);
         const pos_y = try instream.readIntLittle(i32);
-        //std.debug.warn("Loading entity at ({}, {})\n", pos_x, pos_y);
         const pos = Vec2i.new(pos_x, pos_y);
 
-        const entity_type = @intToEnum(@TagType(Entity), @intCast(u3, try instream.readByte())); // ughh
+        const read_byte = @intCast(u3, try instream.readByte());
+        const entity_type = @intToEnum(@TagType(Entity), read_byte);
         const entity = switch (entity_type) {
             .Block => blk: {
                 // Had to do this nonsense, otherwise the type of the switch
@@ -112,19 +118,19 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
                 break :blk ret;
             },
             .Mirror => blk: {
-                const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                const direction = try read_direction(instream);
                 break :blk Entity{ .Mirror = direction };
             },
             .Splitter => blk: {
-                const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                const direction = try read_direction(instream);
                 break :blk Entity{ .Splitter = direction };
             },
             .Laser => blk: {
-                const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                const direction = try read_direction(instream);
                 break :blk Entity{ .Laser = direction };
             },
             .Delayer => blk: {
-                const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                const direction = try read_direction(instream);
                 const is_on = (try instream.readByte()) > 0;
                 break :blk Entity{
                     .Delayer = Delayer{
@@ -134,7 +140,7 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
                 };
             },
             .Switch => blk: {
-                const direction = @intToEnum(Direction, @intCast(u2, try instream.readByte()));
+                const direction = try read_direction(instream);
                 const is_on = (try instream.readByte()) > 0;
                 const is_flipped = (try instream.readByte()) > 0;
                 break :blk Entity{
@@ -155,6 +161,13 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
 
     return state;
 }
+
+inline fn read_direction(instream: var) !Direction {
+    const read_byte = @intCast(u2, try instream.readByte());
+    return @intToEnum(Direction, read_byte);
+}
+
+// TESTS ======================================================================
 
 test "save/load" {
     // Init
