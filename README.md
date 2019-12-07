@@ -53,7 +53,7 @@ The makefile calls the zig build system if you prefer GNU make.
 
 * **Block**: Blocks any rays hitting it
 * **Laser**: Generates a light ray, always on.
-* **Mirror**: Reflects light rays at a 90 degree angle.
+* **Mirrors (single and double-sided)**: Reflects light rays at a 90 degree angle.
 * **Splitter**: Transparent mirror, will reflect *and* refract a light ray,
   effectivly splitting it. Can be used to merge rays as well.
 * **Delayer**: Will delay the propagation of the ray by 1 tick.
