@@ -1,6 +1,7 @@
 # Blink
 
-Blink is a puzzle game involving lasers and mirrors, and is heavily inspired by
+Blink is a sandbox game involving lasers and mirrors, and is heavily inspired
+by
 [Logic World](https://logicworld.net/) and
 [OCTOPTICOM](https://store.steampowered.com/app/943190/OCTOPTICOM/).
 
