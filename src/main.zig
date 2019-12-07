@@ -11,7 +11,9 @@ const input = @import("input.zig");
 const Vec2i = @import("vec.zig").Vec2i;
 const GUI_Element = display.GUI_Element;
 const GUI_Button = display.GUI_Button;
+
 usingnamespace @import("state.zig");
+usingnamespace @import("save_load.zig");
 
 const UPS: f64 = 100;
 
@@ -109,7 +111,7 @@ pub fn main() !void {
         1 => State.new(std.heap.c_allocator),
         2 => blk: {
             const filename = args[1];
-            break :blk (try State.from_file(std.heap.c_allocator, filename)) orelse {
+            break :blk (try load_state(std.heap.c_allocator, filename)) orelse {
                 std.debug.warn("Could not read the file\n");
                 std.process.exit(255);
             };

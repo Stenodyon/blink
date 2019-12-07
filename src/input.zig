@@ -3,9 +3,10 @@ const ArrayList = std.ArrayList;
 
 const sdl = @import("sdl.zig");
 const display = @import("display.zig");
-const State = @import("state.zig").State;
 usingnamespace @import("vec.zig");
 const utils = @import("utils.zig");
+usingnamespace @import("save_load.zig");
+usingnamespace @import("state.zig");
 
 var lmb_down = false;
 var rmb_down = false;
@@ -212,7 +213,7 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             }
         },
         sdl.K_F6 => {
-            try state.save("test.sav");
+            try save_state(&game_state, "test.sav");
             std.debug.warn("saved to test.sav\n");
         },
         else => {},
