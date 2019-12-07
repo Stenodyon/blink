@@ -12,15 +12,6 @@ I am considering closing the sources until well after the 1.0 release, and
 releasing the game for a small price. As such, **I will not accept any
 contributions for the time being**.
 
-## Cloning
-
-This project uses the [Lazy-Zig](https://github.com/BraedonWooding/Lazy-Zig)
-library as a git submodule. Once cloned, run
-
-```
-git submodule update --init --recursive
-```
-
 ## Building
 Dependencies:
 

@@ -98,7 +98,7 @@ pub fn init(allocator: *Allocator) void {
         @intToPtr(*const c_void, 2 * @sizeOf(f32)),
     );
 
-    atlas = TextureAtlas.load(c"data/ui_atlas.png", 16, 16);
+    atlas = TextureAtlas.load(allocator, c"data/ui_atlas.png", 16, 16);
 }
 
 pub fn deinit() void {

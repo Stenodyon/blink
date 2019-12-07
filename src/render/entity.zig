@@ -173,7 +173,7 @@ pub fn init(allocator: *Allocator) void {
         @intToPtr(*const c_void, 4 * @sizeOf(f32)),
     );
 
-    atlas = TextureAtlas.load(c"data/entity_atlas.png", 16, 16);
+    atlas = TextureAtlas.load(allocator, c"data/entity_atlas.png", 16, 16);
 }
 
 pub fn deinit() void {
