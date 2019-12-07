@@ -9,7 +9,7 @@
     - [X] Clone
     - [X] Delete
 - [X] Lamps
-- [ ] Two-sided mirrors
+- [X] Two-sided mirrors
 - [ ] Pause & Step
 - [ ] Change UPS at runtime
 - [ ] Undo/Redo

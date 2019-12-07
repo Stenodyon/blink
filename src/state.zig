@@ -56,7 +56,7 @@ pub const State = struct {
     entities: EntityMap,
     current_entity: usize,
     entity_ghost_dir: Direction,
-    entity_wheel: [7]Entity,
+    entity_wheel: [8]Entity,
     selection_rect: ?Rect,
     selected_entities: EntitySet,
     copy_buffer: EntityMap,
@@ -83,6 +83,7 @@ pub const State = struct {
                 Entity.Block,
                 Entity{ .Laser = .UP },
                 Entity{ .Mirror = .UP },
+                Entity{ .DoubleMirror = .UP },
                 Entity{ .Splitter = .UP },
                 Entity{
                     .Delayer = Delayer{
@@ -215,6 +216,7 @@ pub const State = struct {
         switch (entity) {
             .Block,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             => {},
 
@@ -246,6 +248,7 @@ pub const State = struct {
         switch (entry.value) {
             .Block,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             .Lamp,
             => {},

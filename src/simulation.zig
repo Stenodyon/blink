@@ -53,6 +53,7 @@ pub const Simulation = struct {
                 .Block,
                 .Laser,
                 .Mirror,
+                .DoubleMirror,
                 .Splitter,
                 => unreachable,
                 .Delayer => |*delayer| {
@@ -138,6 +139,7 @@ pub const Simulation = struct {
                 .Block,
                 .Laser,
                 .Mirror,
+                .DoubleMirror,
                 .Splitter,
                 => unreachable,
                 .Delayer => |*delayer| delayer.is_on = update_entry.value,

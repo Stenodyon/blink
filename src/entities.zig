@@ -104,6 +104,7 @@ pub const Entity = union(enum) {
     Block,
     Laser: Direction,
     Mirror: Direction,
+    DoubleMirror: Direction,
     Splitter: Direction,
     Delayer: Delayer,
     Switch: Switch,
@@ -134,6 +135,18 @@ pub const Entity = union(enum) {
                 return [_]Direction{};
             },
 
+            .DoubleMirror => |direction| {
+                if (hitdir == direction or hitdir == direction.opposite()) {
+                    const index = @intCast(usize, @enumToInt(hitdir.clockwise()));
+                    return mirror_directions[index .. index + 1];
+                }
+                if (hitdir == direction.cclockwise() or hitdir == direction.clockwise()) {
+                    const index = @intCast(usize, @enumToInt(hitdir.cclockwise()));
+                    return mirror_directions[index .. index + 1];
+                }
+                return [_]Direction{};
+            },
+
             .Splitter => |direction| {
                 if (hitdir == direction or
                     hitdir == direction.opposite())
@@ -157,6 +170,7 @@ pub const Entity = union(enum) {
             .Block,
             .Laser,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             => return false,
             .Delayer => |*delayer| return delayer.direction == direction,
@@ -170,6 +184,7 @@ pub const Entity = union(enum) {
             .Block,
             .Laser,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             .Delayer,
             .Lamp,
@@ -215,6 +230,7 @@ pub const Entity = union(enum) {
             => {},
             .Laser => |*direction| direction.* = new_direction,
             .Mirror => |*direction| direction.* = new_direction,
+            .DoubleMirror => |*direction| direction.* = new_direction,
             .Splitter => |*direction| direction.* = new_direction,
             .Delayer => |*delayer| {
                 delayer.direction = new_direction;
@@ -230,7 +246,11 @@ pub const Entity = union(enum) {
             .Block,
             .Lamp,
             => return .UP,
-            .Laser, .Mirror, .Splitter => |direction| return direction,
+            .Laser,
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            => |direction| return direction,
             .Delayer => |*delayer| return delayer.direction,
             .Switch => |*eswitch| return eswitch.direction,
         }
@@ -240,6 +260,7 @@ pub const Entity = union(enum) {
         switch (self.*) {
             .Block,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             .Lamp,
             => return false,
@@ -254,6 +275,7 @@ pub const Entity = union(enum) {
             .Block,
             .Laser,
             .Mirror,
+            .DoubleMirror,
             .Splitter,
             .Delayer,
             .Lamp,

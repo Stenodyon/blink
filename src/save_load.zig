@@ -46,7 +46,7 @@ fn save_state_to_stream(
 
         switch (entry.value) {
             .Block => {},
-            .Mirror, .Splitter, .Laser => |direction| {
+            .Mirror, .DoubleMirror, .Splitter, .Laser => |direction| {
                 try outstream.writeByte(@enumToInt(direction));
             },
             .Delayer => |*delayer| {
@@ -120,6 +120,10 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
             .Mirror => blk: {
                 const direction = try read_direction(instream);
                 break :blk Entity{ .Mirror = direction };
+            },
+            .DoubleMirror => blk: {
+                const direction = try read_direction(instream);
+                break :blk Entity{ .DoubleMirror = direction };
             },
             .Splitter => blk: {
                 const direction = try read_direction(instream);
