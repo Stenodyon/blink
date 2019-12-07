@@ -118,30 +118,37 @@ pub fn queue_element(
     const pos = location.pos.to_float(f32);
     const size = location.size.to_float(f32);
     const texture_pos = atlas.get_offset(texture_id);
-    const vertices = [_]pVec2f{
-        pVec2f{ .x = pos.x, .y = pos.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y },
-        pVec2f{ .x = pos.x, .y = pos.y + size.y },
-        pVec2f{ .x = pos.x, .y = pos.y + size.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y + size.y },
+    const vertices = [_]f32{
+        pos.x,          pos.y,
+        pos.x + size.x, pos.y,
+        pos.x,          pos.y + size.y,
+        pos.x,          pos.y + size.y,
+        pos.x + size.x, pos.y,
+        pos.x + size.x, pos.y + size.y,
     };
+
     const cell_width = @intToFloat(f32, atlas.cell_width) / @intToFloat(f32, atlas.width);
     const cell_height = @intToFloat(f32, atlas.cell_height) / @intToFloat(f32, atlas.height);
-    const uvs = [_]pVec2f{
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y + cell_height },
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y + cell_height },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y + cell_height },
+    const uvs = [_]f32{
+        texture_pos.x,              texture_pos.y,
+        texture_pos.x + cell_width, texture_pos.y,
+        texture_pos.x,              texture_pos.y + cell_height,
+        texture_pos.x,              texture_pos.y + cell_height,
+        texture_pos.x + cell_width, texture_pos.y,
+        texture_pos.x + cell_width, texture_pos.y + cell_height,
     };
 
     var i: usize = 0;
     while (i < 6) : (i += 1) {
         const queued = BufferData{
-            .pos = vertices[i],
-            .tex_coord = uvs[i],
+            .pos = pVec2f{
+                .x = vertices[2 * i],
+                .y = vertices[2 * i + 1],
+            },
+            .tex_coord = pVec2f{
+                .x = uvs[2 * i],
+                .y = uvs[2 * i + 1],
+            },
         };
         try queued_elements.append(queued);
     }
