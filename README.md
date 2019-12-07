@@ -20,7 +20,6 @@ Dependencies:
 * `SDL2_ttf`
 * `libGL`
 * `libepoxy`
-* `libSOIL`
 
 Blink uses the zig build system. If the dependencies are met, you can simply run
 ```
