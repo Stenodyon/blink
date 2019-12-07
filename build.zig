@@ -13,8 +13,8 @@ pub fn build(b: *Builder) void {
 
     var exe = b.addExecutable("blink", "src/main.zig");
     exe.setBuildMode(mode);
-    exe.addIncludeDir("include");
-    exe.addCSourceFile("src/lodepng.c", CFLAGS[0..]);
+    exe.addIncludeDir("third-party/lodepng/include");
+    exe.addCSourceFile("third-party/lodepng/src/lodepng.c", CFLAGS[0..]);
     if (windows) {
         exe.setTarget(
             builtin.Arch.x86_64,
