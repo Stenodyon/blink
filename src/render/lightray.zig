@@ -33,6 +33,7 @@ const BufferData = packed struct {
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
 var shader: ShaderProgram = undefined;
+var projection_location: c.GLint = undefined;
 var queued_rays: ArrayList(BufferData) = undefined;
 
 pub fn init(allocator: *Allocator) void {
@@ -52,6 +53,7 @@ pub fn init(allocator: *Allocator) void {
     c.glBindFragDataLocation(shader.handle, 0, c"outColor");
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
 
     // 2B pos | 1B length | 1B rotation
     const pos_attrib = 0;
@@ -158,7 +160,7 @@ pub fn render(state: *const State) !void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
-    display.set_proj_matrix_uniform(&shader);
+    display.set_proj_matrix_uniform(&shader, projection_location);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, ray_data.len));
     try queued_rays.resize(0);
 }

@@ -27,6 +27,7 @@ const fragment_shader_src =
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
 pub var shader: ShaderProgram = undefined;
+var projection_location: c.GLint = undefined;
 
 pub fn init() void {
     c.glGenVertexArrays(1, &vao);
@@ -42,6 +43,7 @@ pub fn init() void {
     );
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
 
     const pos_attrib = 0;
     c.glEnableVertexAttribArray(pos_attrib);
@@ -72,6 +74,6 @@ pub fn draw_polygon(polygon: []const f32) void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
-    display.set_proj_matrix_uniform(&shader);
+    display.set_proj_matrix_uniform(&shader, projection_location);
     c.glDrawArrays(c.GL_LINE_LOOP, 0, @intCast(c_int, polygon.len / 2));
 }

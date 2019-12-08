@@ -46,6 +46,7 @@ const fragment_shader_src =
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
 var shader: ShaderProgram = undefined;
+var projection_location: c.GLint = undefined;
 var vertices: [12]f32 = undefined;
 
 pub fn init() void {
@@ -63,6 +64,7 @@ pub fn init() void {
     c.glBindFragDataLocation(shader.handle, 0, c"outColor");
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
 
     const pos_attrib = 0;
     c.glEnableVertexAttribArray(pos_attrib);
@@ -110,7 +112,7 @@ pub fn render(state: *const State) void {
     shader.set_active();
     update_vertices(state);
 
-    display.set_proj_matrix_uniform(&shader);
+    display.set_proj_matrix_uniform(&shader, projection_location);
 
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 }

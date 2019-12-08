@@ -61,10 +61,13 @@ fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
     //    dest[15] = 1;
 }
 
-pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
+pub fn set_proj_matrix_uniform(
+    program: *const ShaderProgram,
+    location: c.GLint,
+) void {
     const projection_location = program.uniform_location(c"projection");
     c.glUniformMatrix4fv(
-        projection_location,
+        location,
         1,
         c.GL_TRUE,
         &projection_matrix,
@@ -138,18 +141,9 @@ pub fn render(state: *const State) !void {
 fn render_ghost(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
-    const grid_pos = screen2world(state, pos.to_float(f32)).to_int(i32);
+    const grid_pos = screen2world(state, pos.to_float(f32)).floor();
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
     try entity_renderer.draw(0.5);
-
-    //const world_pos = grid_pos.mul(GRID_SIZE).to_float(f32);
-    //const grid_square = [_]f32{
-    //    world_pos.x,             world_pos.y,
-    //    world_pos.x + GRID_SIZE, world_pos.y,
-    //    world_pos.x + GRID_SIZE, world_pos.y + GRID_SIZE,
-    //    world_pos.x,             world_pos.y + GRID_SIZE,
-    //};
-    //polygon_renderer.draw_polygon(grid_square[0..]);
 }
 
 fn render_entities(state: *const State) !void {

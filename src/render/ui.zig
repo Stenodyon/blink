@@ -49,6 +49,7 @@ const fragment_shader_src =
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
+var projection_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
@@ -76,6 +77,7 @@ pub fn init(allocator: *Allocator) void {
     );
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -167,7 +169,7 @@ pub fn draw(transparency: f32) !void {
     c.glBindVertexArray(vao);
     shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&shader);
+    display.set_proj_matrix_uniform(&shader, projection_location);
     const trans_uniform_loc = shader.uniform_location(c"transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));

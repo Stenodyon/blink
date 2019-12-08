@@ -63,9 +63,9 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
                 mouse.sub(initial_mouse).to_float(f32),
             );
             placing = movement.length_sq() < 2;
-            //_ = movement.mulfi(state.get_zoom_factor());
-            std.debug.warn("movement: {}, {}\n", movement.x, movement.y);
             state.viewpos = initial_viewpos.sub(movement);
+            std.debug.warn("viewpos: {}, {}\n", state.viewpos.x, state.viewpos.y);
+            std.debug.warn("movement: {}, {}\n", movement.x, movement.y);
         }
     } else {
         if (drag_initial_mouse != null or drag_initial_viewpos != null) {
@@ -130,7 +130,7 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
                 };
             } else if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0) {
                 const mouse_pos = Vec2i.new(x, y).to_float(f32);
-                const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
+                const grid_pos = display.screen2world(state, mouse_pos).floor();
                 if (state.copy_buffer.count() == 0 and state.selected_entities.contains(grid_pos)) {
                     moving = true;
                 } else {
@@ -147,7 +147,7 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
 }
 
 pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2f) !void {
-    const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
+    const grid_pos = display.screen2world(state, mouse_pos).floor();
 
     if ((lmb_down or rmb_down) and (last_grid_action == null or !last_grid_action.?.equals(grid_pos))) {
         last_grid_action = grid_pos;
