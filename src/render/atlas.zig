@@ -79,6 +79,13 @@ pub const TextureAtlas = struct {
         return self.get_offset_flip(texture_id, false, false);
     }
 
+    pub inline fn get_tile_size(self: *TextureAtlas) Vec2f {
+        return Vec2f{
+            .x = @intToFloat(f32, self.cell_width) / @intToFloat(f32, self.width),
+            .y = @intToFloat(f32, self.cell_height) / @intToFloat(f32, self.height),
+        };
+    }
+
     pub fn get_offset_flip(
         self: *TextureAtlas,
         texture_id: usize,

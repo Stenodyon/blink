@@ -112,11 +112,11 @@ pub fn deinit() void {
 
 pub fn queue_element(
     state: *const State,
-    location: Rect,
+    location: Rectf,
     texture_id: usize,
 ) !void {
-    const pos = location.pos.to_float(f32);
-    const size = location.size.to_float(f32);
+    const pos = location.pos;
+    const size = location.size;
     const texture_pos = atlas.get_offset(texture_id);
     const vertices = [_]f32{
         pos.x,          pos.y,

@@ -20,7 +20,7 @@ const vertex_shader_src =
     c\\out vec2 pixel_pos;
     c\\
     c\\void main() {
-    c\\    pixel_pos = position;
+    c\\    pixel_pos = position.xy;
     c\\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
     c\\}
 ;
@@ -37,8 +37,7 @@ const fragment_shader_src =
     c\\const vec4 fgColor = vec4(0.22, 0.23, 0.27, 1.0);
     c\\
     c\\void main() {
-    c\\    vec2 scaled = pixel_pos / 64;
-    c\\    vec2 lines = abs(fract(scaled - 0.5) - 0.5) / fwidth(scaled);
+    c\\    vec2 lines = abs(fract(pixel_pos - 0.5) - 0.5) / fwidth(pixel_pos);
     c\\    float grid = min(min(lines.x, lines.y), 1.0);
     c\\    outColor = fgColor * (1.0 - grid) + bgColor * grid;
     c\\}
@@ -85,16 +84,16 @@ pub fn deinit() void {
 
 pub fn update_vertices(state: *const State) void {
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-    const x = @intToFloat(f32, state.viewpos.x);
-    const y = @intToFloat(f32, state.viewpos.y);
-    const width = @intToFloat(f32, state.viewport.x);
-    const height = @intToFloat(f32, state.viewport.y);
+    const x = state.viewpos.x;
+    const y = state.viewpos.y;
+    const width = state.viewport.x / 2;
+    const height = state.viewport.y / 2;
     const new_vertices = [_]f32{
-        x,         y,
-        x + width, y,
-        x,         y + height,
-        x,         y + height,
-        x + width, y,
+        x - width, y - height,
+        x + width, y - height,
+        x - width, y + height,
+        x - width, y + height,
+        x + width, y - height,
         x + width, y + height,
     };
     for (vertices) |*vertex, i| vertex.* = new_vertices[i];

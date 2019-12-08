@@ -12,7 +12,7 @@ var lmb_down = false;
 var rmb_down = false;
 var last_grid_action: ?Vec2i = null;
 var drag_initial_mouse: ?Vec2i = null;
-var drag_initial_viewpos: ?Vec2i = null;
+var drag_initial_viewpos: ?Vec2f = null;
 var selecting = false;
 var placing = false;
 var moving = false;
@@ -25,11 +25,14 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
             break :mouse mouse;
         };
         if (selecting) {
-            const mouse_to_world = display.screen2world(state, mouse);
+            const mouse_to_world = display.screen2world(
+                state,
+                mouse.to_float(f32),
+            );
             const selection_rect = state.selection_rect orelse sel: {
-                state.selection_rect = Rect{
+                state.selection_rect = Rectf{
                     .pos = mouse_to_world,
-                    .size = Vec2i.new(0, 0),
+                    .size = Vec2f.new(0, 0),
                 };
                 break :sel state.selection_rect.?;
             };
@@ -37,8 +40,14 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
             state.selection_rect.?.size = movement;
         } else if (moving) {
             if (state.selected_entities.count() > 0) {
-                const initial_pos = display.screen2grid(state, initial_mouse);
-                const mouse_pos = display.screen2grid(state, mouse);
+                const initial_pos = display.screen2world(
+                    state,
+                    initial_mouse.to_float(f32),
+                ).to_int(i32);
+                const mouse_pos = display.screen2world(
+                    state,
+                    mouse.to_float(f32),
+                ).to_int(i32);
                 if (!mouse_pos.equals(initial_pos)) {
                     try state.copy_selection(initial_pos);
                     try state.delete_selection();
@@ -49,9 +58,13 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
                 drag_initial_viewpos = state.viewpos;
                 break :viewpos state.viewpos;
             };
-            var movement = mouse.sub(initial_mouse);
+            var movement = display.screen2world_distance(
+                state,
+                mouse.sub(initial_mouse).to_float(f32),
+            );
             placing = movement.length_sq() < 2;
-            _ = movement.mulfi(state.get_zoom_factor());
+            //_ = movement.mulfi(state.get_zoom_factor());
+            std.debug.warn("movement: {}, {}\n", movement.x, movement.y);
             state.viewpos = initial_viewpos.sub(movement);
         }
     } else {
@@ -62,12 +75,12 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
     }
 }
 
-pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
+pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
     switch (button) {
         sdl.BUTTON_LEFT => {
             if (placing) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2grid(state, mouse_pos);
+                    const pos = display.screen2world(state, mouse_pos).to_int(i32);
                     if (moving and try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
@@ -75,7 +88,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                         _ = try state.place_copy(pos);
                     }
                 } else {
-                    const grid_pos = display.screen2grid(state, mouse_pos);
+                    const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
                     if (try state.place_entity(grid_pos)) {
                         std.debug.warn("Placed!\n");
                     } else {
@@ -85,7 +98,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2i) !void {
                 placing = false;
             } else if (moving) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2grid(state, mouse_pos);
+                    const pos = display.screen2world(state, mouse_pos).to_int(i32);
                     if (try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
@@ -109,15 +122,15 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
         sdl.BUTTON_LEFT => {
             if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
                 selecting = true;
-                const mouse_pos = Vec2i.new(x, y);
+                const mouse_pos = Vec2i.new(x, y).to_float(f32);
                 state.selected_entities.clear();
-                state.selection_rect = Rect{
+                state.selection_rect = Rectf{
                     .pos = display.screen2world(state, mouse_pos),
-                    .size = Vec2i.new(0, 0),
+                    .size = Vec2f.new(0, 0),
                 };
             } else if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0) {
-                const mouse_pos = Vec2i.new(x, y);
-                const grid_pos = display.screen2grid(state, mouse_pos);
+                const mouse_pos = Vec2i.new(x, y).to_float(f32);
+                const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
                 if (state.copy_buffer.count() == 0 and state.selected_entities.contains(grid_pos)) {
                     moving = true;
                 } else {
@@ -133,8 +146,8 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
     }
 }
 
-pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2i) !void {
-    const grid_pos = display.screen2grid(state, mouse_pos);
+pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2f) !void {
+    const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
 
     if ((lmb_down or rmb_down) and (last_grid_action == null or !last_grid_action.?.equals(grid_pos))) {
         last_grid_action = grid_pos;

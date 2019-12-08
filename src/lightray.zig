@@ -8,7 +8,7 @@ const Direction = entities.Direction;
 const Entity = entities.Entity;
 const vec = @import("vec.zig");
 const Vec2i = vec.Vec2i;
-const Rect = vec.Rect;
+const Rect = vec.Recti;
 const State = @import("state.zig").State;
 
 pub const LightRay = struct {

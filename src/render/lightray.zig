@@ -8,11 +8,9 @@ const entities = @import("../entities.zig");
 const Direction = entities.Direction;
 const LightRay = @import("../lightray.zig").LightRay;
 const State = @import("../state.zig").State;
-const vec = @import("../vec.zig");
-const Vec2i = vec.Vec2i;
-const Vec2f = vec.Vec2f;
-const Rect = vec.Rect;
 const pVec2f = @import("utils.zig").pVec2f;
+
+usingnamespace @import("../vec.zig");
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
@@ -99,15 +97,11 @@ pub fn queue_ray(
     state: *const State,
     ray: *const LightRay,
 ) !void {
-    const half_grid = Vec2i.new(
-        GRID_SIZE / 2,
-        GRID_SIZE / 2,
-    );
-    const world_pos = ray.origin.mul(GRID_SIZE).addi(half_grid);
-    const viewport_pos = world_pos.sub(state.viewpos);
+    const world_pos = ray.origin.to_float(f32).add(Vec2f.new(0.5, 0.5));
+    const viewport_pos = world_pos.sub(state.viewpos.to_float(f32));
     const length = blk: {
         if (ray.length) |grid_length|
-            break :blk @intCast(i32, grid_length) * GRID_SIZE;
+            break :blk @intToFloat(f32, grid_length);
         switch (ray.direction) {
             .UP => break :blk viewport_pos.y,
             .DOWN => break :blk state.viewport.y - viewport_pos.y,
@@ -120,10 +114,10 @@ pub fn queue_ray(
 
     const queued = BufferData{
         .pos = pVec2f{
-            .x = @intToFloat(f32, world_pos.x),
-            .y = @intToFloat(f32, world_pos.y),
+            .x = world_pos.x,
+            .y = world_pos.y,
         },
-        .length = @intToFloat(f32, length),
+        .length = length,
         .rotation = angle,
     };
 
@@ -132,9 +126,9 @@ pub fn queue_ray(
 
 pub fn render(state: *const State) !void {
     // Collect
-    const viewarea = Rect.new(
-        state.viewpos.div(GRID_SIZE),
-        state.viewport.div(GRID_SIZE).addi(Vec2i.new(1, 1)),
+    const viewarea = Recti.new(
+        state.viewpos.to_int(i32).div(GRID_SIZE),
+        state.viewport.to_int(i32).div(GRID_SIZE).addi(Vec2i.new(1, 1)),
     );
 
     var tree_iterator = state.lighttrees.iterator();

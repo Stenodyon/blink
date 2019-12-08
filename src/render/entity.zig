@@ -21,9 +21,6 @@ const GRID_SIZE = display.GRID_SIZE;
 const vertex_shader_src = @embedFile("entity_vertex.glsl");
 const vertex_shader_src_list = [_][]const u8{&vertex_shader_src};
 
-const geometry_shader_src = @embedFile("entity_geometry.glsl");
-const geometry_shader_src_list = [_][]const u8{&geometry_shader_src};
-
 const fragment_shader_src = @embedFile("entity_fragment.glsl");
 const fragment_shader_src_list = [_][]const u8{&fragment_shader_src};
 
@@ -52,7 +49,7 @@ pub fn init(allocator: *Allocator) void {
 
     shader = ShaderProgram.new(
         @ptrCast([*c]const [*c]const u8, &vertex_shader_src_list),
-        @ptrCast([*c]const [*c]const u8, &geometry_shader_src_list),
+        null,
         @ptrCast([*c]const [*c]const u8, &fragment_shader_src_list),
     );
     c.glBindFragDataLocation(shader.handle, 0, c"outColor");
@@ -143,27 +140,51 @@ pub fn queue_entity_float(
     entity: *const Entity,
 ) !void {
     const texture_pos = get_entity_texture(entity);
+    const texture_size = atlas.get_tile_size();
     const angle = entity.get_direction().to_rad();
+    const pos = pixel_pos.to_float(f32);
 
-    const queued = BufferData{
-        .pos = pVec2f{
-            .x = @intToFloat(f32, pixel_pos.x),
-            .y = @intToFloat(f32, pixel_pos.y),
-        },
-        .tex_coord = pVec2f{
-            .x = texture_pos.x,
-            .y = texture_pos.y,
-        },
-        .rotation = angle,
+    const vertices = [_]f32{
+        pos.x,       pos.y,
+        pos.x + 1.0, pos.y,
+        pos.x,       pos.y + 1.0,
+        pos.x,       pos.y + 1.0,
+        pos.x + 1.0, pos.y,
+        pos.x + 1.0, pos.y + 1.0,
     };
 
-    try queued_entities.append(queued);
+    const uvs = [_]f32{
+        texture_pos.x,                  texture_pos.y,
+        texture_pos.x + texture_size.x, texture_pos.y,
+        texture_pos.x,                  texture_pos.y + texture_size.y,
+        texture_pos.x,                  texture_pos.y + texture_size.y,
+        texture_pos.x + texture_size.x, texture_pos.y,
+        texture_pos.x + texture_size.x, texture_pos.y + texture_size.y,
+    };
+
+    var i: usize = 0;
+    while (i < 6) : (i += 1) {
+        const queued = BufferData{
+            .pos = pVec2f{
+                .x = vertices[2 * i],
+                .y = vertices[2 * i + 1],
+            },
+            .tex_coord = pVec2f{
+                .x = uvs[2 * i],
+                .y = uvs[2 * i + 1],
+            },
+            .rotation = angle,
+        };
+
+        try queued_entities.append(queued);
+    }
 }
 
 pub fn collect(state: *const State) !void {
-    const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
-    const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
+    const min_pos = state.viewpos.div(GRID_SIZE).to_int(i32);
+    const viewport = state.viewport.to_int(i32);
+    const view_width = @divFloor(viewport.x, GRID_SIZE) + 2;
+    const view_height = @divFloor(viewport.y, GRID_SIZE) + 2;
 
     var grid_y: i32 = min_pos.y;
     while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
@@ -192,6 +213,6 @@ pub fn draw(transparency: f32) !void {
     display.set_proj_matrix_uniform(&shader);
     const trans_uniform_loc = shader.uniform_location(c"transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
-    c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
+    c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }
