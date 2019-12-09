@@ -134,7 +134,7 @@ pub fn render(state: *const State) !void {
 fn render_ghost(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
-    const grid_pos = screen2world(state, pos.to_float(f32)).floor();
+    const grid_pos = screen2world(pos.to_float(f32)).floor();
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
     try entity_renderer.draw(0.5);
 }
@@ -193,9 +193,8 @@ fn render_ui(state: *const State) !void {
         var mouse_pos: Vec2i = undefined;
         _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
         const pos = entry.key.add(screen2world(
-            state,
             mouse_pos.to_float(f32),
-        ).to_int(i32)).muli(GRID_SIZE);
+        ).floor());
         try entity_renderer.queue_entity_float(state, pos, &entry.value);
     }
     try entity_renderer.draw(0.5);
@@ -259,7 +258,7 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub fn screen2world(state: *const State, point: Vec2f) Vec2f {
+pub fn screen2world(point: Vec2f) Vec2f {
     var vec = [4]f32{
         2 * point.x / @intToFloat(f32, window_width) - 1,
         -(2 * point.y / @intToFloat(f32, window_height) - 1),
@@ -270,7 +269,7 @@ pub fn screen2world(state: *const State, point: Vec2f) Vec2f {
     return Vec2f.new(vec[0], vec[1]);
 }
 
-pub fn screen2world_distance(state: *const State, point: Vec2f) Vec2f {
+pub fn screen2world_distance(point: Vec2f) Vec2f {
     var vec = [4]f32{
         2 * point.x / @intToFloat(f32, window_width) - 1,
         -(2 * point.y / @intToFloat(f32, window_height) - 1),
@@ -281,7 +280,7 @@ pub fn screen2world_distance(state: *const State, point: Vec2f) Vec2f {
     return Vec2f.new(vec[0], vec[1]);
 }
 
-pub fn world2screen(state: *const State, point: Vec2f) Vec2f {
+pub fn world2screen(point: Vec2f) Vec2f {
     var vec = [4]f32{
         point.x,
         point.y,

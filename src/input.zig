@@ -25,10 +25,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
             break :mouse mouse;
         };
         if (selecting) {
-            const mouse_to_world = display.screen2world(
-                state,
-                mouse.to_float(f32),
-            );
+            const mouse_to_world = display.screen2world(mouse.to_float(f32));
             const selection_rect = state.selection_rect orelse sel: {
                 state.selection_rect = Rectf{
                     .pos = mouse_to_world,
@@ -41,13 +38,11 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
         } else if (moving) {
             if (state.selected_entities.count() > 0) {
                 const initial_pos = display.screen2world(
-                    state,
                     initial_mouse.to_float(f32),
-                ).to_int(i32);
+                ).floor();
                 const mouse_pos = display.screen2world(
-                    state,
                     mouse.to_float(f32),
-                ).to_int(i32);
+                ).floor();
                 if (!mouse_pos.equals(initial_pos)) {
                     try state.copy_selection(initial_pos);
                     try state.delete_selection();
@@ -64,7 +59,6 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
                 initial_viewpos.y,
             );
             var movement = display.screen2world_distance(
-                state,
                 mouse.sub(initial_mouse).to_float(f32),
             );
             placing = movement.length_sq() < 2;
@@ -85,7 +79,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
         sdl.BUTTON_LEFT => {
             if (placing) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2world(state, mouse_pos).floor();
+                    const pos = display.screen2world(mouse_pos).floor();
                     if (moving and try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
@@ -93,7 +87,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                         _ = try state.place_copy(pos);
                     }
                 } else {
-                    const grid_pos = display.screen2world(state, mouse_pos).floor();
+                    const grid_pos = display.screen2world(mouse_pos).floor();
                     if (try state.place_entity(grid_pos)) {
                         std.debug.warn("Placed!\n");
                     } else {
@@ -103,7 +97,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                 placing = false;
             } else if (moving) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2world(state, mouse_pos).floor();
+                    const pos = display.screen2world(mouse_pos).floor();
                     if (try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
@@ -130,12 +124,12 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
                 const mouse_pos = Vec2i.new(x, y).to_float(f32);
                 state.selected_entities.clear();
                 state.selection_rect = Rectf{
-                    .pos = display.screen2world(state, mouse_pos),
+                    .pos = display.screen2world(mouse_pos),
                     .size = Vec2f.new(0, 0),
                 };
             } else if ((sdl.GetModState() & sdl.KMOD_LCTRL) == 0) {
                 const mouse_pos = Vec2i.new(x, y).to_float(f32);
-                const grid_pos = display.screen2world(state, mouse_pos).floor();
+                const grid_pos = display.screen2world(mouse_pos).floor();
                 if (state.copy_buffer.count() == 0 and state.selected_entities.contains(grid_pos)) {
                     moving = true;
                 } else {
@@ -152,7 +146,7 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
 }
 
 pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2f) !void {
-    const grid_pos = display.screen2world(state, mouse_pos).floor();
+    const grid_pos = display.screen2world(mouse_pos).floor();
 
     if ((lmb_down or rmb_down) and (last_grid_action == null or !last_grid_action.?.equals(grid_pos))) {
         last_grid_action = grid_pos;

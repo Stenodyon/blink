@@ -367,9 +367,7 @@ pub const State = struct {
             display.window_height,
         ).divi(display.GRID_SIZE).to_float(f32);
         const new_viewport = default_viewport.mulf(factor);
-        const difference = new_viewport.sub(self.viewport).divi(2);
         self.viewport = new_viewport;
-        _ = self.viewpos.subi(difference);
     }
 
     fn zoom_in(self: *State) void {
