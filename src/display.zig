@@ -209,15 +209,12 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
         //sdl.WINDOWEVENT_RESIZED,
         sdl.WINDOWEVENT_SIZE_CHANGED => {
             const new_size = Vec2i.new(event.data1, event.data2).to_float(f32);
-            const current_size = Vec2i.new(window_width, window_height).to_float(f32);
-            const difference = new_size.sub(current_size);
             window_width = event.data1;
             window_height = event.data2;
 
             c.glViewport(0, 0, window_width, window_height);
 
-            _ = state.viewpos.subi(difference.div(2));
-            _ = state.viewport.addi(difference);
+            state.viewport = new_size.div(GRID_SIZE);
         },
         else => {},
     }
