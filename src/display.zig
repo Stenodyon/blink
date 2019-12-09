@@ -271,8 +271,8 @@ pub fn screen2world(point: Vec2f) Vec2f {
 
 pub fn screen2world_distance(point: Vec2f) Vec2f {
     var vec = [4]f32{
-        2 * point.x / @intToFloat(f32, window_width) - 1,
-        -(2 * point.y / @intToFloat(f32, window_height) - 1),
+        2 * point.x / @intToFloat(f32, window_width),
+        -(2 * point.y / @intToFloat(f32, window_height)),
         0,
         0,
     };
