@@ -6,7 +6,6 @@ const Buffer = std.Buffer;
 const sdl = @import("sdl.zig");
 const ttf = @import("ttf.zig");
 const c = @import("c.zig");
-const lazy = @import("lazy");
 
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
 const ShaderProgram = @import("render/shader.zig").ShaderProgram;
@@ -16,14 +15,13 @@ const grid_renderer = @import("render/grid.zig");
 const polygon_renderer = @import("render/polygon.zig");
 const ui_renderer = @import("render/ui.zig");
 const State = @import("state.zig").State;
-const vec = @import("vec.zig");
-const Vec2i = vec.Vec2i;
-const Vec2f = vec.Vec2f;
-const Rect = vec.Rect;
 const utils = @import("utils.zig");
 const Entity = @import("entities.zig").Entity;
 const dir_angle = @import("entities.zig").dir_angle;
 const LightRay = @import("lightray.zig").LightRay;
+const matrix = @import("matrix.zig");
+
+usingnamespace @import("vec.zig");
 
 pub var renderer: sdl.Renderer = undefined;
 
@@ -38,32 +36,47 @@ const font_name = c"data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
 var projection_matrix: [16]f32 = undefined;
+var inv_proj_matrix: [16]f32 = undefined;
 
-fn otho_matrix(viewpos: Vec2i, size: Vec2i, dest: *[16]f32) void {
-    for (dest[0..]) |*index| index.* = 0;
-    dest[0] = 2 / @intToFloat(f32, size.x);
-    dest[3] = @intToFloat(f32, -viewpos.x) * dest[0] - 1;
-    dest[5] = -2. / @intToFloat(f32, size.y);
-    dest[7] = @intToFloat(f32, -viewpos.y) * dest[5] + 1;
-    dest[15] = 1;
+fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
+    matrix.identity(dest);
+    matrix.translate(
+        dest,
+        -viewpos.x,
+        -viewpos.y,
+        0,
+    );
+    matrix.scale(
+        dest,
+        2 / viewport.x,
+        -2 / viewport.y,
+        1,
+    );
 }
 
-pub fn set_proj_matrix_uniform(program: *const ShaderProgram) void {
+pub fn set_proj_matrix_uniform(
+    program: *const ShaderProgram,
+    location: c.GLint,
+) void {
     const projection_location = program.uniform_location(c"projection");
     c.glUniformMatrix4fv(
-        projection_location,
+        location,
         1,
         c.GL_TRUE,
         &projection_matrix,
     );
 }
 
-pub fn update_projection_matrix(viewpos: Vec2i, viewport: Vec2i) void {
-    otho_matrix(
+pub fn update_projection_matrix(viewpos: Vec2f, viewport: Vec2f) void {
+    ortho_matrix(
         viewpos,
         viewport,
         &projection_matrix,
     );
+    if (!matrix.inverse(&inv_proj_matrix, &projection_matrix)) {
+        std.debug.warn("Non-invertible projection matrix!\n");
+        matrix.print_matrix(&projection_matrix);
+    }
 }
 
 pub fn init(allocator: *Allocator) void {
@@ -76,7 +89,7 @@ pub fn init(allocator: *Allocator) void {
     lightray_renderer.init(allocator);
     ui_renderer.init(allocator);
 
-    update_projection_matrix(Vec2i.new(0, 0), Vec2i.new(1, 1));
+    update_projection_matrix(Vec2f.new(0, 0), Vec2f.new(1, 1));
 
     std.debug.warn("OpenGL initialized\n");
 
@@ -105,7 +118,10 @@ pub fn render(state: *const State) !void {
     c.glClearColor(0, 0, 0, 1);
     c.glClear(c.GL_COLOR_BUFFER_BIT);
 
-    update_projection_matrix(state.viewpos, state.viewport);
+    update_projection_matrix(
+        state.viewpos.to_float(f32),
+        state.viewport.to_float(f32),
+    );
 
     ////g_gui.draw(g_gui, renderer);
 
@@ -118,18 +134,9 @@ pub fn render(state: *const State) !void {
 fn render_ghost(state: *const State) !void {
     var pos: Vec2i = undefined;
     _ = sdl.GetMouseState(&pos.x, &pos.y);
-    const grid_pos = screen2grid(state, pos);
+    const grid_pos = screen2world(pos.to_float(f32)).floor();
     try entity_renderer.queue_entity(state, grid_pos, &state.get_current_entity());
     try entity_renderer.draw(0.5);
-
-    //const world_pos = grid_pos.mul(GRID_SIZE).to_float(f32);
-    //const grid_square = [_]f32{
-    //    world_pos.x,             world_pos.y,
-    //    world_pos.x + GRID_SIZE, world_pos.y,
-    //    world_pos.x + GRID_SIZE, world_pos.y + GRID_SIZE,
-    //    world_pos.x,             world_pos.y + GRID_SIZE,
-    //};
-    //polygon_renderer.draw_polygon(grid_square[0..]);
 }
 
 fn render_entities(state: *const State) !void {
@@ -140,8 +147,8 @@ fn render_entities(state: *const State) !void {
 fn render_ui(state: *const State) !void {
     if (state.selection_rect) |sel_rect| {
         {
-            const pos = sel_rect.pos.to_float(f32);
-            const size = sel_rect.size.to_float(f32);
+            const pos = sel_rect.pos;
+            const size = sel_rect.size;
             const polygon = [_]f32{
                 pos.x,          pos.y,
                 pos.x + size.x, pos.y,
@@ -152,20 +159,18 @@ fn render_ui(state: *const State) !void {
         }
 
         const can_sel_rect = sel_rect.canonic();
-        const min_pos = can_sel_rect.pos.div(GRID_SIZE);
-        const max_pos = can_sel_rect.pos.add(
-            can_sel_rect.size,
-        ).divi(GRID_SIZE).addi(Vec2i.new(1, 1));
-        var y: i32 = min_pos.y;
-        while (y < max_pos.y) : (y += 1) {
-            var x: i32 = min_pos.x;
-            while (x < max_pos.x) : (x += 1) {
+        const rect_pos = can_sel_rect.pos.floor();
+        const rect_size = can_sel_rect.size.ceil();
+        var y: i32 = rect_pos.y - rect_size.y;
+        while (y < rect_pos.y + rect_size.y) : (y += 1) {
+            var x: i32 = rect_pos.x - rect_size.x;
+            while (x < rect_pos.x + rect_size.x) : (x += 1) {
                 const pos = Vec2i.new(x, y);
                 if (!state.entities.contains(pos))
                     continue;
-                try ui_renderer.queue_element(state, Rect{
-                    .pos = pos.mul(GRID_SIZE),
-                    .size = Vec2i.new(GRID_SIZE, GRID_SIZE),
+                try ui_renderer.queue_element(state, Rectf{
+                    .pos = pos.to_float(f32),
+                    .size = Vec2f.new(1, 1),
                 }, 1);
             }
         }
@@ -174,10 +179,10 @@ fn render_ui(state: *const State) !void {
     // Selected entities
     var entity_iterator = state.selected_entities.iterator();
     while (entity_iterator.next()) |entry| {
-        const pos = entry.key.mul(GRID_SIZE);
-        try ui_renderer.queue_element(state, Rect{
+        const pos = entry.key.to_float(f32);
+        try ui_renderer.queue_element(state, Rectf{
             .pos = pos,
-            .size = Vec2i.new(64, 64),
+            .size = Vec2f.new(1, 1),
         }, 1);
     }
     try ui_renderer.draw(0.0);
@@ -187,7 +192,9 @@ fn render_ui(state: *const State) !void {
     while (copy_buffer_iter.next()) |entry| {
         var mouse_pos: Vec2i = undefined;
         _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-        const pos = entry.key.add(screen2grid(state, mouse_pos)).muli(GRID_SIZE);
+        const pos = entry.key.add(screen2world(
+            mouse_pos.to_float(f32),
+        ).floor());
         try entity_renderer.queue_entity_float(state, pos, &entry.value);
     }
     try entity_renderer.draw(0.5);
@@ -201,16 +208,13 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
         //sdl.WINDOWEVENT_MAXIMIZED,
         //sdl.WINDOWEVENT_RESIZED,
         sdl.WINDOWEVENT_SIZE_CHANGED => {
-            const new_size = Vec2i.new(event.data1, event.data2);
-            const current_size = Vec2i.new(window_width, window_height);
-            const difference = new_size.sub(current_size);
-            window_width = new_size.x;
-            window_height = new_size.y;
+            const new_size = Vec2i.new(event.data1, event.data2).to_float(f32);
+            window_width = event.data1;
+            window_height = event.data2;
 
             c.glViewport(0, 0, window_width, window_height);
 
-            _ = state.viewpos.subi(difference.div(2));
-            _ = state.viewport.addi(difference);
+            state.viewport = new_size.div(GRID_SIZE);
         },
         else => {},
     }
@@ -251,14 +255,38 @@ pub fn debug_write(
     _ = sdl.RenderCopy(renderer, texture, null, dest_rect);
 }
 
-pub inline fn screen2world(state: *const State, point: Vec2i) Vec2i {
-    return point.mulf(state.get_zoom_factor()).addi(state.viewpos);
+pub fn screen2world(point: Vec2f) Vec2f {
+    var vec = [4]f32{
+        2 * point.x / @intToFloat(f32, window_width) - 1,
+        -(2 * point.y / @intToFloat(f32, window_height) - 1),
+        0,
+        1,
+    };
+    matrix.apply(&inv_proj_matrix, &vec);
+    return Vec2f.new(vec[0], vec[1]);
 }
 
-pub inline fn screen2grid(state: *const State, point: Vec2i) Vec2i {
-    return screen2world(state, point).divi(GRID_SIZE);
+pub fn screen2world_distance(point: Vec2f) Vec2f {
+    var vec = [4]f32{
+        2 * point.x / @intToFloat(f32, window_width),
+        -(2 * point.y / @intToFloat(f32, window_height)),
+        0,
+        0,
+    };
+    matrix.apply(&inv_proj_matrix, &vec);
+    return Vec2f.new(vec[0], vec[1]);
 }
 
-pub inline fn grid2screen(state: *const State, point: Vec2i) Vec2i {
-    return point.mul(GRID_SIZE).subi(state.viewpos).divfi(state.get_zoom_factor());
+pub fn world2screen(point: Vec2f) Vec2f {
+    var vec = [4]f32{
+        point.x,
+        point.y,
+        0,
+        1,
+    };
+    matrix.apply(&projection_matrix, &vec);
+    return Vec2f.new(
+        window_width / 2 * (vec[0] + 1),
+        window_height / 2 * (-vec[1] + 1),
+    );
 }

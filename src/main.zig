@@ -8,10 +8,10 @@ const ttf = @import("ttf.zig");
 const c = @import("c.zig");
 const display = @import("display.zig");
 const input = @import("input.zig");
-const Vec2i = @import("vec.zig").Vec2i;
 const GUI_Element = display.GUI_Element;
 const GUI_Button = display.GUI_Button;
 
+usingnamespace @import("vec.zig");
 usingnamespace @import("state.zig");
 usingnamespace @import("save_load.zig");
 
@@ -144,7 +144,11 @@ pub fn main() !void {
                 sdl.MOUSEBUTTONUP => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
                     const mouse_pos = Vec2i.new(mouse_event.x, mouse_event.y);
-                    try input.on_mouse_button_up(&game_state, mouse_event.button, mouse_pos);
+                    try input.on_mouse_button_up(
+                        &game_state,
+                        mouse_event.button,
+                        mouse_pos.to_float(f32),
+                    );
                 },
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
@@ -181,7 +185,10 @@ pub fn main() !void {
         {
             var mouse_pos: Vec2i = undefined;
             _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-            try input.tick_held_mouse_buttons(&game_state, mouse_pos);
+            try input.tick_held_mouse_buttons(
+                &game_state,
+                mouse_pos.to_float(f32),
+            );
         }
 
         try display.render(&game_state);

@@ -29,6 +29,8 @@ const fragment_shader_src_list = [_][]const u8{&fragment_shader_src};
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
+var projection_location: c.GLint = undefined;
+var transparency_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
@@ -58,6 +60,8 @@ pub fn init(allocator: *Allocator) void {
     c.glBindFragDataLocation(shader.handle, 0, c"outColor");
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
+    transparency_location = shader.uniform_location(c"transparency");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -134,21 +138,23 @@ pub inline fn queue_entity(
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    try queue_entity_float(state, grid_pos.mul(GRID_SIZE), entity);
+    try queue_entity_float(state, grid_pos, entity);
 }
 
 pub fn queue_entity_float(
     state: *const State,
-    pixel_pos: Vec2i,
+    grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
     const texture_pos = get_entity_texture(entity);
+    const texture_size = atlas.get_tile_size();
     const angle = entity.get_direction().to_rad();
+    const pos = grid_pos.to_float(f32);
 
     const queued = BufferData{
         .pos = pVec2f{
-            .x = @intToFloat(f32, pixel_pos.x),
-            .y = @intToFloat(f32, pixel_pos.y),
+            .x = pos.x,
+            .y = pos.y,
         },
         .tex_coord = pVec2f{
             .x = texture_pos.x,
@@ -161,14 +167,13 @@ pub fn queue_entity_float(
 }
 
 pub fn collect(state: *const State) !void {
-    const min_pos = state.viewpos.div(GRID_SIZE);
-    const view_width = @divFloor(state.viewport.x, GRID_SIZE) + 2;
-    const view_height = @divFloor(state.viewport.y, GRID_SIZE) + 2;
+    const viewpos = state.viewpos.floor();
+    const viewport = state.viewport.divf(2).ceil();
 
-    var grid_y: i32 = min_pos.y;
-    while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
-        var grid_x: i32 = min_pos.x;
-        while (grid_x < min_pos.x + view_width) : (grid_x += 1) {
+    var grid_y: i32 = viewpos.y - viewport.y;
+    while (grid_y < viewpos.y + viewport.y) : (grid_y += 1) {
+        var grid_x: i32 = viewpos.x - viewport.x;
+        while (grid_x < viewpos.x + viewport.x) : (grid_x += 1) {
             const grid_pos = Vec2i.new(grid_x, grid_y);
             const entry = state.entities.get(grid_pos) orelse continue;
             try queue_entity(state, grid_pos, &entry.value);
@@ -189,9 +194,8 @@ pub fn draw(transparency: f32) !void {
     c.glBindVertexArray(vao);
     shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&shader);
-    const trans_uniform_loc = shader.uniform_location(c"transparency");
-    c.glUniform1f(trans_uniform_loc, transparency);
+    display.set_proj_matrix_uniform(&shader, projection_location);
+    c.glUniform1f(transparency_location, transparency);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }

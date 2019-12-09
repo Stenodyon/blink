@@ -5,9 +5,6 @@ const ArrayList = std.ArrayList;
 //const lazy = @import("lazy");
 const sdl = @import("sdl.zig");
 const img = @import("img.zig");
-const vec = @import("vec.zig");
-const Vec2i = vec.Vec2i;
-const Rect = vec.Rect;
 const display = @import("display.zig");
 
 const entities = @import("entities.zig");
@@ -16,6 +13,7 @@ const Direction = entities.Direction;
 const Delayer = entities.Delayer;
 const Switch = entities.Switch;
 
+usingnamespace @import("vec.zig");
 usingnamespace @import("lightray.zig");
 usingnamespace @import("simulation.zig");
 
@@ -50,14 +48,14 @@ const IOMap = std.HashMap(
 pub var game_state: State = undefined;
 
 pub const State = struct {
-    viewpos: Vec2i,
-    viewport: Vec2i,
+    viewpos: Vec2f,
+    viewport: Vec2f,
 
     entities: EntityMap,
     current_entity: usize,
     entity_ghost_dir: Direction,
     entity_wheel: [8]Entity,
-    selection_rect: ?Rect,
+    selection_rect: ?Rectf,
     selected_entities: EntitySet,
     copy_buffer: EntityMap,
 
@@ -73,8 +71,11 @@ pub const State = struct {
 
     pub fn new(allocator: *Allocator) State {
         return State{
-            .viewpos = Vec2i.new(0, 0),
-            .viewport = Vec2i.new(display.window_width, display.window_height),
+            .viewpos = Vec2f.new(0, 0),
+            .viewport = Vec2i.new(
+                display.window_width,
+                display.window_height,
+            ).divi(display.GRID_SIZE).to_float(f32),
 
             .entities = EntityMap.init(allocator),
             .current_entity = 0,
@@ -364,11 +365,9 @@ pub const State = struct {
         const default_viewport = Vec2i.new(
             display.window_width,
             display.window_height,
-        );
+        ).divi(display.GRID_SIZE).to_float(f32);
         const new_viewport = default_viewport.mulf(factor);
-        const difference = new_viewport.sub(self.viewport).divi(2);
         self.viewport = new_viewport;
-        _ = self.viewpos.subi(difference);
     }
 
     fn zoom_in(self: *State) void {
@@ -418,10 +417,9 @@ pub const State = struct {
 
     pub fn capture_selection_rect(self: *State) !void {
         const sel_rect = self.selection_rect.?.canonic();
-        const min_pos = sel_rect.pos.div(display.GRID_SIZE);
-        const max_pos = sel_rect.pos.add(
-            sel_rect.size,
-        ).divi(display.GRID_SIZE).addi(Vec2i.new(1, 1));
+        const min_pos = sel_rect.pos.floor();
+        const max_pos = sel_rect.pos.add(sel_rect.size).addi(Vec2f.new(1, 1)).ceil();
+
         var y: i32 = min_pos.y;
         while (y < max_pos.y) : (y += 1) {
             var x: i32 = min_pos.x;

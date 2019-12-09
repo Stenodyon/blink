@@ -49,6 +49,7 @@ const fragment_shader_src =
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
+var projection_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
@@ -76,6 +77,7 @@ pub fn init(allocator: *Allocator) void {
     );
     shader.link();
     shader.set_active();
+    projection_location = shader.uniform_location(c"projection");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -112,36 +114,43 @@ pub fn deinit() void {
 
 pub fn queue_element(
     state: *const State,
-    location: Rect,
+    location: Rectf,
     texture_id: usize,
 ) !void {
-    const pos = location.pos.to_float(f32);
-    const size = location.size.to_float(f32);
+    const pos = location.pos;
+    const size = location.size;
     const texture_pos = atlas.get_offset(texture_id);
-    const vertices = [_]pVec2f{
-        pVec2f{ .x = pos.x, .y = pos.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y },
-        pVec2f{ .x = pos.x, .y = pos.y + size.y },
-        pVec2f{ .x = pos.x, .y = pos.y + size.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y },
-        pVec2f{ .x = pos.x + size.x, .y = pos.y + size.y },
+    const vertices = [_]f32{
+        pos.x,          pos.y,
+        pos.x + size.x, pos.y,
+        pos.x,          pos.y + size.y,
+        pos.x,          pos.y + size.y,
+        pos.x + size.x, pos.y,
+        pos.x + size.x, pos.y + size.y,
     };
+
     const cell_width = @intToFloat(f32, atlas.cell_width) / @intToFloat(f32, atlas.width);
     const cell_height = @intToFloat(f32, atlas.cell_height) / @intToFloat(f32, atlas.height);
-    const uvs = [_]pVec2f{
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y + cell_height },
-        pVec2f{ .x = texture_pos.x, .y = texture_pos.y + cell_height },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y },
-        pVec2f{ .x = texture_pos.x + cell_width, .y = texture_pos.y + cell_height },
+    const uvs = [_]f32{
+        texture_pos.x,              texture_pos.y,
+        texture_pos.x + cell_width, texture_pos.y,
+        texture_pos.x,              texture_pos.y + cell_height,
+        texture_pos.x,              texture_pos.y + cell_height,
+        texture_pos.x + cell_width, texture_pos.y,
+        texture_pos.x + cell_width, texture_pos.y + cell_height,
     };
 
     var i: usize = 0;
     while (i < 6) : (i += 1) {
         const queued = BufferData{
-            .pos = vertices[i],
-            .tex_coord = uvs[i],
+            .pos = pVec2f{
+                .x = vertices[2 * i],
+                .y = vertices[2 * i + 1],
+            },
+            .tex_coord = pVec2f{
+                .x = uvs[2 * i],
+                .y = uvs[2 * i + 1],
+            },
         };
         try queued_elements.append(queued);
     }
@@ -160,7 +169,7 @@ pub fn draw(transparency: f32) !void {
     c.glBindVertexArray(vao);
     shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&shader);
+    display.set_proj_matrix_uniform(&shader, projection_location);
     const trans_uniform_loc = shader.uniform_location(c"transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));
