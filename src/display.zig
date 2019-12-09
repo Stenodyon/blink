@@ -52,13 +52,6 @@ fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
         -2 / viewport.y,
         1,
     );
-
-    //    for (dest[0..]) |*index| index.* = 0;
-    //    dest[0] = 2 / @intToFloat(f32, size.x);
-    //    dest[3] = @intToFloat(f32, -viewpos.x) * dest[0] - 1;
-    //    dest[5] = -2. / @intToFloat(f32, size.y);
-    //    dest[7] = @intToFloat(f32, -viewpos.y) * dest[5] + 1;
-    //    dest[15] = 1;
 }
 
 pub fn set_proj_matrix_uniform(
@@ -154,8 +147,8 @@ fn render_entities(state: *const State) !void {
 fn render_ui(state: *const State) !void {
     if (state.selection_rect) |sel_rect| {
         {
-            const pos = sel_rect.pos.to_float(f32);
-            const size = sel_rect.size.to_float(f32);
+            const pos = sel_rect.pos;
+            const size = sel_rect.size;
             const polygon = [_]f32{
                 pos.x,          pos.y,
                 pos.x + size.x, pos.y,
@@ -166,20 +159,18 @@ fn render_ui(state: *const State) !void {
         }
 
         const can_sel_rect = sel_rect.canonic();
-        const min_pos = can_sel_rect.pos.div(GRID_SIZE).to_int(i32);
-        const max_pos = can_sel_rect.pos.add(
-            can_sel_rect.size,
-        ).divi(GRID_SIZE).addi(Vec2f.new(1, 1)).to_int(i32);
-        var y: i32 = min_pos.y;
-        while (y < max_pos.y) : (y += 1) {
-            var x: i32 = min_pos.x;
-            while (x < max_pos.x) : (x += 1) {
+        const rect_pos = can_sel_rect.pos.floor();
+        const rect_size = can_sel_rect.size.ceil();
+        var y: i32 = rect_pos.y - rect_size.y;
+        while (y < rect_pos.y + rect_size.y) : (y += 1) {
+            var x: i32 = rect_pos.x - rect_size.x;
+            while (x < rect_pos.x + rect_size.x) : (x += 1) {
                 const pos = Vec2i.new(x, y);
                 if (!state.entities.contains(pos))
                     continue;
                 try ui_renderer.queue_element(state, Rectf{
-                    .pos = pos.to_float(f32).muli(GRID_SIZE),
-                    .size = Vec2f.new(GRID_SIZE, GRID_SIZE),
+                    .pos = pos.to_float(f32),
+                    .size = Vec2f.new(1, 1),
                 }, 1);
             }
         }
@@ -188,10 +179,10 @@ fn render_ui(state: *const State) !void {
     // Selected entities
     var entity_iterator = state.selected_entities.iterator();
     while (entity_iterator.next()) |entry| {
-        const pos = entry.key.mul(GRID_SIZE);
+        const pos = entry.key.to_float(f32);
         try ui_renderer.queue_element(state, Rectf{
-            .pos = pos.to_float(f32),
-            .size = Vec2f.new(64, 64),
+            .pos = pos,
+            .size = Vec2f.new(1, 1),
         }, 1);
     }
     try ui_renderer.draw(0.0);
