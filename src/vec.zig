@@ -106,10 +106,14 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn divf(self: Self, scalar: f32) Self {
-            return Self.new(
-                @floatToInt(i32, @intToFloat(f32, self.x) / scalar),
-                @floatToInt(i32, @intToFloat(f32, self.y) / scalar),
-            );
+            if (ValType == f32) {
+                return Self.new(self.x / scalar, self.y / scalar);
+            } else {
+                return Self.new(
+                    @floatToInt(i32, @intToFloat(f32, self.x) / scalar),
+                    @floatToInt(i32, @intToFloat(f32, self.y) / scalar),
+                );
+            }
         }
 
         pub fn divfi(self: *Self, scalar: f32) Self {

@@ -135,7 +135,7 @@ pub inline fn queue_entity(
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    try queue_entity_float(state, grid_pos.mul(GRID_SIZE), entity);
+    try queue_entity_float(state, grid_pos, entity);
 }
 
 pub fn queue_entity_float(
@@ -185,15 +185,13 @@ pub fn queue_entity_float(
 }
 
 pub fn collect(state: *const State) !void {
-    const min_pos = state.viewpos.div(GRID_SIZE).to_int(i32);
-    const viewport = state.viewport.to_int(i32);
-    const view_width = @divFloor(viewport.x, GRID_SIZE) + 2;
-    const view_height = @divFloor(viewport.y, GRID_SIZE) + 2;
+    const viewpos = state.viewpos.floor();
+    const viewport = state.viewport.divf(2).ceil();
 
-    var grid_y: i32 = min_pos.y;
-    while (grid_y < min_pos.y + view_height) : (grid_y += 1) {
-        var grid_x: i32 = min_pos.x;
-        while (grid_x < min_pos.x + view_width) : (grid_x += 1) {
+    var grid_y: i32 = viewpos.y - viewport.y;
+    while (grid_y < viewpos.y + viewport.y) : (grid_y += 1) {
+        var grid_x: i32 = viewpos.x - viewport.x;
+        while (grid_x < viewpos.x + viewport.x) : (grid_x += 1) {
             const grid_pos = Vec2i.new(grid_x, grid_y);
             const entry = state.entities.get(grid_pos) orelse continue;
             try queue_entity(state, grid_pos, &entry.value);

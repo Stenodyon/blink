@@ -58,6 +58,11 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
                 drag_initial_viewpos = state.viewpos;
                 break :viewpos state.viewpos;
             };
+            std.debug.warn(
+                "initial_viewpos: {}, {}\n",
+                initial_viewpos.x,
+                initial_viewpos.y,
+            );
             var movement = display.screen2world_distance(
                 state,
                 mouse.sub(initial_mouse).to_float(f32),
@@ -65,7 +70,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
             placing = movement.length_sq() < 2;
             state.viewpos = initial_viewpos.sub(movement);
             std.debug.warn("viewpos: {}, {}\n", state.viewpos.x, state.viewpos.y);
-            std.debug.warn("movement: {}, {}\n", movement.x, movement.y);
+            std.debug.warn("movement: {}, {}\n\n", movement.x, movement.y);
         }
     } else {
         if (drag_initial_mouse != null or drag_initial_viewpos != null) {
