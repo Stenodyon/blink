@@ -7,6 +7,7 @@ const sdl = @import("sdl.zig");
 const img = @import("img.zig");
 const display = @import("display.zig");
 
+const InputState = @import("input.zig").InputState;
 const entities = @import("entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
@@ -50,6 +51,7 @@ pub var game_state: State = undefined;
 pub const State = struct {
     viewpos: Vec2f,
     viewport: Vec2f,
+    input_state: InputState,
 
     entities: EntityMap,
     current_entity: usize,
@@ -76,6 +78,7 @@ pub const State = struct {
                 display.window_width,
                 display.window_height,
             ).divi(display.GRID_SIZE).to_float(f32),
+            .input_state = .Normal,
 
             .entities = EntityMap.init(allocator),
             .current_entity = 0,

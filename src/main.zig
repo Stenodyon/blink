@@ -133,7 +133,7 @@ pub fn main() !void {
             switch (event.type) {
                 sdl.MOUSEMOTION => {
                     const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
-                    try input.on_mouse_motion(
+                    input.on_mouse_motion(
                         &game_state,
                         mouse_event.x,
                         mouse_event.y,
@@ -185,7 +185,7 @@ pub fn main() !void {
         {
             var mouse_pos: Vec2i = undefined;
             _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-            try input.tick_held_mouse_buttons(
+            input.tick_held_mouse_buttons(
                 &game_state,
                 mouse_pos.to_float(f32),
             );

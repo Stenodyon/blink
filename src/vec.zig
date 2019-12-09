@@ -200,13 +200,13 @@ fn Vec2(comptime ValType: type) type {
         }
 
         pub fn length_sq(self: Self) f32 {
-            comptime if (ValType == f32) {
+            if (ValType == f32) {
                 return self.x * self.x + self.y * self.y;
             } else {
                 const x = @intToFloat(f32, self.x);
                 const y = @intToFloat(f32, self.y);
                 return x * x + y * y;
-            };
+            }
         }
 
         pub fn distanceInt(self: Self, other: Vec2i) u32 {
