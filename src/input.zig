@@ -85,7 +85,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
         sdl.BUTTON_LEFT => {
             if (placing) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2world(state, mouse_pos).to_int(i32);
+                    const pos = display.screen2world(state, mouse_pos).floor();
                     if (moving and try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
@@ -93,7 +93,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                         _ = try state.place_copy(pos);
                     }
                 } else {
-                    const grid_pos = display.screen2world(state, mouse_pos).to_int(i32);
+                    const grid_pos = display.screen2world(state, mouse_pos).floor();
                     if (try state.place_entity(grid_pos)) {
                         std.debug.warn("Placed!\n");
                     } else {
@@ -103,7 +103,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                 placing = false;
             } else if (moving) {
                 if (state.copy_buffer.count() > 0) {
-                    const pos = display.screen2world(state, mouse_pos).to_int(i32);
+                    const pos = display.screen2world(state, mouse_pos).floor();
                     if (try state.place_selected_copy(pos)) {
                         state.copy_buffer.clear();
                         moving = false;
