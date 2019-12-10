@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TMP_DIR=/tmp/blink
+SCRIPT_DIR=$PWD
 
 set -e
 
@@ -27,11 +28,17 @@ cp blink README.md $TMP_DIR/Blink_Linux_x64/
 cp -r data $TMP_DIR/Blink_Linux_x64/
 
 cp blink.exe README.md $TMP_DIR/Blink_Windows_x64/
+cp $(find zig-cache/ -name '*.pdb') $TMP_DIR/Blink_Windows_x64/
 cp -r data $TMP_DIR/Blink_Windows_x64/
 cp $TMP_DIR/*.dll $TMP_DIR/Blink_Windows_x64/
 
-rm -f Blink_Linux_x64.zip
-rm -f Blink_Windows_x64.zip
+rm -f Blink_Linux_x64.zip $TMP_DIR/Blink_Linux_x64.zip
+rm -f Blink_Windows_x64.zip $TMP_DIR/Blink_Windows_x64.zip
 
-zip -r Blink_Linux_x64.zip $TMP_DIR/Blink_Linux_x64
-zip -r Blink_Windows_x64.zip $TMP_DIR/Blink_Windows_x64
+cd $TMP_DIR
+zip -r Blink_Linux_x64.zip Blink_Linux_x64
+zip -r Blink_Windows_x64.zip Blink_Windows_x64
+
+cd $SCRIPT_DIR
+cp $TMP_DIR/Blink_Linux_x64.zip .
+cp $TMP_DIR/Blink_Windows_x64.zip .
