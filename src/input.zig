@@ -9,7 +9,7 @@ usingnamespace @import("vec.zig");
 usingnamespace @import("save_load.zig");
 usingnamespace @import("state.zig");
 
-var last_grid_action: ?Vec2i = null;
+var last_cell: ?Vec2i = null;
 var left_click_pos: Vec2i = undefined;
 var drag_initial_viewpos: Vec2f = undefined;
 var selecting = false;
@@ -18,16 +18,27 @@ var moving = false;
 
 pub const InputState = enum {
     Normal,
+    Removing,
     PlaceOrPan,
     Panning,
     Selecting,
 };
 
-pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
+pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !void {
     const mouse = Vec2i.new(x, y);
 
+    if (last_cell) |cell| {
+        if (cell.x != x or cell.y != y) {
+            try on_mouse_enter_cell(state, x, y);
+            last_cell = Vec2i.new(x, y);
+        }
+    } else {
+        try on_mouse_enter_cell(state, x, y);
+        last_cell = Vec2i.new(x, y);
+    }
+
     switch (state.input_state) {
-        .Normal => {},
+        .Normal, .Removing => {},
         .PlaceOrPan => {
             const pixel_movement = mouse.sub(left_click_pos);
             if (pixel_movement.length_sq() > 2) {
@@ -50,11 +61,27 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) vo
     }
 }
 
+fn on_mouse_enter_cell(state: *State, x: i32, y: i32) !void {
+    const world_mouse = display.screen2world(Vec2i.new(x, y).to_float(f32));
+
+    switch (state.input_state) {
+        .Removing => {
+            const grid_pos = world_mouse.floor();
+            _ = try state.remove_entity(grid_pos);
+        },
+        else => {},
+    }
+}
+
 pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
     switch (state.input_state) {
         .Normal => {},
+        .Removing => {
+            if (button == sdl.BUTTON_RIGHT) {
+                state.input_state = .Normal;
+            }
+        },
         .PlaceOrPan => {
-            std.debug.warn("Place!\n");
             const grid_pos = display.screen2world(mouse_pos).floor();
             _ = try state.place_entity(grid_pos);
 
@@ -80,7 +107,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
     }
 }
 
-pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
+pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
     const mouse = Vec2i.new(x, y);
 
     switch (state.input_state) {
@@ -102,9 +129,16 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
                         state.input_state = .PlaceOrPan;
                     }
                 },
+                sdl.BUTTON_RIGHT => {
+                    const grid_pos = display.screen2world(mouse.to_float(f32)).floor();
+                    _ = try state.remove_entity(grid_pos);
+
+                    state.input_state = .Removing;
+                },
                 else => {},
             }
         },
+        .Removing => if (button == sdl.BUTTON_RIGHT) unreachable,
         .PlaceOrPan => if (button == sdl.BUTTON_LEFT) unreachable,
         .Panning => if (button == sdl.BUTTON_LEFT) unreachable,
         .Selecting => if (button == sdl.BUTTON_LEFT) unreachable,

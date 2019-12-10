@@ -133,7 +133,7 @@ pub fn main() !void {
             switch (event.type) {
                 sdl.MOUSEMOTION => {
                     const mouse_event = @ptrCast(*sdl.MouseMotionEvent, &event);
-                    input.on_mouse_motion(
+                    try input.on_mouse_motion(
                         &game_state,
                         mouse_event.x,
                         mouse_event.y,
@@ -152,7 +152,7 @@ pub fn main() !void {
                 },
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
-                    input.on_mouse_button_down(
+                    try input.on_mouse_button_down(
                         &game_state,
                         mouse_event.button,
                         mouse_event.x,
