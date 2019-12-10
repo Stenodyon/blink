@@ -167,13 +167,14 @@ pub fn queue_entity_float(
 }
 
 pub fn collect(state: *const State) !void {
-    const viewpos = state.viewpos.floor();
-    const viewport = state.viewport.divf(2).ceil();
+    const viewport_size = state.viewport.div(2).add(Vec2f.new(1, 1));
+    const min_pos = state.viewpos.sub(viewport_size).floor();
+    const max_pos = state.viewpos.add(viewport_size).ceil();
 
-    var grid_y: i32 = viewpos.y - viewport.y;
-    while (grid_y < viewpos.y + viewport.y) : (grid_y += 1) {
-        var grid_x: i32 = viewpos.x - viewport.x;
-        while (grid_x < viewpos.x + viewport.x) : (grid_x += 1) {
+    var grid_y: i32 = min_pos.y;
+    while (grid_y < max_pos.y) : (grid_y += 1) {
+        var grid_x: i32 = min_pos.x;
+        while (grid_x < max_pos.x) : (grid_x += 1) {
             const grid_pos = Vec2i.new(grid_x, grid_y);
             const entry = state.entities.get(grid_pos) orelse continue;
             try queue_entity(state, grid_pos, &entry.value);
