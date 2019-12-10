@@ -12,9 +12,6 @@ usingnamespace @import("state.zig");
 var last_cell: ?Vec2i = null;
 var left_click_pos: Vec2i = undefined;
 var drag_initial_viewpos: Vec2f = undefined;
-var selecting = false;
-var placing = false;
-var moving = false;
 
 pub const InputState = enum {
     Normal,
