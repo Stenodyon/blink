@@ -43,7 +43,8 @@ The makefile calls the zig build system if you prefer GNU make.
 * Ctrl+mouse wheel to zoom in/out.
 * Mouse wheel or 1-9 numbers to select an item
 * Q and E to rotate the item
-* F to flip switches
+* F to pick the item under the cursor
+* R to mirror switches
 * Ctrl+left click to select
 * Left click and drag a selected item to move the selection
 * Ctrl+D to clone the selection, Ctrl+X to cut
