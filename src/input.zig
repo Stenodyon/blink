@@ -21,6 +21,7 @@ pub const InputState = enum {
     Removing,
     PlaceOrPan,
     Panning,
+    PlaceHold,
     Selecting,
 };
 
@@ -38,7 +39,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
     }
 
     switch (state.input_state) {
-        .Normal, .Removing => {},
+        .Normal, .Removing, .PlaceHold => {},
         .PlaceOrPan => {
             const pixel_movement = mouse.sub(left_click_pos);
             if (pixel_movement.length_sq() > 2) {
@@ -63,12 +64,11 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
 
 fn on_mouse_enter_cell(state: *State, x: i32, y: i32) !void {
     const world_mouse = display.screen2world(Vec2i.new(x, y).to_float(f32));
+    const grid_pos = world_mouse.floor();
 
     switch (state.input_state) {
-        .Removing => {
-            const grid_pos = world_mouse.floor();
-            _ = try state.remove_entity(grid_pos);
-        },
+        .Removing => _ = try state.remove_entity(grid_pos),
+        .PlaceHold => _ = try state.place_entity(grid_pos),
         else => {},
     }
 }
@@ -88,11 +88,13 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
             state.input_state = .Normal;
         },
         .Panning => {
-            switch (button) {
-                sdl.BUTTON_LEFT => {
-                    state.input_state = .Normal;
-                },
-                else => {},
+            if (button == sdl.BUTTON_LEFT) {
+                state.input_state = .Normal;
+            }
+        },
+        .PlaceHold => {
+            if (button == sdl.BUTTON_LEFT) {
+                state.input_state = .Normal;
             }
         },
         .Selecting => {
@@ -122,6 +124,8 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
                         };
 
                         state.input_state = .Selecting;
+                    } else if ((sdl.GetModState() & sdl.KMOD_LSHIFT) != 0) {
+                        state.input_state = .PlaceHold;
                     } else {
                         left_click_pos = mouse;
                         drag_initial_viewpos = state.viewpos;
@@ -141,6 +145,7 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
         .Removing => if (button == sdl.BUTTON_RIGHT) unreachable,
         .PlaceOrPan => if (button == sdl.BUTTON_LEFT) unreachable,
         .Panning => if (button == sdl.BUTTON_LEFT) unreachable,
+        .PlaceHold => if (button == sdl.BUTTON_LEFT) unreachable,
         .Selecting => if (button == sdl.BUTTON_LEFT) unreachable,
     }
 }
@@ -206,6 +211,11 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
         sdl.K_F6 => {
             try save_state(&game_state, "test.sav");
             std.debug.warn("saved to test.sav\n");
+        },
+        sdl.K_LSHIFT => {
+            if (state.input_state == .PlaceHold) {
+                state.input_state = .Normal;
+            }
         },
         else => {},
     }
