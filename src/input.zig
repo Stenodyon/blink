@@ -20,6 +20,7 @@ pub const InputState = enum {
     Normal,
     PlaceOrPan,
     Panning,
+    Selecting,
 };
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) void {
@@ -39,6 +40,12 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) vo
                 pixel_movement.to_float(f32),
             );
             state.viewpos = drag_initial_viewpos.sub(movement);
+        },
+        .Selecting => {
+            const movement = display.screen2world(mouse.to_float(f32)).subi(
+                state.selection_rect.?.pos,
+            );
+            state.selection_rect.?.size = movement;
         },
     }
 }
@@ -61,6 +68,15 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                 else => {},
             }
         },
+        .Selecting => {
+            switch (button) {
+                sdl.BUTTON_LEFT => {
+                    try state.capture_selection_rect();
+                    state.input_state = .Normal;
+                },
+                else => {},
+            }
+        },
     }
 }
 
@@ -71,15 +87,27 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) void {
         .Normal => {
             switch (button) {
                 sdl.BUTTON_LEFT => {
-                    left_click_pos = mouse;
-                    drag_initial_viewpos = state.viewpos;
-                    state.input_state = .PlaceOrPan;
+                    if ((sdl.GetModState() & sdl.KMOD_LCTRL) != 0) {
+                        const world_pos = display.screen2world(mouse.to_float(f32));
+                        state.selection_rect = Rectf{
+                            .pos = world_pos,
+                            .size = Vec2f.new(0, 0),
+                        };
+
+                        state.input_state = .Selecting;
+                    } else {
+                        left_click_pos = mouse;
+                        drag_initial_viewpos = state.viewpos;
+
+                        state.input_state = .PlaceOrPan;
+                    }
                 },
                 else => {},
             }
         },
         .PlaceOrPan => if (button == sdl.BUTTON_LEFT) unreachable,
-        .Panning => unreachable,
+        .Panning => if (button == sdl.BUTTON_LEFT) unreachable,
+        .Selecting => if (button == sdl.BUTTON_LEFT) unreachable,
     }
 }
 
