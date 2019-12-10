@@ -167,6 +167,10 @@ pub fn main() !void {
                         game_state.on_wheel_up(@intCast(u32, wheel_event.y));
                     }
                 },
+                sdl.KEYDOWN => {
+                    const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
+                    try input.on_key_down(&game_state, keyboard_event.keysym);
+                },
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
                     try input.on_key_up(&game_state, keyboard_event.keysym);

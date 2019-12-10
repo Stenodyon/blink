@@ -46,6 +46,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
             if (pixel_movement.length_sq() > 2) {
                 const grid_pos = display.screen2world(mouse.to_float(f32)).floor();
                 if (state.selected_entities.contains(grid_pos)) {
+                    state.copy_buffer.clear();
                     try state.copy_selection(grid_pos);
                     try state.delete_selection();
 
@@ -57,7 +58,7 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
         },
         .Panning => {
             const pixel_movement = mouse.sub(left_click_pos);
-            var movement = display.screen2world_distance(
+            const movement = display.screen2world_distance(
                 pixel_movement.to_float(f32),
             );
             state.viewpos = drag_initial_viewpos.sub(movement);
@@ -92,7 +93,15 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
         },
         .PlaceOrPanOrMove => {
             const grid_pos = display.screen2world(mouse_pos).floor();
-            _ = try state.place_entity(grid_pos);
+            if (state.copy_buffer.count() > 0) {
+                if ((try state.place_selected_copy(grid_pos)) and
+                    (sdl.GetModState() & sdl.KMOD_LSHIFT) == 0)
+                {
+                    state.copy_buffer.clear();
+                }
+            } else {
+                _ = try state.place_entity(grid_pos);
+            }
 
             state.input_state = .Normal;
         },
@@ -119,8 +128,9 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
             const grid_pos = display.screen2world(mouse_pos).floor();
             if (try state.place_selected_copy(grid_pos)) {
                 state.copy_buffer.clear();
-                state.input_state = .Normal;
             }
+
+            state.input_state = .Normal;
         },
     }
 }
@@ -141,7 +151,11 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
 
                         state.input_state = .Selecting;
                     } else if ((sdl.GetModState() & sdl.KMOD_LSHIFT) != 0) {
-                        state.input_state = .PlaceHold;
+                        if (state.copy_buffer.count() == 0) {
+                            state.input_state = .PlaceHold;
+                        } else {
+                            state.input_state = .PlaceOrPanOrMove;
+                        }
                     } else {
                         left_click_pos = mouse;
                         drag_initial_viewpos = state.viewpos;
@@ -163,11 +177,31 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
         .Panning => if (button == sdl.BUTTON_LEFT) unreachable,
         .PlaceHold => if (button == sdl.BUTTON_LEFT) unreachable,
         .Selecting => if (button == sdl.BUTTON_LEFT) unreachable,
-        .Moving => {},
+        .Moving => if (button == sdl.BUTTON_LEFT) unreachable,
     }
 }
 
 pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2f) void {}
+
+pub fn on_key_down(state: *State, keysym: sdl.Keysym) !void {
+    const modifiers = sdl.GetModState();
+    switch (keysym.sym) {
+        sdl.K_d => {
+            state.copy_buffer.clear();
+            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
+                try put_selection_in_buffer(state);
+            }
+        },
+        sdl.K_x => {
+            state.copy_buffer.clear();
+            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + X
+                try put_selection_in_buffer(state);
+                try state.delete_selection();
+            }
+        },
+        else => {},
+    }
+}
 
 pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
     const modifiers = sdl.GetModState();
@@ -186,22 +220,6 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             const index = @intCast(usize, utils.slot_value(keysym.sym));
             if (index < state.entity_wheel.len) {
                 state.set_selected_slot(index);
-            }
-        },
-        sdl.K_d => {
-            state.copy_buffer.clear();
-            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
-                var min = Vec2i.new(std.math.maxInt(i32), std.math.maxInt(i32));
-                var max = Vec2i.new(std.math.minInt(i32), std.math.minInt(i32));
-                var entity_iterator = state.selected_entities.iterator();
-                while (entity_iterator.next()) |entry| {
-                    min.x = std.math.min(min.x, entry.key.x);
-                    min.y = std.math.min(min.y, entry.key.y);
-                    max.x = std.math.max(max.x, entry.key.x);
-                    max.y = std.math.max(max.y, entry.key.y);
-                }
-                const center = min.add(max).divi(2);
-                try state.copy_selection(center);
             }
         },
         sdl.K_q => {
@@ -236,4 +254,20 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
         },
         else => {},
     }
+}
+
+fn put_selection_in_buffer(state: *State) !void {
+    // Find the center of selected entities
+    var min = Vec2i.new(std.math.maxInt(i32), std.math.maxInt(i32));
+    var max = Vec2i.new(std.math.minInt(i32), std.math.minInt(i32));
+    var entity_iterator = state.selected_entities.iterator();
+    while (entity_iterator.next()) |entry| {
+        min.x = std.math.min(min.x, entry.key.x);
+        min.y = std.math.min(min.y, entry.key.y);
+        max.x = std.math.max(max.x, entry.key.x);
+        max.y = std.math.max(max.y, entry.key.y);
+    }
+    const center = min.add(max).divi(2);
+
+    try state.copy_selection(center);
 }
