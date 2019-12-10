@@ -283,4 +283,37 @@ pub const Entity = union(enum) {
             .Switch => |*eswitch| eswitch.is_flipped = !eswitch.is_flipped,
         }
     }
+
+    pub fn set_flipped(self: *Entity, value: bool) void {
+        switch (self.*) {
+            .Block,
+            .Laser,
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            .Delayer,
+            .Lamp,
+            => {},
+            .Switch => |*eswitch| eswitch.is_flipped = value,
+        }
+    }
+
+    pub fn get_flipped(self: *const Entity) bool {
+        switch (self.*) {
+            .Block,
+            .Laser,
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            .Delayer,
+            .Lamp,
+            => return false,
+            .Switch => |*eswitch| return eswitch.is_flipped,
+        }
+    }
+
+    pub fn set_properties_from(self: *Entity, other: *const Entity) void {
+        self.set_direction(other.get_direction());
+        self.set_flipped(other.get_flipped());
+    }
 };

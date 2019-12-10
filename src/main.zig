@@ -173,7 +173,7 @@ pub fn main() !void {
                 },
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
-                    try input.on_key_up(&game_state, keyboard_event.keysym);
+                    input.on_key_up(&game_state, keyboard_event.keysym);
                 },
                 sdl.WINDOWEVENT => {
                     display.on_window_event(&game_state, &event.window);

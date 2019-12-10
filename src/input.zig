@@ -185,26 +185,6 @@ pub fn tick_held_mouse_buttons(state: *State, mouse_pos: Vec2f) void {}
 pub fn on_key_down(state: *State, keysym: sdl.Keysym) !void {
     const modifiers = sdl.GetModState();
     switch (keysym.sym) {
-        sdl.K_d => {
-            state.copy_buffer.clear();
-            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
-                try put_selection_in_buffer(state);
-            }
-        },
-        sdl.K_x => {
-            state.copy_buffer.clear();
-            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + X
-                try put_selection_in_buffer(state);
-                try state.delete_selection();
-            }
-        },
-        else => {},
-    }
-}
-
-pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
-    const modifiers = sdl.GetModState();
-    switch (keysym.sym) {
         sdl.K_0,
         sdl.K_1,
         sdl.K_2,
@@ -222,15 +202,10 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             }
         },
         sdl.K_q => {
-            state.entity_ghost_dir = state.entity_ghost_dir.cclockwise();
-            state.get_entity_ptr().set_direction(state.entity_ghost_dir);
+            state.set_ghost_direction(state.get_ghost_direction().cclockwise());
         },
         sdl.K_e => {
-            state.entity_ghost_dir = state.entity_ghost_dir.clockwise();
-            state.get_entity_ptr().set_direction(state.entity_ghost_dir);
-        },
-        sdl.K_f => {
-            state.get_entity_ptr().flip();
+            state.set_ghost_direction(state.get_ghost_direction().clockwise());
         },
         sdl.K_DELETE, sdl.K_BACKSPACE => {
             try state.delete_selection();
@@ -246,6 +221,37 @@ pub fn on_key_up(state: *State, keysym: sdl.Keysym) !void {
             try save_state(&game_state, "test.sav");
             std.debug.warn("saved to test.sav\n");
         },
+        sdl.K_r => {
+            state.get_entity_ptr().flip();
+        },
+        sdl.K_f => { // pick under cursor
+            var mouse: Vec2i = undefined;
+            _ = sdl.GetMouseState(&mouse.x, &mouse.y);
+            const grid_pos = display.screen2world(mouse.to_float(f32)).floor();
+            if (state.get_entity(grid_pos)) |entity| {
+                state.set_selected_entity(entity.*);
+            }
+        },
+        sdl.K_d => {
+            state.copy_buffer.clear();
+            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + D
+                try put_selection_in_buffer(state);
+            }
+        },
+        sdl.K_x => {
+            state.copy_buffer.clear();
+            if ((modifiers & sdl.KMOD_LCTRL) != 0) { // CTRL + X
+                try put_selection_in_buffer(state);
+                try state.delete_selection();
+            }
+        },
+        else => {},
+    }
+}
+
+pub fn on_key_up(state: *State, keysym: sdl.Keysym) void {
+    const modifiers = sdl.GetModState();
+    switch (keysym.sym) {
         sdl.K_LSHIFT => {
             if (state.input_state == .PlaceHold) {
                 state.input_state = .Normal;

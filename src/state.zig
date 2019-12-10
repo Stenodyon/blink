@@ -55,7 +55,6 @@ pub const State = struct {
 
     entities: EntityMap,
     current_entity: usize,
-    entity_ghost_dir: Direction,
     entity_wheel: [8]Entity,
     selection_rect: ?Rectf,
     selected_entities: EntitySet,
@@ -82,7 +81,6 @@ pub const State = struct {
 
             .entities = EntityMap.init(allocator),
             .current_entity = 0,
-            .entity_ghost_dir = .UP,
             .entity_wheel = [_]Entity{
                 Entity.Block,
                 Entity{ .Laser = .UP },
@@ -239,6 +237,11 @@ pub const State = struct {
         }
         try self.update_trees(pos);
         return true;
+    }
+
+    pub fn get_entity(self: *const State, pos: Vec2i) ?*const Entity {
+        const entry = self.entities.get(pos) orelse return null;
+        return &entry.value;
     }
 
     pub fn remove_entity(self: *State, pos: Vec2i) !?EntityMap.KV {
@@ -413,9 +416,35 @@ pub const State = struct {
         }
     }
 
+    pub fn find_entity_slot(self: *const State, entity_type: @TagType(Entity)) ?usize {
+        for (self.entity_wheel) |wheel_entity, i| {
+            if (@TagType(Entity)(wheel_entity) == entity_type) {
+                return i;
+            }
+        }
+        return null;
+    }
+
     pub fn set_selected_slot(self: *State, slot: usize) void {
         self.current_entity = slot;
-        self.get_entity_ptr().set_direction(self.entity_ghost_dir);
+    }
+
+    pub fn set_selected_entity(self: *State, entity: Entity) void {
+        if (self.find_entity_slot(@TagType(Entity)(entity))) |slot| {
+            self.set_selected_slot(slot);
+            self.get_entity_ptr().set_properties_from(&entity);
+            self.set_ghost_direction(entity.get_direction());
+        }
+    }
+
+    pub fn get_ghost_direction(self: *State) Direction {
+        return self.get_entity_ptr().get_direction();
+    }
+
+    pub fn set_ghost_direction(self: *State, direction: Direction) void {
+        for (self.entity_wheel) |*entity| {
+            entity.set_direction(direction);
+        }
     }
 
     pub fn capture_selection_rect(self: *State) !void {
