@@ -152,7 +152,7 @@ pub fn main() !void {
                 },
                 sdl.MOUSEBUTTONDOWN => {
                     const mouse_event = @ptrCast(*sdl.MouseButtonEvent, &event);
-                    input.on_mouse_button_down(
+                    try input.on_mouse_button_down(
                         &game_state,
                         mouse_event.button,
                         mouse_event.x,
@@ -166,6 +166,10 @@ pub fn main() !void {
                     } else {
                         game_state.on_wheel_up(@intCast(u32, wheel_event.y));
                     }
+                },
+                sdl.KEYDOWN => {
+                    const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
+                    try input.on_key_down(&game_state, keyboard_event.keysym);
                 },
                 sdl.KEYUP => {
                     const keyboard_event = @ptrCast(*sdl.KeyboardEvent, &event);
@@ -185,7 +189,7 @@ pub fn main() !void {
         {
             var mouse_pos: Vec2i = undefined;
             _ = sdl.GetMouseState(&mouse_pos.x, &mouse_pos.y);
-            try input.tick_held_mouse_buttons(
+            input.tick_held_mouse_buttons(
                 &game_state,
                 mouse_pos.to_float(f32),
             );

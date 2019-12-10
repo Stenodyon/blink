@@ -242,6 +242,11 @@ pub const K_F22 = c.SDLK_F22;
 pub const K_F23 = c.SDLK_F23;
 pub const K_F24 = c.SDLK_F24;
 
+pub const K_LSHIFT = c.SDLK_LSHIFT;
+pub const K_RSHIFT = c.SDLK_RSHIFT;
+pub const K_LCTRL = c.SDLK_LCTRL;
+pub const K_RCTRL = c.SDLK_RCTRL;
+
 pub const KMOD_NONE: c_int = c.KMOD_NONE;
 pub const KMOD_LSHIFT: c_int = c.KMOD_LSHIFT;
 pub const KMOD_RSHIFT: c_int = c.KMOD_RSHIFT;
