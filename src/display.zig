@@ -159,12 +159,12 @@ fn render_ui(state: *const State) !void {
         }
 
         const can_sel_rect = sel_rect.canonic();
-        const rect_pos = can_sel_rect.pos.floor();
-        const rect_size = can_sel_rect.size.ceil();
-        var y: i32 = rect_pos.y - rect_size.y;
-        while (y < rect_pos.y + rect_size.y) : (y += 1) {
-            var x: i32 = rect_pos.x - rect_size.x;
-            while (x < rect_pos.x + rect_size.x) : (x += 1) {
+        const min_pos = can_sel_rect.pos.floor();
+        const max_pos = can_sel_rect.pos.add(can_sel_rect.size).ceil();
+        var y: i32 = min_pos.y;
+        while (y < max_pos.y) : (y += 1) {
+            var x: i32 = min_pos.x;
+            while (x < max_pos.x) : (x += 1) {
                 const pos = Vec2i.new(x, y);
                 if (!state.entities.contains(pos))
                     continue;
