@@ -109,6 +109,8 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
         },
         .PlaceHold => {
             if (button == sdl.BUTTON_LEFT) {
+                const grid_pos = display.screen2world(mouse_pos).floor();
+                _ = try state.place_entity(grid_pos);
                 state.input_state = .Normal;
             }
         },
