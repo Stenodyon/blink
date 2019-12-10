@@ -19,10 +19,11 @@ var moving = false;
 pub const InputState = enum {
     Normal,
     Removing,
-    PlaceOrPan,
+    PlaceOrPanOrMove,
     Panning,
     PlaceHold,
     Selecting,
+    Moving,
 };
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !void {
@@ -39,11 +40,19 @@ pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !v
     }
 
     switch (state.input_state) {
-        .Normal, .Removing, .PlaceHold => {},
-        .PlaceOrPan => {
+        .Normal, .Removing, .PlaceHold, .Moving => {},
+        .PlaceOrPanOrMove => {
             const pixel_movement = mouse.sub(left_click_pos);
             if (pixel_movement.length_sq() > 2) {
-                state.input_state = .Panning;
+                const grid_pos = display.screen2world(mouse.to_float(f32)).floor();
+                if (state.selected_entities.contains(grid_pos)) {
+                    try state.copy_selection(grid_pos);
+                    try state.delete_selection();
+
+                    state.input_state = .Moving;
+                } else {
+                    state.input_state = .Panning;
+                }
             }
         },
         .Panning => {
@@ -81,7 +90,7 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                 state.input_state = .Normal;
             }
         },
-        .PlaceOrPan => {
+        .PlaceOrPanOrMove => {
             const grid_pos = display.screen2world(mouse_pos).floor();
             _ = try state.place_entity(grid_pos);
 
@@ -104,6 +113,13 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
                     state.input_state = .Normal;
                 },
                 else => {},
+            }
+        },
+        .Moving => {
+            const grid_pos = display.screen2world(mouse_pos).floor();
+            if (try state.place_selected_copy(grid_pos)) {
+                state.copy_buffer.clear();
+                state.input_state = .Normal;
             }
         },
     }
@@ -130,7 +146,7 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
                         left_click_pos = mouse;
                         drag_initial_viewpos = state.viewpos;
 
-                        state.input_state = .PlaceOrPan;
+                        state.input_state = .PlaceOrPanOrMove;
                     }
                 },
                 sdl.BUTTON_RIGHT => {
@@ -143,10 +159,11 @@ pub fn on_mouse_button_down(state: *State, button: u8, x: i32, y: i32) !void {
             }
         },
         .Removing => if (button == sdl.BUTTON_RIGHT) unreachable,
-        .PlaceOrPan => if (button == sdl.BUTTON_LEFT) unreachable,
+        .PlaceOrPanOrMove => if (button == sdl.BUTTON_LEFT) unreachable,
         .Panning => if (button == sdl.BUTTON_LEFT) unreachable,
         .PlaceHold => if (button == sdl.BUTTON_LEFT) unreachable,
         .Selecting => if (button == sdl.BUTTON_LEFT) unreachable,
+        .Moving => {},
     }
 }
 

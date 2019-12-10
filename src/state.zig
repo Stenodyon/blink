@@ -421,7 +421,7 @@ pub const State = struct {
     pub fn capture_selection_rect(self: *State) !void {
         const sel_rect = self.selection_rect.?.canonic();
         const min_pos = sel_rect.pos.floor();
-        const max_pos = sel_rect.pos.add(sel_rect.size).addi(Vec2f.new(1, 1)).ceil();
+        const max_pos = sel_rect.pos.add(sel_rect.size).ceil();
 
         var y: i32 = min_pos.y;
         while (y < max_pos.y) : (y += 1) {
