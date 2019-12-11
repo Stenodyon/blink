@@ -91,9 +91,14 @@ pub fn on_mouse_button_up(state: *State, button: u8, mouse_pos: Vec2f) !void {
         .PlaceOrPanOrMove => {
             const grid_pos = display.screen2world(mouse_pos).floor();
             if (state.copy_buffer.count() > 0) {
-                if ((try state.place_selected_copy(grid_pos)) and
-                    (sdl.GetModState() & sdl.KMOD_LSHIFT) == 0)
-                {
+                var placed = false;
+                if (state.selected_entities.count() > 0) {
+                    placed = try state.place_copy(grid_pos);
+                } else {
+                    placed = try state.place_selected_copy(grid_pos);
+                }
+
+                if (placed and (sdl.GetModState() & sdl.KMOD_LSHIFT) == 0) {
                     state.copy_buffer.clear();
                 }
             } else {
