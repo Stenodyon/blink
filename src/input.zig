@@ -235,7 +235,11 @@ pub fn on_key_down(state: *State, keysym: sdl.Keysym) !void {
             std.debug.warn("saved to test.sav\n");
         },
         sdl.K_r => {
-            state.get_entity_ptr().flip();
+            if (state.copy_buffer.count() > 0) {
+                try state.flip_copy();
+            } else {
+                state.get_entity_ptr().flip();
+            }
         },
         sdl.K_f => { // pick under cursor
             var mouse: Vec2i = undefined;

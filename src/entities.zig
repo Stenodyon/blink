@@ -290,6 +290,34 @@ pub const Entity = union(enum) {
         }
     }
 
+    pub fn flip_vertically(self: *Entity) void {
+        switch (self.*) {
+            .Block, .Lamp => {},
+            .Laser => |*direction| switch (direction.*) {
+                .UP, .DOWN => {},
+                .LEFT, .RIGHT => direction.* = direction.opposite(),
+            },
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            => |*direction| switch (direction.*) {
+                .UP, .DOWN => direction.* = direction.clockwise(),
+                .LEFT, .RIGHT => direction.* = direction.cclockwise(),
+            },
+            .Delayer => |*delayer| switch (delayer.direction) {
+                .UP, .DOWN => {},
+                .LEFT, .RIGHT => delayer.direction = delayer.direction.opposite(),
+            },
+            .Switch => |*eswitch| {
+                eswitch.is_flipped = !eswitch.is_flipped;
+                switch (eswitch.direction) {
+                    .UP, .DOWN => {},
+                    .LEFT, .RIGHT => eswitch.direction = eswitch.direction.opposite(),
+                }
+            },
+        }
+    }
+
     pub fn set_flipped(self: *Entity, value: bool) void {
         switch (self.*) {
             .Block,

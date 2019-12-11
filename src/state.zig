@@ -561,6 +561,26 @@ pub const State = struct {
         self.copy_buffer = tmp;
     }
 
+    pub fn flip_copy(self: *State) !void {
+        if (self.copy_buffer.count() == 0) {
+            return;
+        }
+
+        var tmp = EntityMap.init(self.copy_buffer.allocator);
+
+        var entity_iterator = self.copy_buffer.iterator();
+        while (entity_iterator.next()) |entry| {
+            const new_pos = Vec2i.new(
+                -entry.key.x,
+                entry.key.y,
+            );
+            entry.value.flip_vertically();
+            _ = try tmp.put(new_pos, entry.value);
+        }
+        self.copy_buffer.deinit();
+        self.copy_buffer = tmp;
+    }
+
     pub fn update(self: *State) !void {
         try self.sim.update(self);
     }
