@@ -207,10 +207,18 @@ pub fn on_key_down(state: *State, keysym: sdl.Keysym) !void {
             }
         },
         sdl.K_q => {
-            state.set_ghost_direction(state.get_ghost_direction().cclockwise());
+            if (state.copy_buffer.count() > 0) {
+                try state.rotate_copy_cclockwise();
+            } else {
+                state.set_ghost_direction(state.get_ghost_direction().cclockwise());
+            }
         },
         sdl.K_e => {
-            state.set_ghost_direction(state.get_ghost_direction().clockwise());
+            if (state.copy_buffer.count() > 0) {
+                try state.rotate_copy_clockwise();
+            } else {
+                state.set_ghost_direction(state.get_ghost_direction().clockwise());
+            }
         },
         sdl.K_DELETE, sdl.K_BACKSPACE => {
             try state.delete_selection();

@@ -201,10 +201,13 @@ pub const Entity = union(enum) {
 
     pub fn clockwise(self: *Entity) void {
         switch (self.*) {
-            .Block => {},
-            .Laser => |*direction| direction.* = direction.clockwise(),
-            .Mirror => |*direction| direction.* = direction.clockwise(),
-            .Splitter => |*direction| direction.* = direction.clockwise(),
+            .Block, .Lamp => {},
+            .Laser,
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            => |*direction| direction.* = direction.clockwise(),
+            .Switch => |*eswitch| eswitch.direction = eswitch.direction.clockwise(),
             .Delayer => |*delayer| {
                 delayer.direction = delayer.direction.clockwise();
             },
@@ -213,10 +216,13 @@ pub const Entity = union(enum) {
 
     pub fn cclockwise(self: *Entity) void {
         switch (self.*) {
-            .Block => {},
-            .Laser => |*direction| direction.* = direction.cclockwise(),
-            .Mirror => |*direction| direction.* = direction.cclockwise(),
-            .Splitter => |*direction| direction.* = direction.cclockwise(),
+            .Block, .Lamp => {},
+            .Laser,
+            .Mirror,
+            .DoubleMirror,
+            .Splitter,
+            => |*direction| direction.* = direction.cclockwise(),
+            .Switch => |*eswitch| eswitch.direction = eswitch.direction.cclockwise(),
             .Delayer => |*delayer| {
                 delayer.direction = delayer.direction.cclockwise();
             },
