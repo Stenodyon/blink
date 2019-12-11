@@ -21,6 +21,9 @@ unzip -o $TMP_DIR/SDL2.zip -d $TMP_DIR
 unzip -o $TMP_DIR/SDL2_ttf.zip -d $TMP_DIR
 unzip -oj $TMP_DIR/libepoxy libepoxy-shared-x64/bin/epoxy-0.dll -d $TMP_DIR
 
+rm -rf $TMP_DIR/Blink_Linux_x64
+rm -rf $TMP_DIR/Blink_Windows_x64
+
 mkdir -p $TMP_DIR/Blink_Windows_x64
 mkdir -p $TMP_DIR/Blink_Linux_x64
 
