@@ -4,37 +4,25 @@ const ArrayList = std.ArrayList;
 
 const TextureAtlas = @import("atlas.zig").TextureAtlas;
 const ShaderProgram = @import("shader.zig").ShaderProgram;
-
 const c = @import("../c.zig");
-const entities = @import("../entities.zig");
-const Direction = entities.Direction;
+const Direction = @import("../entities.zig").Direction;
 const State = @import("../state.zig").State;
-usingnamespace @import("../vec.zig");
 const pVec2f = @import("utils.zig").pVec2f;
-
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
-const texture_vertex_shader = @embedFile("ui_texture_vertex.glsl");
-const texture_fragment_shader = @embedFile("ui_texture_fragment.glsl");
+usingnamespace @import("../vec.zig");
 
-const color_vertex_shader = @embedFile("ui_color_vertex.glsl");
-const color_fragment_shader = @embedFile("ui_color_fragment.glsl");
+const vertex_shader_src = @embedFile("ui_vertex.glsl");
+const fragment_shader_src = @embedFile("ui_fragment.glsl");
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
-var image_proj_location: c.GLint = undefined;
-var color_proj_location: c.GLint = undefined;
+var projection_location: c.GLint = undefined;
 var transparency_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
-pub var image_shader: ShaderProgram = undefined;
-var color_shader: ShaderProgram = undefined;
-
-const BufferData = packed struct {
-    pos: pVec2f,
-    tex_coord: pVec2f,
-};
+pub var shader: ShaderProgram = undefined;
 
 var queued_elements: ArrayList(BufferData) = undefined;
 
@@ -47,28 +35,17 @@ pub fn init(allocator: *Allocator) void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
-    const image_vertex = [_][*c]const u8{texture_vertex_shader[0..].ptr};
-    const image_fragment = [_][*c]const u8{texture_fragment_shader[0..].ptr};
-    image_shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &image_vertex),
+    const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
+    const fragment = [_][*c]const u8{fragment_shader_src[0..].ptr};
+    shader = ShaderProgram.new(
+        @ptrCast([*c]const [*c]const u8, &vertex),
         null,
-        @ptrCast([*c]const [*c]const u8, &image_fragment),
+        @ptrCast([*c]const [*c]const u8, &fragment),
     );
-    image_shader.link();
-    image_shader.set_active();
-    image_proj_location = image_shader.uniform_location("projection");
-    transparency_location = image_shader.uniform_location("transparency");
-
-    const color_vertex = [_][*]const u8{color_vertex_shader[0..].ptr};
-    const color_fragment = [_][*]const u8{color_fragment_shader[0..].ptr};
-    color_shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &color_vertex),
-        null,
-        @ptrCast([*c]const [*c]const u8, &color_fragment),
-    );
-    color_shader.link();
-    color_shader.set_active();
-    color_proj_location = color_shader.uniform_location("projection");
+    shader.link();
+    shader.set_active();
+    projection_location = shader.uniform_location("projection");
+    transparency_location = shader.uniform_location("transparency");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -96,18 +73,19 @@ pub fn init(allocator: *Allocator) void {
 
 pub fn deinit() void {
     atlas.deinit();
-    image_shader.deinit();
+    shader.deinit();
     queued_elements.deinit();
 
     c.glDeleteBuffers(1, &vbo);
     c.glDeleteVertexArrays(1, &vao);
 }
 
-pub fn queue_element(
-    state: *const State,
-    location: Rectf,
-    texture_id: usize,
-) !void {
+const BufferData = packed struct {
+    pos: pVec2f,
+    tex_coord: pVec2f,
+};
+
+fn collect_data(location: Rectf, texture_id: usize, buffer: []BufferData) void {
     const pos = location.pos;
     const size = location.size;
     const texture_pos = atlas.get_offset(texture_id);
@@ -133,7 +111,7 @@ pub fn queue_element(
 
     var i: usize = 0;
     while (i < 6) : (i += 1) {
-        const queued = BufferData{
+        const data = BufferData{
             .pos = pVec2f{
                 .x = vertices[2 * i],
                 .y = vertices[2 * i + 1],
@@ -143,20 +121,67 @@ pub fn queue_element(
                 .y = uvs[2 * i + 1],
             },
         };
-        try queued_elements.append(queued);
+        buffer[i] = data;
     }
 }
 
-pub fn draw_image_world(location: Vec2f, texture: Rectf, transparency: f32) void {
-    c.glBindVertexArray(vao);
-    image_shader.set_active();
-    atlas.bind();
-    display.set_proj_matrix_uniform(&image_shader, image_proj_location);
-    c.glUniform1f(transparency_location, transparency);
-    c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));
+pub fn queue_element(
+    state: *const State,
+    location: Rectf,
+    texture_id: usize,
+) !void {
+    var buffer: [6]BufferData = undefined;
+    collect_data(location, texture_id, buffer[0..]);
+    for (buffer) |*data| try queued_elements.append(data.*);
 }
 
-pub fn draw(transparency: f32) !void {
+fn draw_image(
+    dest: Rectf,
+    texture_id: usize,
+    transparency: f32,
+    projection_matrix: *[16]f32,
+) void {
+    var buffer: [6]BufferData = undefined;
+    collect_data(dest, texture_id, buffer[0..]);
+
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(BufferData) * 6,
+        @ptrCast(?*const c_void, &buffer[0]),
+        c.GL_STREAM_DRAW,
+    );
+
+    c.glBindVertexArray(vao);
+    shader.set_active();
+    atlas.bind();
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        projection_matrix,
+    );
+    c.glUniform1f(transparency_location, transparency);
+    c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
+}
+
+pub inline fn draw_on_world(
+    dest: Rectf,
+    texture_id: usize,
+    transparency: f32,
+) void {
+    draw_image(dest, texture_id, transparency, &display.world_matrix);
+}
+
+pub inline fn draw_on_screen(
+    dest: Rectf,
+    texture_id: usize,
+    transparency: f32,
+) void {
+    draw_image(dest, texture_id, transparency, &display.screen_matrix);
+}
+
+pub fn draw_queued(transparency: f32) !void {
     const element_data = queued_elements.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
@@ -167,15 +192,15 @@ pub fn draw(transparency: f32) !void {
     );
 
     c.glBindVertexArray(vao);
-    image_shader.set_active();
+    shader.set_active();
     atlas.bind();
     c.glUniformMatrix4fv(
-        image_proj_location,
+        projection_location,
         1,
         c.GL_TRUE,
         &display.world_matrix,
     );
-    const trans_uniform_loc = image_shader.uniform_location("transparency");
+    const trans_uniform_loc = shader.uniform_location("transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));
     try queued_elements.resize(0);

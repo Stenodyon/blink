@@ -74,7 +74,7 @@ fn update_screen_matrix(window_size: Vec2f) void {
         0,
     );
     if (!matrix.inverse(&inv_screen_matrix, &screen_matrix)) {
-        std.debug.warn("Non-invertible screen matrix!\n");
+        std.debug.warn("Non-invertible screen matrix!\n", .{});
         matrix.print_matrix(&screen_matrix);
     }
 }
@@ -215,7 +215,7 @@ fn render_ui(state: *const State) !void {
             .size = Vec2f.new(1, 1),
         }, 1);
     }
-    try ui_renderer.draw(0.0);
+    try ui_renderer.draw_queued(0.0);
 
     // Copy buffer
     var copy_buffer_iter = state.copy_buffer.iterator();
