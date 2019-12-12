@@ -194,7 +194,12 @@ pub fn draw(transparency: f32) !void {
     c.glBindVertexArray(vao);
     shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&shader, projection_location);
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        &display.world_matrix,
+    );
     c.glUniform1f(transparency_location, transparency);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);

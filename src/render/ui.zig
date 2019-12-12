@@ -169,7 +169,12 @@ pub fn draw(transparency: f32) !void {
     c.glBindVertexArray(vao);
     image_shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&image_shader, image_proj_location);
+    c.glUniformMatrix4fv(
+        image_proj_location,
+        1,
+        c.GL_TRUE,
+        &display.world_matrix,
+    );
     const trans_uniform_loc = image_shader.uniform_location("transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));

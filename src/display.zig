@@ -37,11 +37,11 @@ const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
 // World -> OpenGL
-var world_matrix: [16]f32 = undefined;
-var inv_world_matrix: [16]f32 = undefined;
+pub var world_matrix: [16]f32 = undefined;
+pub var inv_world_matrix: [16]f32 = undefined;
 // Screen -> OpenGL
-var screen_matrix: [16]f32 = undefined;
-var inv_screen_matrix: [16]f32 = undefined;
+pub var screen_matrix: [16]f32 = undefined;
+pub var inv_screen_matrix: [16]f32 = undefined;
 
 fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
     matrix.identity(dest);
@@ -56,19 +56,6 @@ fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
         2 / viewport.x,
         -2 / viewport.y,
         1,
-    );
-}
-
-pub fn set_proj_matrix_uniform(
-    program: *const ShaderProgram,
-    location: c.GLint,
-) void {
-    const projection_location = program.uniform_location("projection");
-    c.glUniformMatrix4fv(
-        location,
-        1,
-        c.GL_TRUE,
-        &world_matrix,
     );
 }
 

@@ -158,7 +158,12 @@ pub fn render(state: *const State) !void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
-    display.set_proj_matrix_uniform(&shader, projection_location);
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        &display.world_matrix,
+    );
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, ray_data.len));
     try queued_rays.resize(0);
 }

@@ -112,7 +112,12 @@ pub fn render(state: *const State) void {
     shader.set_active();
     update_vertices(state);
 
-    display.set_proj_matrix_uniform(&shader, projection_location);
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        &display.world_matrix,
+    );
 
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
 }

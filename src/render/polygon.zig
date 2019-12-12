@@ -74,6 +74,11 @@ pub fn draw_polygon(polygon: []const f32) void {
 
     c.glBindVertexArray(vao);
     shader.set_active();
-    display.set_proj_matrix_uniform(&shader, projection_location);
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        &display.world_matrix,
+    );
     c.glDrawArrays(c.GL_LINE_LOOP, 0, @intCast(c_int, polygon.len / 2));
 }
