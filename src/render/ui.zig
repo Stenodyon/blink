@@ -15,44 +15,21 @@ const pVec2f = @import("utils.zig").pVec2f;
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
-const vertex_shader_src =
-    \\#version 330 core
-    \\
-    \\layout (location = 0) in vec2 position;
-    \\layout (location = 1) in vec2 texture_uv;
-    \\
-    \\uniform mat4 projection;
-    \\
-    \\out vec2 uv;
-    \\
-    \\void main() {
-    \\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
-    \\    uv = texture_uv;
-    \\}
-;
+const texture_vertex_shader = @embedFile("ui_texture_vertex.glsl");
+const texture_fragment_shader = @embedFile("ui_texture_fragment.glsl");
 
-const fragment_shader_src =
-    \\#version 330 core
-    \\
-    \\in vec2 uv;
-    \\
-    \\uniform float transparency;
-    \\uniform sampler2D atlas;
-    \\
-    \\void main() {
-    \\    vec4 color = texture(atlas, uv);
-    \\    color.a *= 1.0 - transparency;
-    \\    gl_FragColor = color;
-    \\    //gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    \\}
-;
+const color_vertex_shader = @embedFile("ui_color_vertex.glsl");
+const color_fragment_shader = @embedFile("ui_color_fragment.glsl");
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
-var projection_location: c.GLint = undefined;
+var image_proj_location: c.GLint = undefined;
+var color_proj_location: c.GLint = undefined;
+var transparency_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
-pub var shader: ShaderProgram = undefined;
+pub var image_shader: ShaderProgram = undefined;
+var color_shader: ShaderProgram = undefined;
 
 const BufferData = packed struct {
     pos: pVec2f,
@@ -70,14 +47,28 @@ pub fn init(allocator: *Allocator) void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
-    shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &[_][]const u8{vertex_shader_src}),
+    const image_vertex = [_][*c]const u8{texture_vertex_shader[0..].ptr};
+    const image_fragment = [_][*c]const u8{texture_fragment_shader[0..].ptr};
+    image_shader = ShaderProgram.new(
+        @ptrCast([*c]const [*c]const u8, &image_vertex),
         null,
-        @ptrCast([*c]const [*c]const u8, &[_][]const u8{fragment_shader_src}),
+        @ptrCast([*c]const [*c]const u8, &image_fragment),
     );
-    shader.link();
-    shader.set_active();
-    projection_location = shader.uniform_location("projection");
+    image_shader.link();
+    image_shader.set_active();
+    image_proj_location = image_shader.uniform_location("projection");
+    transparency_location = image_shader.uniform_location("transparency");
+
+    const color_vertex = [_][*]const u8{color_vertex_shader[0..].ptr};
+    const color_fragment = [_][*]const u8{color_fragment_shader[0..].ptr};
+    color_shader = ShaderProgram.new(
+        @ptrCast([*c]const [*c]const u8, &color_vertex),
+        null,
+        @ptrCast([*c]const [*c]const u8, &color_fragment),
+    );
+    color_shader.link();
+    color_shader.set_active();
+    color_proj_location = color_shader.uniform_location("projection");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -105,7 +96,7 @@ pub fn init(allocator: *Allocator) void {
 
 pub fn deinit() void {
     atlas.deinit();
-    shader.deinit();
+    image_shader.deinit();
     queued_elements.deinit();
 
     c.glDeleteBuffers(1, &vbo);
@@ -156,6 +147,15 @@ pub fn queue_element(
     }
 }
 
+pub fn draw_image_world(location: Vec2f, texture: Rectf, transparency: f32) void {
+    c.glBindVertexArray(vao);
+    image_shader.set_active();
+    atlas.bind();
+    display.set_proj_matrix_uniform(&image_shader, image_proj_location);
+    c.glUniform1f(transparency_location, transparency);
+    c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));
+}
+
 pub fn draw(transparency: f32) !void {
     const element_data = queued_elements.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
@@ -167,10 +167,10 @@ pub fn draw(transparency: f32) !void {
     );
 
     c.glBindVertexArray(vao);
-    shader.set_active();
+    image_shader.set_active();
     atlas.bind();
-    display.set_proj_matrix_uniform(&shader, projection_location);
-    const trans_uniform_loc = shader.uniform_location("transparency");
+    display.set_proj_matrix_uniform(&image_shader, image_proj_location);
+    const trans_uniform_loc = image_shader.uniform_location("transparency");
     c.glUniform1f(trans_uniform_loc, transparency);
     c.glDrawArrays(c.GL_TRIANGLES, 0, @intCast(c_int, element_data.len));
     try queued_elements.resize(0);
