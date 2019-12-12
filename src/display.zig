@@ -36,8 +36,12 @@ pub var window_height: i32 = 720;
 const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
-var projection_matrix: [16]f32 = undefined;
-var inv_proj_matrix: [16]f32 = undefined;
+// World -> OpenGL
+var world_matrix: [16]f32 = undefined;
+var inv_world_matrix: [16]f32 = undefined;
+// Screen -> OpenGL
+var screen_matrix: [16]f32 = undefined;
+var inv_screen_matrix: [16]f32 = undefined;
 
 fn ortho_matrix(viewpos: Vec2f, viewport: Vec2f, dest: *[16]f32) void {
     matrix.identity(dest);
@@ -64,19 +68,39 @@ pub fn set_proj_matrix_uniform(
         location,
         1,
         c.GL_TRUE,
-        &projection_matrix,
+        &world_matrix,
     );
+}
+
+fn update_screen_matrix(window_size: Vec2f) void {
+    matrix.identity(&screen_matrix);
+    matrix.scale(
+        &screen_matrix,
+        2 / window_size.x,
+        -2 / window_size.y,
+        1,
+    );
+    matrix.translate(
+        &screen_matrix,
+        -1,
+        1,
+        0,
+    );
+    if (!matrix.inverse(&inv_screen_matrix, &screen_matrix)) {
+        std.debug.warn("Non-invertible screen matrix!\n");
+        matrix.print_matrix(&screen_matrix);
+    }
 }
 
 pub fn update_projection_matrix(viewpos: Vec2f, viewport: Vec2f) void {
     ortho_matrix(
         viewpos,
         viewport,
-        &projection_matrix,
+        &world_matrix,
     );
-    if (!matrix.inverse(&inv_proj_matrix, &projection_matrix)) {
+    if (!matrix.inverse(&inv_world_matrix, &world_matrix)) {
         std.debug.warn("Non-invertible projection matrix!\n", .{});
-        matrix.print_matrix(&projection_matrix);
+        matrix.print_matrix(&world_matrix);
     }
 }
 
@@ -108,6 +132,7 @@ pub fn init(allocator: *Allocator) void {
     ui_renderer.init(allocator);
 
     update_projection_matrix(Vec2f.new(0, 0), Vec2f.new(1, 1));
+    update_screen_matrix(Vec2i.new(window_width, window_height).to_float(f32));
 
     std.debug.warn("OpenGL initialized\n", .{});
 
@@ -231,6 +256,9 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
             window_height = event.data2;
 
             c.glViewport(0, 0, window_width, window_height);
+            update_screen_matrix(
+                Vec2i.new(window_width, window_height).to_float(f32),
+            );
 
             state.viewport = new_size.div(GRID_SIZE);
         },
@@ -275,23 +303,25 @@ pub fn debug_write(
 
 pub fn screen2world(point: Vec2f) Vec2f {
     var vec = [4]f32{
-        2 * point.x / @intToFloat(f32, window_width) - 1,
-        -(2 * point.y / @intToFloat(f32, window_height) - 1),
+        point.x,
+        point.y,
         0,
         1,
     };
-    matrix.apply(&inv_proj_matrix, &vec);
+    matrix.apply(&screen_matrix, &vec);
+    matrix.apply(&inv_world_matrix, &vec);
     return Vec2f.new(vec[0], vec[1]);
 }
 
 pub fn screen2world_distance(point: Vec2f) Vec2f {
     var vec = [4]f32{
-        2 * point.x / @intToFloat(f32, window_width),
-        -(2 * point.y / @intToFloat(f32, window_height)),
+        point.x,
+        point.y,
         0,
         0,
     };
-    matrix.apply(&inv_proj_matrix, &vec);
+    matrix.apply(&screen_matrix, &vec);
+    matrix.apply(&inv_world_matrix, &vec);
     return Vec2f.new(vec[0], vec[1]);
 }
 
@@ -302,9 +332,7 @@ pub fn world2screen(point: Vec2f) Vec2f {
         0,
         1,
     };
-    matrix.apply(&projection_matrix, &vec);
-    return Vec2f.new(
-        window_width / 2 * (vec[0] + 1),
-        window_height / 2 * (-vec[1] + 1),
-    );
+    matrix.apply(&world_matrix, &vec);
+    matrix.apply(&inv_screen_matrix, &vec);
+    return Vec2f.new(vec[0], vec[1]);
 }
