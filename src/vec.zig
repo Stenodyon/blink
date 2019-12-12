@@ -279,6 +279,32 @@ fn Rect(comptime T: type) type {
             }
         }
 
+        pub fn intersect_x(self: *Self, x_start: ValType, x_end: ValType) Self {
+            const start = if (x_start < x_end) x_start else x_end;
+            const end = if (x_start < x_end) x_end else x_start;
+
+            if (start >= self.x + self.w or end < self.x) {
+                self.w = 0;
+                return;
+            }
+
+            if (start > self.x) self.x = start;
+            if (end < self.x + self.w) self.w -= end - self.x;
+        }
+
+        pub fn intersect_y(self: *Self, y_start: ValType, x_end: ValType) Self {
+            const start = if (y_start < y_end) y_start else y_end;
+            const end = if (y_start < y_end) y_end else y_start;
+
+            if (start >= self.y + self.h or end < self.y) {
+                self.h = 0;
+                return;
+            }
+
+            if (start > self.y) self.y = start;
+            if (end < self.y + self.h) self.h -= end - self.y;
+        }
+
         /// Turns rectangles with negative size into the same rectangle
         /// but with positive size
         pub fn canonic(self: *const Self) Self {
