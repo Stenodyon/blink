@@ -1,9 +1,13 @@
 const std = @import("std");
+const json = std.json;
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+const StringHashMap = std.StringHashMap;
 
 const c = @import("../c.zig");
 const Direction = @import("../entities.zig").Direction;
-const Vec2f = @import("../vec.zig").Vec2f;
+
+usingnamespace @import("../vec.zig");
 
 pub const TextureAtlas = struct {
     handle: c.GLuint,
@@ -11,21 +15,41 @@ pub const TextureAtlas = struct {
     height: c_int,
     cell_width: usize,
     cell_height: usize,
+    textures: ArrayList(Rectf),
+    index: StringHashMap(usize),
 
     pub fn load(
         allocator: *Allocator,
-        path: [*c]const u8,
+        path: []const u8,
         cell_width: usize,
         cell_height: usize,
-    ) TextureAtlas {
+    ) !TextureAtlas {
         var atlas = TextureAtlas{
             .handle = undefined,
             .width = undefined,
             .height = undefined,
             .cell_width = cell_width,
             .cell_height = cell_height,
+            .textures = ArrayList(Rectf).init(allocator),
+            .index = StringHashMap(usize).init(allocator),
         };
 
+        const texture_path = try std.mem.concat(
+            allocator,
+            u8,
+            [_][]const u8{ path, ".png\x00" },
+        );
+        const layout_path = try std.mem.concat(
+            allocator,
+            u8,
+            [_][]const u8{ path, ".json" },
+        );
+        defer {
+            allocator.free(layout_path);
+            allocator.free(texture_path);
+        }
+
+        // Load image data
         c.glGenTextures(1, &atlas.handle);
         c.glBindTexture(c.GL_TEXTURE_2D, atlas.handle);
 
@@ -35,17 +59,17 @@ pub const TextureAtlas = struct {
         c.glTexParameteri(c.GL_TEXTURE_2D, c.GL_TEXTURE_MAG_FILTER, c.GL_NEAREST);
 
         var image_data: [*c]u8 = undefined;
-        const err = c.lodepng_decode32_file(
+        const ret = c.lodepng_decode32_file(
             &image_data,
             @ptrCast([*c]c_uint, &atlas.width),
             @ptrCast([*c]c_uint, &atlas.height),
-            path,
+            @ptrCast([*c]const u8, texture_path.ptr),
         );
-        if (err != 0) {
-            std.debug.warn(
-                "Could not load data/entity_atlas.png: {c}\n",
-                .{c.lodepng_error_text(err)},
-            );
+        if (ret != 0) {
+            std.debug.warn("Could not load {s}: {s}\n", .{
+                texture_path,
+                c.lodepng_error_text(ret),
+            });
             std.process.exit(1);
         }
         defer c.free(image_data);
@@ -61,11 +85,50 @@ pub const TextureAtlas = struct {
             image_data,
         );
 
+        // Load layout
+        const layout = std.io.readFileAlloc(allocator, layout_path) catch |err| {
+            std.debug.panic(
+                "Could not load {}: {}\n",
+                layout_path,
+                @errorName(err),
+            );
+        };
+        defer allocator.free(layout);
+
+        var parser = json.Parser.init(allocator, true);
+        defer parser.deinit();
+
+        var tree = try parser.parse(layout);
+        defer tree.deinit();
+
+        var root = tree.root;
+        var iter = root.Object.iterator();
+        while (iter.next()) |entry| {
+            _ = try atlas.index.put(entry.key, atlas.index.count());
+
+            var x = @intToFloat(f32, entry.value.Array.at(0).Integer) + 0.5;
+            var y = @intToFloat(f32, entry.value.Array.at(1).Integer) + 0.5;
+            var w = @intToFloat(f32, entry.value.Array.at(2).Integer) - 1.0;
+            var h = @intToFloat(f32, entry.value.Array.at(3).Integer) - 1.0;
+
+            x /= @intToFloat(f32, atlas.width);
+            y /= @intToFloat(f32, atlas.height);
+            w /= @intToFloat(f32, atlas.width);
+            h /= @intToFloat(f32, atlas.height);
+
+            try atlas.textures.append(Rectf.new(
+                Vec2f.new(x, y),
+                Vec2f.new(w, h),
+            ));
+        }
+
         return atlas;
     }
 
     pub fn deinit(self: *TextureAtlas) void {
         c.glDeleteTextures(1, &self.handle);
+        self.textures.deinit();
+        self.index.deinit();
     }
 
     pub fn bind(self: *TextureAtlas) void {
@@ -103,5 +166,14 @@ pub const TextureAtlas = struct {
             @intToFloat(f32, x) / @intToFloat(f32, self.width),
             @intToFloat(f32, y) / @intToFloat(f32, self.height),
         );
+    }
+
+    pub fn id_of(self: *const TextureAtlas, name: []const u8) ?usize {
+        const entry = self.index.get(name) orelse return null;
+        return entry.value;
+    }
+
+    pub fn rect_of(self: *const TextureAtlas, texture_id: usize) Rectf {
+        return self.textures.at(texture_id);
     }
 };

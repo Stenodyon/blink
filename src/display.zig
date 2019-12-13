@@ -105,7 +105,7 @@ export fn openGLCallback(
     }
 }
 
-pub fn init(allocator: *Allocator) void {
+pub fn init(allocator: *Allocator) !void {
     c.glEnable(c.GL_DEBUG_OUTPUT);
     c.glDebugMessageCallback(openGLCallback, null);
 
@@ -114,9 +114,9 @@ pub fn init(allocator: *Allocator) void {
 
     polygon_renderer.init();
     grid_renderer.init();
-    entity_renderer.init(allocator);
+    try entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
-    ui_renderer.init(allocator);
+    try ui_renderer.init(allocator);
 
     update_projection_matrix(Vec2f.new(0, 0), Vec2f.new(1, 1));
     update_screen_matrix(Vec2i.new(window_width, window_height).to_float(f32));

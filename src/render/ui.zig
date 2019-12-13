@@ -26,7 +26,7 @@ pub var shader: ShaderProgram = undefined;
 
 var queued_elements: ArrayList(BufferData) = undefined;
 
-pub fn init(allocator: *Allocator) void {
+pub fn init(allocator: *Allocator) !void {
     queued_elements = ArrayList(BufferData).init(allocator);
 
     c.glGenVertexArrays(1, &vao);
@@ -68,7 +68,7 @@ pub fn init(allocator: *Allocator) void {
         @intToPtr(*const c_void, 2 * @sizeOf(f32)),
     );
 
-    atlas = TextureAtlas.load(allocator, "data/ui_atlas.png", 16, 16);
+    atlas = try TextureAtlas.load(allocator, "data/ui_atlas", 16, 16);
 }
 
 pub fn deinit() void {

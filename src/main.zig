@@ -91,7 +91,7 @@ pub fn main() !void {
     //ResourceManager.init(&resource_allocator.allocator);
     //defer ResourceManager.deinit();
 
-    display.init(std.heap.c_allocator);
+    try display.init(std.heap.c_allocator);
     defer display.deinit();
 
     //var gui_allocator = ArenaAllocator.init(std.debug.global_allocator);
