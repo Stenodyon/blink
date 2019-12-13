@@ -10,12 +10,11 @@ const entities = @import("../entities.zig");
 const Entity = entities.Entity;
 const Direction = entities.Direction;
 const State = @import("../state.zig").State;
-const vec = @import("../vec.zig");
-const Vec2i = vec.Vec2i;
-const Vec2f = vec.Vec2f;
 const pVec2f = @import("utils.zig").pVec2f;
-
 const display = @import("../display.zig");
+
+usingnamespace @import("../vec.zig");
+
 const GRID_SIZE = display.GRID_SIZE;
 
 const vertex_shader_src = @embedFile("entity_vertex.glsl");
@@ -29,6 +28,20 @@ var transparency_location: c.GLint = undefined;
 
 var atlas: TextureAtlas = undefined;
 pub var shader: ShaderProgram = undefined;
+
+var id: struct {
+    error_texture: usize,
+    block: usize,
+    laser: usize,
+    mirror: usize,
+    double_mirror: usize,
+    splitter: usize,
+    switch_entity: usize,
+    delayer_off: usize,
+    delayer_on: usize,
+    lamp_off: usize,
+    lamp_on: usize,
+} = undefined;
 
 const BufferData = packed struct {
     pos: pVec2f,
@@ -94,6 +107,17 @@ pub fn init(allocator: *Allocator) !void {
     );
 
     atlas = try TextureAtlas.load(allocator, "data/entity_atlas", 16, 16);
+    id.error_texture = atlas.id_of("error").?;
+    id.block = atlas.id_of("block").?;
+    id.laser = atlas.id_of("laser").?;
+    id.mirror = atlas.id_of("mirror").?;
+    id.double_mirror = atlas.id_of("double_mirror").?;
+    id.splitter = atlas.id_of("splitter").?;
+    id.switch_entity = atlas.id_of("switch").?;
+    id.delayer_off = atlas.id_of("delayer_off").?;
+    id.delayer_on = atlas.id_of("delayer_on").?;
+    id.lamp_off = atlas.id_of("lamp_off").?;
+    id.lamp_on = atlas.id_of("lamp_on").?;
 }
 
 pub fn deinit() void {
@@ -105,30 +129,32 @@ pub fn deinit() void {
     c.glDeleteVertexArrays(1, &vao);
 }
 
-fn get_entity_texture(entity: *const Entity) Vec2f {
+fn get_entity_texture(entity: *const Entity) Rectf {
+    const texture_id = switch (entity.*) {
+        .Block => id.block,
+        .Laser => id.laser,
+        .Mirror => id.mirror,
+        .DoubleMirror => id.double_mirror,
+        .Splitter => id.splitter,
+        .Switch => id.switch_entity,
+        .Delayer => |*delayer| if (delayer.is_on) id.delayer_on else id.delayer_off,
+        .Lamp => |is_on| if (is_on) id.lamp_on else id.lamp_off,
+    };
+
     switch (entity.*) {
-        .Block => return atlas.get_offset(1),
-        .Laser => |direction| return atlas.get_offset(2),
-        .Mirror => |direction| return atlas.get_offset(3),
-        .DoubleMirror => |direction| return atlas.get_offset(10),
-        .Splitter => |direction| return atlas.get_offset(4),
-        .Switch => |*eswitch| {
-            return atlas.get_offset_flip(5, eswitch.is_flipped, false);
-        },
-        .Delayer => |*delayer| {
-            if (delayer.is_on) {
-                return atlas.get_offset(7);
-            } else {
-                return atlas.get_offset(6);
-            }
-        },
-        .Lamp => |is_on| {
-            if (is_on) {
-                return atlas.get_offset(9);
-            } else {
-                return atlas.get_offset(8);
-            }
-        },
+        .Block,
+        .Laser,
+        .Mirror,
+        .DoubleMirror,
+        .Splitter,
+        .Delayer,
+        .Lamp,
+        => return atlas.rect_of(texture_id),
+        .Switch => |*eswitch| return atlas.rect_of_flipped(
+            texture_id,
+            eswitch.is_flipped,
+            false,
+        ),
     }
 }
 
@@ -145,8 +171,7 @@ pub fn queue_entity_float(
     grid_pos: Vec2i,
     entity: *const Entity,
 ) !void {
-    const texture_pos = get_entity_texture(entity);
-    const texture_size = atlas.get_tile_size();
+    const texture = get_entity_texture(entity);
     const angle = entity.get_direction().to_rad();
     const pos = grid_pos.to_float(f32);
 
@@ -156,8 +181,8 @@ pub fn queue_entity_float(
             .y = pos.y,
         },
         .tex_coord = pVec2f{
-            .x = texture_pos.x,
-            .y = texture_pos.y,
+            .x = texture.pos.x,
+            .y = texture.pos.y,
         },
         .rotation = angle,
     };

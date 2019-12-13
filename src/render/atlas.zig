@@ -106,10 +106,10 @@ pub const TextureAtlas = struct {
         while (iter.next()) |entry| {
             _ = try atlas.index.put(entry.key, atlas.index.count());
 
-            var x = @intToFloat(f32, entry.value.Array.at(0).Integer) + 0.5;
-            var y = @intToFloat(f32, entry.value.Array.at(1).Integer) + 0.5;
-            var w = @intToFloat(f32, entry.value.Array.at(2).Integer) - 1.0;
-            var h = @intToFloat(f32, entry.value.Array.at(3).Integer) - 1.0;
+            var x = @intToFloat(f32, entry.value.Array.at(0).Integer);
+            var y = @intToFloat(f32, entry.value.Array.at(1).Integer);
+            var w = @intToFloat(f32, entry.value.Array.at(2).Integer);
+            var h = @intToFloat(f32, entry.value.Array.at(3).Integer);
 
             x /= @intToFloat(f32, atlas.width);
             y /= @intToFloat(f32, atlas.height);
@@ -173,7 +173,21 @@ pub const TextureAtlas = struct {
         return entry.value;
     }
 
-    pub fn rect_of(self: *const TextureAtlas, texture_id: usize) Rectf {
-        return self.textures.at(texture_id);
+    pub fn rect_of_flipped(
+        self: *const TextureAtlas,
+        texture_id: usize,
+        horizontal: bool,
+        vertical: bool,
+    ) Rectf {
+        var rect = self.textures.at(texture_id);
+        if (horizontal)
+            rect.pos.x = -rect.pos.x - rect.size.x;
+        if (vertical)
+            rect.pos.y = -rect.pos.y - rect.size.y;
+        return rect;
+    }
+
+    pub inline fn rect_of(self: *const TextureAtlas, texture_id: usize) Rectf {
+        return self.rect_of_flipped(texture_id, false, false);
     }
 };
