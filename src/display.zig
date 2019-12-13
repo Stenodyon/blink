@@ -235,8 +235,6 @@ fn render_ui(state: *const State) !void {
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
     switch (event.event) {
-        //sdl.WINDOWEVENT_MAXIMIZED,
-        //sdl.WINDOWEVENT_RESIZED,
         sdl.WINDOWEVENT_SIZE_CHANGED => {
             const new_size = Vec2i.new(event.data1, event.data2).to_float(f32);
             window_width = event.data1;
