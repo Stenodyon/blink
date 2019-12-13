@@ -243,11 +243,13 @@ pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
             window_height = event.data2;
 
             c.glViewport(0, 0, window_width, window_height);
+
             update_screen_matrix(
                 Vec2i.new(window_width, window_height).to_float(f32),
             );
 
-            state.viewport = new_size.div(GRID_SIZE);
+            state.viewport = new_size.divf(GRID_SIZE);
+            update_projection_matrix(state.viewpos, state.viewport);
         },
         else => {},
     }
