@@ -43,9 +43,9 @@ fn init_sdl() void {
         sdl.WINDOWPOS_UNDEFINED,
         display.window_width,
         display.window_height,
-        sdl.WINDOW_OPENGL | sdl.WINDOW_RESIZABLE,
+        sdl.WINDOW_OPENGL | sdl.WINDOW_RESIZABLE | sdl.WINDOW_MAXIMIZED,
     ) orelse
-        panic("Could not create a window: {c}\n", .{sdl.GetError()});
+        panic("Could not create a window: {s}\n", .{sdl.GetError()});
 
     gl_context = sdl.GL_CreateContext(window);
 
