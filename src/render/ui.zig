@@ -26,6 +26,11 @@ pub var shader: ShaderProgram = undefined;
 
 var queued_elements: ArrayList(BufferData) = undefined;
 
+pub var id: struct {
+    error_texture: usize,
+    selection: usize,
+} = undefined;
+
 pub fn init(allocator: *Allocator) !void {
     queued_elements = ArrayList(BufferData).init(allocator);
 
@@ -69,6 +74,9 @@ pub fn init(allocator: *Allocator) !void {
     );
 
     atlas = try TextureAtlas.load(allocator, "data/ui_atlas", 16, 16);
+
+    id.error_texture = atlas.id_of("error").?;
+    id.selection = atlas.id_of("selection").?;
 }
 
 pub fn deinit() void {
@@ -88,7 +96,7 @@ const BufferData = packed struct {
 fn collect_data(location: Rectf, texture_id: usize, buffer: []BufferData) void {
     const pos = location.pos;
     const size = location.size;
-    const texture_pos = atlas.get_offset(texture_id);
+    const texture = atlas.rect_of(texture_id);
     const vertices = [_]f32{
         pos.x,          pos.y,
         pos.x + size.x, pos.y,
@@ -98,15 +106,13 @@ fn collect_data(location: Rectf, texture_id: usize, buffer: []BufferData) void {
         pos.x + size.x, pos.y + size.y,
     };
 
-    const cell_width = @intToFloat(f32, atlas.cell_width) / @intToFloat(f32, atlas.width);
-    const cell_height = @intToFloat(f32, atlas.cell_height) / @intToFloat(f32, atlas.height);
     const uvs = [_]f32{
-        texture_pos.x,              texture_pos.y,
-        texture_pos.x + cell_width, texture_pos.y,
-        texture_pos.x,              texture_pos.y + cell_height,
-        texture_pos.x,              texture_pos.y + cell_height,
-        texture_pos.x + cell_width, texture_pos.y,
-        texture_pos.x + cell_width, texture_pos.y + cell_height,
+        texture.pos.x,                  texture.pos.y,
+        texture.pos.x + texture.size.x, texture.pos.y,
+        texture.pos.x,                  texture.pos.y + texture.size.y,
+        texture.pos.x,                  texture.pos.y + texture.size.y,
+        texture.pos.x + texture.size.x, texture.pos.y,
+        texture.pos.x + texture.size.x, texture.pos.y + texture.size.y,
     };
 
     var i: usize = 0;

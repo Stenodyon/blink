@@ -201,7 +201,7 @@ fn render_ui(state: *const State) !void {
                 try ui_renderer.queue_element(state, Rectf{
                     .pos = pos.to_float(f32),
                     .size = Vec2f.new(1, 1),
-                }, 1);
+                }, ui_renderer.id.selection);
             }
         }
     }
@@ -213,7 +213,7 @@ fn render_ui(state: *const State) !void {
         try ui_renderer.queue_element(state, Rectf{
             .pos = pos,
             .size = Vec2f.new(1, 1),
-        }, 1);
+        }, ui_renderer.id.selection);
     }
     try ui_renderer.draw_queued(0.0);
 
