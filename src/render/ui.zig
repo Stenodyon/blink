@@ -26,9 +26,22 @@ pub var shader: ShaderProgram = undefined;
 
 var queued_elements: ArrayList(BufferData) = undefined;
 
+const Frame = struct {
+    body: usize,
+    top: usize,
+    bottom: usize,
+    left: usize,
+    right: usize,
+    topleft: usize,
+    topright: usize,
+    bottomleft: usize,
+    bottomright: usize,
+};
+
 pub var id: struct {
     error_texture: usize,
     selection: usize,
+    frame: Frame,
 } = undefined;
 
 pub fn init(allocator: *Allocator) !void {
@@ -77,6 +90,15 @@ pub fn init(allocator: *Allocator) !void {
 
     id.error_texture = atlas.id_of("error").?;
     id.selection = atlas.id_of("selection").?;
+    id.frame.body = atlas.id_of("frame_body").?;
+    id.frame.top = atlas.id_of("frame_top").?;
+    id.frame.bottom = atlas.id_of("frame_bottom").?;
+    id.frame.left = atlas.id_of("frame_left").?;
+    id.frame.right = atlas.id_of("frame_right").?;
+    id.frame.topleft = atlas.id_of("frame_topleft").?;
+    id.frame.topright = atlas.id_of("frame_topright").?;
+    id.frame.bottomleft = atlas.id_of("frame_bottomleft").?;
+    id.frame.bottomright = atlas.id_of("frame_bottomright").?;
 }
 
 pub fn deinit() void {
@@ -185,6 +207,121 @@ pub inline fn draw_on_screen(
     transparency: f32,
 ) void {
     draw_image(dest, texture_id, transparency, &display.screen_matrix);
+}
+
+pub fn draw_frame(dest: Rectf, border_width: f32, frame: *const Frame) void {
+    var buffer: [6 * 9]BufferData = undefined;
+
+    collect_data(
+        Rectf.box(
+            dest.pos.x,
+            dest.pos.y,
+            border_width,
+            border_width,
+        ),
+        frame.topleft,
+        buffer[0..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + border_width,
+            dest.pos.y,
+            dest.size.x - 2 * border_width,
+            border_width,
+        ),
+        frame.top,
+        buffer[6..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + dest.size.x - border_width,
+            dest.pos.y,
+            border_width,
+            border_width,
+        ),
+        frame.topright,
+        buffer[12..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x,
+            dest.pos.y + border_width,
+            border_width,
+            dest.size.y - 2 * border_width,
+        ),
+        frame.left,
+        buffer[18..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + border_width,
+            dest.pos.y + border_width,
+            dest.size.x - 2 * border_width,
+            dest.size.y - 2 * border_width,
+        ),
+        frame.body,
+        buffer[24..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + dest.size.x - border_width,
+            dest.pos.y + border_width,
+            border_width,
+            dest.size.y - 2 * border_width,
+        ),
+        frame.right,
+        buffer[30..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x,
+            dest.pos.y + dest.size.y - border_width,
+            border_width,
+            border_width,
+        ),
+        frame.bottomleft,
+        buffer[36..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + border_width,
+            dest.pos.y + dest.size.y - border_width,
+            dest.size.x - 2 * border_width,
+            border_width,
+        ),
+        frame.bottom,
+        buffer[42..],
+    );
+    collect_data(
+        Rectf.box(
+            dest.pos.x + dest.size.x - border_width,
+            dest.pos.y + dest.size.y - border_width,
+            border_width,
+            border_width,
+        ),
+        frame.bottomright,
+        buffer[48..],
+    );
+
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    c.glBufferData(
+        c.GL_ARRAY_BUFFER,
+        @sizeOf(BufferData) * 6 * 9,
+        @ptrCast(?*const c_void, &buffer[0]),
+        c.GL_STREAM_DRAW,
+    );
+
+    c.glBindVertexArray(vao);
+    shader.set_active();
+    atlas.bind();
+    c.glUniformMatrix4fv(
+        projection_location,
+        1,
+        c.GL_TRUE,
+        &display.screen_matrix,
+    );
+    c.glUniform1f(transparency_location, 0.0);
+    c.glDrawArrays(c.GL_TRIANGLES, 0, 6 * 9);
 }
 
 pub fn draw_queued(transparency: f32) !void {

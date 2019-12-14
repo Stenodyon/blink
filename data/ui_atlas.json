@@ -1,4 +1,14 @@
 {
     "error": [0, 0, 16, 16],
-    "selection": [16, 0, 16, 16]
+    "selection": [16, 0, 16, 16],
+
+    "frame_body": [1, 17, 14, 14],
+    "frame_top": [1, 16, 14, 1],
+    "frame_bottom": [1, 31, 14, 1],
+    "frame_left": [0, 17, 1, 14],
+    "frame_right": [15, 17, 1, 14],
+    "frame_topleft": [0, 16, 1, 1],
+    "frame_topright": [15, 16, 1, 1],
+    "frame_bottomleft": [0, 31, 1, 1],
+    "frame_bottomright": [15, 31, 1, 1]
 }

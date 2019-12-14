@@ -237,10 +237,17 @@ fn Rect(comptime T: type) type {
         pos: Vec2(T),
         size: Vec2(T),
 
-        pub fn new(_pos: Vec2(T), _size: Vec2(T)) Self {
+        pub fn new(pos: Vec2(T), size: Vec2(T)) Self {
             return Self{
-                .pos = _pos,
-                .size = _size,
+                .pos = pos,
+                .size = size,
+            };
+        }
+
+        pub fn box(x: T, y: T, w: T, h: T) Self {
+            return Self{
+                .pos = Vec2(T).new(x, y),
+                .size = Vec2(T).new(w, h),
             };
         }
 

@@ -231,6 +231,23 @@ fn render_ui(state: *const State) !void {
 
     if (state.copy_buffer.count() == 0)
         try render_ghost(state);
+
+    //{
+    //    var test_pos = [4]f32{ -0.5, -0.5, 0, 1 };
+    //    var test_size = [4]f32{ 1, -0.25, 0, 0 };
+    //    matrix.apply(&inv_screen_matrix, &test_pos);
+    //    matrix.apply(&inv_screen_matrix, &test_size);
+    //    ui_renderer.draw_frame(
+    //        Rectf.box(
+    //            test_pos[0],
+    //            test_pos[1],
+    //            test_size[0],
+    //            test_size[1],
+    //        ),
+    //        8,
+    //        &ui_renderer.id.frame,
+    //    );
+    //}
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {
