@@ -21,3 +21,5 @@
     - [ ] Load & save components
 - [ ] Pause & Step
 - [ ] Change UPS at runtime
+- [ ] Replace renderer with SFML or something
+- [ ] Labels & markers
