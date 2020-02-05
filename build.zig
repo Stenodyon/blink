@@ -29,6 +29,7 @@ fn build_common(b: *Builder) *LibExeObjStep {
     var exe = b.addExecutable("blink", "src/main.zig");
     exe.setBuildMode(mode);
     exe.addIncludeDir("third-party/lodepng/include");
+    exe.addIncludeDir("include");
     exe.addCSourceFile("third-party/lodepng/src/lodepng.c", CFLAGS[0..]);
     exe.linkSystemLibrary("c");
     exe.setOutputDir(".");
@@ -43,6 +44,7 @@ fn build_linux(b: *Builder) *LibExeObjStep {
     exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("epoxy");
+    exe.linkSystemLibrary("freetype2");
 
     return exe;
 }
@@ -62,6 +64,7 @@ fn build_windows(b: *Builder) *LibExeObjStep {
     exe.addObjectFile("deps/windows/lib/libSDL2_ttf.dll.a");
     exe.addObjectFile("deps/windows/lib/libopengl32.a");
     exe.addObjectFile("deps/windows/lib/epoxy.lib");
+    //TODO: add freetype2
 
     return exe;
 }
