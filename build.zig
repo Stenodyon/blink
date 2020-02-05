@@ -41,7 +41,6 @@ fn build_linux(b: *Builder) *LibExeObjStep {
     var exe = build_common(b);
 
     exe.linkSystemLibrary("SDL2");
-    exe.linkSystemLibrary("SDL2_ttf");
     exe.linkSystemLibrary("GL");
     exe.linkSystemLibrary("epoxy");
     exe.linkSystemLibrary("freetype2");
@@ -61,7 +60,6 @@ fn build_windows(b: *Builder) *LibExeObjStep {
 
     exe.addObjectFile("deps/windows/lib/libSDL2main.a");
     exe.addObjectFile("deps/windows/lib/libSDL2.dll.a");
-    exe.addObjectFile("deps/windows/lib/libSDL2_ttf.dll.a");
     exe.addObjectFile("deps/windows/lib/libopengl32.a");
     exe.addObjectFile("deps/windows/lib/epoxy.lib");
     //TODO: add freetype2

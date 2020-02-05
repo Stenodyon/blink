@@ -5,7 +5,6 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 
 //const ResourceManager = @import("res.zig");
 const sdl = @import("sdl.zig");
-const ttf = @import("ttf.zig");
 const ft = @import("ft.zig");
 const c = @import("c.zig");
 const display = @import("display.zig");
@@ -67,21 +66,6 @@ fn deinit_sdl() void {
 
 // ============================================================================
 
-fn init_ttf() void {
-    if (ttf.Init() < 0) {
-        std.debug.warn("Could not initialize TTF: {}\n", .{ttf.GetError()});
-        std.os.exit(1);
-    }
-}
-
-// ============================================================================
-
-fn deinit_ttf() void {
-    ttf.Quit();
-}
-
-// ============================================================================
-
 fn init_freetype() void {
     var err = ft.InitFreeType(&ft_context);
     if (err != 0) {
@@ -92,7 +76,7 @@ fn init_freetype() void {
         std.os.exit(1);
     }
 
-    err = ft.NewFace(ft_context, c"data/VT323-Regular.ttf", 0, &face);
+    err = ft.NewFace(ft_context, "data/VT323-Regular.ttf", 0, &face);
     if (err != 0) {
         std.debug.warn(
             "Could not initialize FreeType: {}\n",
@@ -119,11 +103,9 @@ fn deinit_freetype() void {
 
 pub fn main() !void {
     init_sdl();
-    init_ttf();
     init_freetype();
     defer {
         deinit_freetype();
-        deinit_ttf();
         deinit_sdl();
     }
 

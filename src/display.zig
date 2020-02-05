@@ -5,7 +5,6 @@ const Allocator = std.mem.Allocator;
 const Buffer = std.Buffer;
 
 const sdl = @import("sdl.zig");
-const ttf = @import("ttf.zig");
 const c = @import("c.zig");
 
 const TextureAtlas = @import("render/atlas.zig").TextureAtlas;
