@@ -16,13 +16,8 @@ const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
 const vertex_shader_src = @embedFile("lightray_vertex.glsl");
-const vertex_shader_src_list = [_][]const u8{&vertex_shader_src};
-
 const geometry_shader_src = @embedFile("lightray_geometry.glsl");
-const geometry_shader_src_list = [_][]const u8{&geometry_shader_src};
-
 const fragment_shader_src = @embedFile("lightray_fragment.glsl");
-const fragment_shader_src_list = [_][]const u8{&fragment_shader_src};
 
 const BufferData = packed struct {
     pos: pVec2f,
@@ -45,15 +40,20 @@ pub fn init(allocator: *Allocator) void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
+    const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
+    const geometry = [_][*c]const u8{geometry_shader_src[0..].ptr};
+    const fragment = [_][*c]const u8{vertex_shader_src[0..].ptr};
+
+    std.debug.warn("Compiling shaders for lightray\n", .{});
     shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &vertex_shader_src_list),
-        @ptrCast([*c]const [*c]const u8, &geometry_shader_src_list),
-        @ptrCast([*c]const [*c]const u8, &fragment_shader_src_list),
+        @ptrCast([*c]const [*c]const u8, &vertex),
+        @ptrCast([*c]const [*c]const u8, &geometry),
+        @ptrCast([*c]const [*c]const u8, &fragment),
     );
-    c.glBindFragDataLocation(shader.handle, 0, c"outColor");
+    c.glBindFragDataLocation(shader.handle, 0, "outColor");
     shader.link();
     shader.set_active();
-    projection_location = shader.uniform_location(c"projection");
+    projection_location = shader.uniform_location("projection");
 
     // 2B pos | 1B length | 1B rotation
     const pos_attrib = 0;

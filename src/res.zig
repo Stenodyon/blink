@@ -7,13 +7,11 @@ const img = @import("img.zig");
 const ResourceMap = std.AutoHashMap([]const u8, sdl.Surface);
 var Resources: ResourceMap = undefined;
 
-pub fn init(allocator: *Allocator) void
-{
+pub fn init(allocator: *Allocator) void {
     Resources = ResourceMap.init(allocator);
 }
 
-pub fn deinit() void
-{
+pub fn deinit() void {
     var resources_it = Resources.iterator();
     while (resources_it.next()) |entry| {
         sdl.FreeSurface(entry.value);
@@ -21,16 +19,14 @@ pub fn deinit() void
     Resources.deinit();
 }
 
-pub fn Get(path: []const u8) !sdl.Surface
-{
+pub fn Get(path: []const u8) !sdl.Surface {
     const result = Resources.get(path);
     if (result) |entry|
         return entry.value;
 
     const surface = img.Load(path);
-    if (surface == null)
-    {
-        std.debug.warn("Could not load \"{}\": {}\n", path, img.GetError());
+    if (surface == null) {
+        std.debug.warn("Could not load \"{}\": {}\n", .{ path, img.GetError() });
         std.os.exit(1);
     }
 

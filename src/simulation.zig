@@ -120,13 +120,11 @@ pub const Simulation = struct {
 
     fn propagate_update(self: *Simulation, state: *State, origin: Vec2i) !void {
         var tree_entry = state.lighttrees.get(origin) orelse unreachable;
-        var output_iterator = tree_entry.value.leaves.iterator();
-        while (output_iterator.next()) |output_pos| {
+        for (tree_entry.value.leaves.toSlice()) |output_pos| {
             _ = try self.to_update_secondary().put(output_pos, {});
         }
 
-        var side_output_iterator = tree_entry.value.side_leaves.iterator();
-        while (side_output_iterator.next()) |output_pos| {
+        for (tree_entry.value.side_leaves.toSlice()) |output_pos| {
             _ = try self.to_update_secondary().put(output_pos, {});
         }
     }

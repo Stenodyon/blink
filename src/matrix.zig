@@ -6,9 +6,9 @@ pub fn print_matrix(mat: *[16]f32) void {
         var x: usize = 0;
         while (x < 4) : (x += 1) {
             const index = x + y * 4;
-            std.debug.warn("{}\t", mat[index]);
+            std.debug.warn("{}\t", .{mat[index]});
         }
-        std.debug.warn("\n");
+        std.debug.warn("\n", .{});
     }
 }
 

@@ -11,36 +11,36 @@ const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
 const vertex_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (location = 0) in vec2 position;
-    c\\
-    c\\uniform mat4 projection;
-    c\\
-    c\\out vec2 pixel_pos;
-    c\\
-    c\\void main() {
-    c\\    pixel_pos = position.xy;
-    c\\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
-    c\\}
+    \\#version 330 core
+    \\
+    \\layout (location = 0) in vec2 position;
+    \\
+    \\uniform mat4 projection;
+    \\
+    \\out vec2 pixel_pos;
+    \\
+    \\void main() {
+    \\    pixel_pos = position.xy;
+    \\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
+    \\}
 ;
 
 const fragment_shader_src =
-    c\\#version 330 core
-    c\\#extension GL_OES_standard_derivatives : enable
-    c\\
-    c\\in vec2 pixel_pos;
-    c\\
-    c\\out vec4 outColor;
-    c\\
-    c\\const vec4 bgColor = vec4(0.43, 0.47, 0.53, 1.0);
-    c\\const vec4 fgColor = vec4(0.22, 0.23, 0.27, 1.0);
-    c\\
-    c\\void main() {
-    c\\    vec2 lines = abs(fract(pixel_pos - 0.5) - 0.5) / fwidth(pixel_pos);
-    c\\    float grid = min(min(lines.x, lines.y), 1.0);
-    c\\    outColor = fgColor * (1.0 - grid) + bgColor * grid;
-    c\\}
+    \\#version 330 core
+    \\#extension GL_OES_standard_derivatives : enable
+    \\
+    \\in vec2 pixel_pos;
+    \\
+    \\out vec4 outColor;
+    \\
+    \\const vec4 bgColor = vec4(0.43, 0.47, 0.53, 1.0);
+    \\const vec4 fgColor = vec4(0.22, 0.23, 0.27, 1.0);
+    \\
+    \\void main() {
+    \\    vec2 lines = abs(fract(pixel_pos - 0.5) - 0.5) / fwidth(pixel_pos);
+    \\    float grid = min(min(lines.x, lines.y), 1.0);
+    \\    outColor = fgColor * (1.0 - grid) + bgColor * grid;
+    \\}
 ;
 
 var vao: c.GLuint = undefined;
@@ -56,15 +56,16 @@ pub fn init() void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
+    std.debug.warn("Compiling shaders for grid\n", .{});
     shader = ShaderProgram.new(
-        &vertex_shader_src,
+        @ptrCast([*c]const [*c]const u8, &[_][]const u8{vertex_shader_src}),
         null,
-        &fragment_shader_src,
+        @ptrCast([*c]const [*c]const u8, &[_][]const u8{fragment_shader_src}),
     );
-    c.glBindFragDataLocation(shader.handle, 0, c"outColor");
+    c.glBindFragDataLocation(shader.handle, 0, "outColor");
     shader.link();
     shader.set_active();
-    projection_location = shader.uniform_location(c"projection");
+    projection_location = shader.uniform_location("projection");
 
     const pos_attrib = 0;
     c.glEnableVertexAttribArray(pos_attrib);

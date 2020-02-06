@@ -277,15 +277,13 @@ pub const State = struct {
         );
         try tree.generate(self);
         _ = try self.lighttrees.put(pos, tree);
-        var output_iterator = tree.leaves.iterator();
-        while (output_iterator.next()) |output_pos| {
+        for (tree.leaves.toSlice()) |output_pos| {
             try self.sim.queue_update(output_pos);
             const input_entry = self.input_map.get(output_pos) orelse unreachable;
             _ = try input_entry.value.put(pos, {});
         }
 
-        var side_output_iterator = tree.side_leaves.iterator();
-        while (side_output_iterator.next()) |output_pos| {
+        for (tree.side_leaves.toSlice()) |output_pos| {
             try self.sim.queue_update(output_pos);
             const input_entry = self.side_input_map.get(output_pos) orelse unreachable;
             _ = try input_entry.value.put(pos, {});
@@ -295,8 +293,7 @@ pub const State = struct {
     pub fn remove_tree(self: *State, pos: Vec2i, direction: Direction) !void {
         var tree_entry = self.lighttrees.remove(pos) orelse unreachable;
 
-        var output_iterator = tree_entry.value.leaves.iterator();
-        while (output_iterator.next()) |output_pos| {
+        for (tree_entry.value.leaves.toSlice()) |output_pos| {
             try self.sim.queue_update(output_pos);
             const input_entry = self.input_map.get(output_pos) orelse {
                 std.debug.assert(output_pos.equals(pos));
@@ -305,8 +302,7 @@ pub const State = struct {
             _ = input_entry.value.remove(pos);
         }
 
-        var side_output_iterator = tree_entry.value.side_leaves.iterator();
-        while (side_output_iterator.next()) |output_pos| {
+        for (tree_entry.value.side_leaves.toSlice()) |output_pos| {
             try self.sim.queue_update(output_pos);
             const input_entry = self.side_input_map.get(output_pos) orelse {
                 std.debug.assert(output_pos.equals(pos));
@@ -418,7 +414,8 @@ pub const State = struct {
 
     pub fn find_entity_slot(self: *const State, entity_type: @TagType(Entity)) ?usize {
         for (self.entity_wheel) |wheel_entity, i| {
-            if (@TagType(Entity)(wheel_entity) == entity_type) {
+            const wheel_entity_tag: @TagType(Entity) = wheel_entity;
+            if (wheel_entity_tag == entity_type) {
                 return i;
             }
         }
@@ -430,7 +427,7 @@ pub const State = struct {
     }
 
     pub fn set_selected_entity(self: *State, entity: Entity) void {
-        if (self.find_entity_slot(@TagType(Entity)(entity))) |slot| {
+        if (self.find_entity_slot(entity)) |slot| {
             self.set_selected_slot(slot);
             self.get_entity_ptr().set_properties_from(&entity);
             self.set_ghost_direction(entity.get_direction());

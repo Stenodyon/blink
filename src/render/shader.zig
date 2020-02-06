@@ -16,7 +16,7 @@ fn check_shader(shader: c.GLuint) void {
         var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
         c.glGetShaderInfoLog(shader, LOG_BUFFER_SIZE, null, &log_buffer);
         _ = c.printf(
-            c"%s\n",
+            "%s\n",
             &log_buffer,
         );
         std.process.exit(255);
@@ -35,7 +35,7 @@ fn check_program(program: c.GLuint) void {
         var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
         c.glGetProgramInfoLog(program, LOG_BUFFER_SIZE, null, &log_buffer);
         _ = c.printf(
-            c"%s\n",
+            "%s\n",
             &log_buffer,
         );
         std.process.exit(255);
@@ -56,7 +56,7 @@ pub const ShaderProgram = struct {
 
     pub fn new(
         vertex_shader_src: [*c]const [*c]const u8,
-        geometry_shader_src: ?[*c]const [*c]const u8,
+        geometry_shader_src: [*c]const [*c]const u8,
         fragment_shader_src: [*c]const [*c]const u8,
     ) ShaderProgram {
         var shader_program = ShaderProgram{

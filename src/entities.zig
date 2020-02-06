@@ -121,7 +121,7 @@ pub const Entity = union(enum) {
             .Delayer,
             .Switch,
             .Lamp,
-            => return [_]Direction{},
+            => return &[_]Direction{},
 
             .Mirror => |direction| {
                 if (hitdir == direction) {
@@ -132,7 +132,7 @@ pub const Entity = union(enum) {
                     const index = @intCast(usize, @enumToInt(direction.opposite()));
                     return mirror_directions[index .. index + 1];
                 }
-                return [_]Direction{};
+                return &[_]Direction{};
             },
 
             .DoubleMirror => |direction| {
@@ -144,7 +144,7 @@ pub const Entity = union(enum) {
                     const index = @intCast(usize, @enumToInt(hitdir.cclockwise()));
                     return mirror_directions[index .. index + 1];
                 }
-                return [_]Direction{};
+                return &[_]Direction{};
             },
 
             .Splitter => |direction| {
@@ -160,7 +160,7 @@ pub const Entity = union(enum) {
                     const index = @intCast(usize, @enumToInt(hitdir.cclockwise()));
                     return splitter_directions[index .. index + 2];
                 }
-                return [_]Direction{};
+                return &[_]Direction{};
             },
         }
     }
