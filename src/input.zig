@@ -232,7 +232,7 @@ pub fn on_key_down(state: *State, keysym: sdl.Keysym) !void {
         },
         sdl.K_F6 => {
             try save_state(&game_state, "test.sav");
-            std.debug.warn("saved to test.sav\n");
+            std.debug.warn("saved to test.sav\n", .{});
         },
         sdl.K_r => {
             if (state.copy_buffer.count() > 0) {

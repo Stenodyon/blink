@@ -5,8 +5,8 @@ const absFloat = std.math.absFloat;
 const sdl = @import("sdl.zig");
 const Direction = @import("entities.zig").Direction;
 
-inline fn abs(x: var) @typeOf(x) {
-    if (@typeOf(x) == f32) {
+inline fn abs(x: var) @TypeOf(x) {
+    if (@TypeOf(x) == f32) {
         return absFloat(x);
     } else {
         return absInt(x) catch unreachable;

@@ -19,13 +19,8 @@ const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
 const vertex_shader_src = @embedFile("entity_vertex.glsl");
-const vertex_shader_src_list = [_][]const u8{&vertex_shader_src};
-
 const geometry_shader_src = @embedFile("entity_geometry.glsl");
-const geometry_shader_src_list = [_][]const u8{&geometry_shader_src};
-
 const fragment_shader_src = @embedFile("entity_fragment.glsl");
-const fragment_shader_src_list = [_][]const u8{&fragment_shader_src};
 
 var vao: c.GLuint = undefined;
 var vbo: c.GLuint = undefined;
@@ -52,16 +47,21 @@ pub fn init(allocator: *Allocator) void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
+    const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
+    const geometry = [_][*c]const u8{geometry_shader_src[0..].ptr};
+    const fragment = [_][*c]const u8{fragment_shader_src[0..].ptr};
+
+    std.debug.warn("Compiling shaders for entity\n", .{});
     shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &vertex_shader_src_list),
-        @ptrCast([*c]const [*c]const u8, &geometry_shader_src_list),
-        @ptrCast([*c]const [*c]const u8, &fragment_shader_src_list),
+        @ptrCast([*c]const [*c]const u8, &vertex),
+        @ptrCast([*c]const [*c]const u8, &geometry),
+        @ptrCast([*c]const [*c]const u8, &fragment),
     );
-    c.glBindFragDataLocation(shader.handle, 0, c"outColor");
+    c.glBindFragDataLocation(shader.handle, 0, "outColor");
     shader.link();
     shader.set_active();
-    projection_location = shader.uniform_location(c"projection");
-    transparency_location = shader.uniform_location(c"transparency");
+    projection_location = shader.uniform_location("projection");
+    transparency_location = shader.uniform_location("transparency");
 
     const pos_attrib = 0;
     const uv_attrib = 1;
@@ -94,7 +94,7 @@ pub fn init(allocator: *Allocator) void {
         @intToPtr(*const c_void, 4 * @sizeOf(f32)),
     );
 
-    atlas = TextureAtlas.load(allocator, c"data/entity_atlas.png", 16, 16);
+    atlas = TextureAtlas.load(allocator, "data/entity_atlas.png", 16, 16);
 }
 
 pub fn deinit() void {

@@ -1,4 +1,5 @@
 const std = @import("std");
+const panic = std.debug.panic;
 const math = std.math;
 const Allocator = std.mem.Allocator;
 const Buffer = std.Buffer;
@@ -32,7 +33,7 @@ pub const GRID_CENTER = Vec2i.new(GRID_SIZE / 2, GRID_SIZE / 2);
 pub var window_width: i32 = 1280;
 pub var window_height: i32 = 720;
 
-const font_name = c"data/VT323-Regular.ttf";
+const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
 var projection_matrix: [16]f32 = undefined;
@@ -58,7 +59,7 @@ pub fn set_proj_matrix_uniform(
     program: *const ShaderProgram,
     location: c.GLint,
 ) void {
-    const projection_location = program.uniform_location(c"projection");
+    const projection_location = program.uniform_location("projection");
     c.glUniformMatrix4fv(
         location,
         1,
@@ -74,12 +75,29 @@ pub fn update_projection_matrix(viewpos: Vec2f, viewport: Vec2f) void {
         &projection_matrix,
     );
     if (!matrix.inverse(&inv_proj_matrix, &projection_matrix)) {
-        std.debug.warn("Non-invertible projection matrix!\n");
+        std.debug.warn("Non-invertible projection matrix!\n", .{});
         matrix.print_matrix(&projection_matrix);
     }
 }
 
+export fn openGLCallback(
+    source: c.GLenum,
+    msg_type: c.GLenum,
+    id: c.GLuint,
+    severity: c.GLenum,
+    length: c.GLsizei,
+    message: [*c]const u8,
+    user_param: ?*const c_void,
+) callconv(.C) void {
+    if (severity != c.GL_DEBUG_SEVERITY_NOTIFICATION) {
+        panic("OpenGL: {s}\n", .{message});
+    }
+}
+
 pub fn init(allocator: *Allocator) void {
+    c.glEnable(c.GL_DEBUG_OUTPUT);
+    c.glDebugMessageCallback(openGLCallback, null);
+
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -91,7 +109,7 @@ pub fn init(allocator: *Allocator) void {
 
     update_projection_matrix(Vec2f.new(0, 0), Vec2f.new(1, 1));
 
-    std.debug.warn("OpenGL initialized\n");
+    std.debug.warn("OpenGL initialized\n", .{});
 
     //font = ttf.OpenFont(font_name, 25);
     //if (font == null) {
@@ -236,14 +254,14 @@ pub fn debug_write(
         color,
     );
     if (surface == null) {
-        std.debug.warn("Failed to render text\n");
+        std.debug.warn("Failed to render text\n", .{});
         return;
     }
     defer sdl.FreeSurface(surface);
 
     const texture = sdl.CreateTextureFromSurface(renderer, surface);
     if (texture == null) {
-        std.debug.warn("Failed to create texture from surface\n");
+        std.debug.warn("Failed to create texture from surface\n", .{});
         return;
     }
     defer sdl.DestroyTexture(texture);

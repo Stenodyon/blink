@@ -1,4 +1,5 @@
 const std = @import("std");
+const panic = std.debug.panic;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
@@ -25,10 +26,8 @@ var quit = false;
 // ============================================================================
 
 fn init_sdl() void {
-    if (sdl.Init(sdl.INIT_VIDEO) < 0) {
-        std.debug.warn("Could not initialize SDL: {}\n", sdl.GetError());
-        std.os.exit(1);
-    }
+    if (sdl.Init(sdl.INIT_VIDEO) < 0)
+        panic("Could not initialize SDL: {c}\n", .{sdl.GetError()});
 
     _ = sdl.GL_SetAttribute(
         sdl.GL_CONTEXT_PROFILE_MASK,
@@ -39,21 +38,18 @@ fn init_sdl() void {
     _ = sdl.GL_SetAttribute(sdl.GL_STENCIL_SIZE, 8);
 
     window = sdl.CreateWindow(
-        c"Blink",
+        "Blink",
         sdl.WINDOWPOS_UNDEFINED,
         sdl.WINDOWPOS_UNDEFINED,
         display.window_width,
         display.window_height,
         sdl.WINDOW_OPENGL | sdl.WINDOW_RESIZABLE,
-    );
-    if (window == null) {
-        std.debug.warn("Could not create a window: {}\n", sdl.GetError());
-        std.os.exit(1);
-    }
+    ) orelse
+        panic("Could not create a window: {c}\n", .{sdl.GetError()});
 
     gl_context = sdl.GL_CreateContext(window);
 
-    std.debug.warn("SDL Initialized\n");
+    std.debug.warn("SDL Initialized\n", .{});
 }
 
 // ============================================================================
@@ -63,14 +59,14 @@ fn deinit_sdl() void {
     sdl.DestroyWindow(window);
     sdl.Quit();
 
-    std.debug.warn("SDL Deinitialized\n");
+    std.debug.warn("SDL Deinitialized\n", .{});
 }
 
 // ============================================================================
 
 fn init_ttf() void {
     if (ttf.Init() < 0) {
-        std.debug.warn("Could not initialize TTF: {}\n", ttf.GetError());
+        std.debug.warn("Could not initialize TTF: {}\n", .{ttf.GetError()});
         std.os.exit(1);
     }
 }
@@ -112,12 +108,12 @@ pub fn main() !void {
         2 => blk: {
             const filename = args[1];
             break :blk (try load_state(std.heap.c_allocator, filename)) orelse {
-                std.debug.warn("Could not read the file\n");
+                std.debug.warn("Could not read the file\n", .{});
                 std.process.exit(255);
             };
         },
         else => {
-            std.debug.warn("Usage: {} [save-file]\n", args[0]);
+            std.debug.warn("Usage: {} [save-file]\n", .{args[0]});
             std.process.exit(255);
         },
     };
@@ -179,7 +175,7 @@ pub fn main() !void {
                     display.on_window_event(&game_state, &event.window);
                 },
                 sdl.QUIT => {
-                    std.debug.warn("Quit Event!\n");
+                    std.debug.warn("Quit Event!\n", .{});
                     quit = true;
                 },
                 else => {},

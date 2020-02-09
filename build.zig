@@ -16,7 +16,7 @@ pub fn build(b: *Builder) void {
     var install_windows = b.addInstallArtifact(exe_windows);
     windows_step.dependOn(&install_windows.step);
 
-    var package_script = b.addSystemCommand([_][]const u8{"./package.sh"});
+    var package_script = b.addSystemCommand(&[_][]const u8{"./package.sh"});
     package_script.step.dependOn(&exe_linux.step);
     package_script.step.dependOn(&exe_windows.step);
     package_step.dependOn(&package_script.step);

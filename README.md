@@ -16,7 +16,7 @@ contributions for the time being**.
 ## Building
 Dependencies:
 
-* `zig 0.5.0`
+* `0.5.0+b55bc5eb2`
 * `SDL2`
 * `SDL2_ttf`
 * `libGL`

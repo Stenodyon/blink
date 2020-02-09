@@ -44,7 +44,7 @@ pub const TextureAtlas = struct {
         if (err != 0) {
             std.debug.warn(
                 "Could not load data/entity_atlas.png: {c}\n",
-                c.lodepng_error_text(err),
+                .{c.lodepng_error_text(err)},
             );
             std.process.exit(1);
         }

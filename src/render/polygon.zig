@@ -5,23 +5,23 @@ const display = @import("../display.zig");
 const ShaderProgram = @import("shader.zig").ShaderProgram;
 
 const vertex_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\layout (location = 0) in vec2 position;
-    c\\
-    c\\uniform mat4 projection;
-    c\\
-    c\\void main() {
-    c\\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
-    c\\}
+    \\#version 330 core
+    \\
+    \\layout (location = 0) in vec2 position;
+    \\
+    \\uniform mat4 projection;
+    \\
+    \\void main() {
+    \\    gl_Position = projection * vec4(position.xy, 0.0, 1.0);
+    \\}
 ;
 
 const fragment_shader_src =
-    c\\#version 330 core
-    c\\
-    c\\void main() {
-    c\\    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    c\\}
+    \\#version 330 core
+    \\
+    \\void main() {
+    \\    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    \\}
 ;
 
 var vao: c.GLuint = undefined;
@@ -36,14 +36,15 @@ pub fn init() void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
+    std.debug.warn("Compiling shaders for polygon\n", .{});
     shader = ShaderProgram.new(
-        &vertex_shader_src,
+        @ptrCast([*c]const [*c]const u8, &[_][]const u8{vertex_shader_src}),
         null,
-        &fragment_shader_src,
+        @ptrCast([*c]const [*c]const u8, &[_][]const u8{fragment_shader_src}),
     );
     shader.link();
     shader.set_active();
-    projection_location = shader.uniform_location(c"projection");
+    projection_location = shader.uniform_location("projection");
 
     const pos_attrib = 0;
     c.glEnableVertexAttribArray(pos_attrib);

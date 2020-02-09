@@ -71,7 +71,7 @@ fn save_state_to_stream(
 pub fn load_state(allocator: *Allocator, filename: []const u8) !?State {
     var file_contents = std.io.readFileAlloc(allocator, filename) catch |err| {
         if (err == error.FileNotFound) {
-            std.debug.warn("Could not find savefile '{}'\n", filename);
+            std.debug.warn("Could not find savefile '{}'\n", .{filename});
             std.os.exit(1);
         }
         return err;
@@ -87,14 +87,13 @@ fn load_state_from_stream(allocator: *Allocator, instream: var) !?State {
     // Header
     var buffer: [SAVEFILE_HEADER.len]u8 = undefined;
     if ((try instream.read(buffer[0..])) != SAVEFILE_HEADER.len) {
-        std.debug.warn("Did not read 8 bytes for the header\n");
+        std.debug.warn("Did not read 8 bytes for the header\n", .{});
         return null;
     }
-    if (std.mem.compare(u8, buffer[0..], SAVEFILE_HEADER[0..]) != .Equal) {
+    if (!std.mem.eql(u8, buffer[0..], SAVEFILE_HEADER[0..])) {
         std.debug.warn(
             "Header did not match: {} vs {}\n",
-            buffer,
-            SAVEFILE_HEADER,
+            .{ buffer, SAVEFILE_HEADER },
         );
         return null;
     }
