@@ -1,4 +1,5 @@
 const std = @import("std");
+const panic = std.debug.panic;
 
 const c = @import("../c.zig");
 
@@ -15,11 +16,7 @@ fn check_shader(shader: c.GLuint) void {
     if (status != c.GL_TRUE) {
         var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
         c.glGetShaderInfoLog(shader, LOG_BUFFER_SIZE, null, &log_buffer);
-        _ = c.printf(
-            "%s\n",
-            &log_buffer,
-        );
-        std.process.exit(255);
+        panic("Shader compilation error:\n{}\n", .{&log_buffer});
     }
 }
 
@@ -34,11 +31,7 @@ fn check_program(program: c.GLuint) void {
     if (status != c.GL_TRUE) {
         var log_buffer: [LOG_BUFFER_SIZE]u8 = undefined;
         c.glGetProgramInfoLog(program, LOG_BUFFER_SIZE, null, &log_buffer);
-        _ = c.printf(
-            "%s\n",
-            &log_buffer,
-        );
-        std.process.exit(255);
+        panic("Shader linking error:\n{}\n", .{&log_buffer});
     }
 }
 
