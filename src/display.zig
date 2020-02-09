@@ -89,7 +89,9 @@ export fn openGLCallback(
     message: [*c]const u8,
     user_param: ?*const c_void,
 ) callconv(.C) void {
-    panic("OpenGL: {c}\n", .{message});
+    if (severity != c.GL_DEBUG_SEVERITY_NOTIFICATION) {
+        panic("OpenGL: {s}\n", .{message});
+    }
 }
 
 pub fn init(allocator: *Allocator) void {

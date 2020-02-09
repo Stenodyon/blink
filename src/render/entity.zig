@@ -49,7 +49,7 @@ pub fn init(allocator: *Allocator) void {
 
     const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
     const geometry = [_][*c]const u8{geometry_shader_src[0..].ptr};
-    const fragment = [_][*c]const u8{vertex_shader_src[0..].ptr};
+    const fragment = [_][*c]const u8{fragment_shader_src[0..].ptr};
 
     std.debug.warn("Compiling shaders for entity\n", .{});
     shader = ShaderProgram.new(
