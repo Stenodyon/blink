@@ -1,4 +1,5 @@
 const std = @import("std");
+const panic = std.debug.panic;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
@@ -25,10 +26,8 @@ var quit = false;
 // ============================================================================
 
 fn init_sdl() void {
-    if (sdl.Init(sdl.INIT_VIDEO) < 0) {
-        std.debug.warn("Could not initialize SDL: {}\n", .{sdl.GetError()});
-        std.os.exit(1);
-    }
+    if (sdl.Init(sdl.INIT_VIDEO) < 0)
+        panic("Could not initialize SDL: {c}\n", .{sdl.GetError()});
 
     _ = sdl.GL_SetAttribute(
         sdl.GL_CONTEXT_PROFILE_MASK,
@@ -45,11 +44,8 @@ fn init_sdl() void {
         display.window_width,
         display.window_height,
         sdl.WINDOW_OPENGL | sdl.WINDOW_RESIZABLE,
-    );
-    if (window == null) {
-        std.debug.warn("Could not create a window: {}\n", .{sdl.GetError()});
-        std.os.exit(1);
-    }
+    ) orelse
+        panic("Could not create a window: {c}\n", .{sdl.GetError()});
 
     gl_context = sdl.GL_CreateContext(window);
 

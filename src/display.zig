@@ -1,4 +1,5 @@
 const std = @import("std");
+const panic = std.debug.panic;
 const math = std.math;
 const Allocator = std.mem.Allocator;
 const Buffer = std.Buffer;
@@ -79,7 +80,22 @@ pub fn update_projection_matrix(viewpos: Vec2f, viewport: Vec2f) void {
     }
 }
 
+export fn openGLCallback(
+    source: c.GLenum,
+    msg_type: c.GLenum,
+    id: c.GLuint,
+    severity: c.GLenum,
+    length: c.GLsizei,
+    message: [*c]const u8,
+    user_param: ?*const c_void,
+) callconv(.C) void {
+    panic("OpenGL: {c}\n", .{message});
+}
+
 pub fn init(allocator: *Allocator) void {
+    c.glEnable(c.GL_DEBUG_OUTPUT);
+    c.glDebugMessageCallback(openGLCallback, null);
+
     c.glEnable(c.GL_BLEND);
     c.glBlendFunc(c.GL_SRC_ALPHA, c.GL_ONE_MINUS_SRC_ALPHA);
 
