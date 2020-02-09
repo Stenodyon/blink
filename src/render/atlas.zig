@@ -37,12 +37,12 @@ pub const TextureAtlas = struct {
         const texture_path = try std.mem.concat(
             allocator,
             u8,
-            [_][]const u8{ path, ".png\x00" },
+            &[_][]const u8{ path, ".png\x00" },
         );
         const layout_path = try std.mem.concat(
             allocator,
             u8,
-            [_][]const u8{ path, ".json" },
+            &[_][]const u8{ path, ".json" },
         );
         defer {
             allocator.free(layout_path);
@@ -87,11 +87,10 @@ pub const TextureAtlas = struct {
 
         // Load layout
         const layout = std.io.readFileAlloc(allocator, layout_path) catch |err| {
-            std.debug.panic(
-                "Could not load {}: {}\n",
+            std.debug.panic("Could not load {}: {}\n", .{
                 layout_path,
                 @errorName(err),
-            );
+            });
         };
         defer allocator.free(layout);
 

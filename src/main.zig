@@ -70,8 +70,8 @@ fn init_freetype() void {
     var err = ft.InitFreeType(&ft_context);
     if (err != 0) {
         std.debug.warn(
-            "Could not initialize FreeType: {}\n",
-            ft.ErrorString(err),
+            "Could not initialize FreeType: {s}\n",
+            .{ft.ErrorString(err)},
         );
         std.os.exit(1);
     }
@@ -79,8 +79,8 @@ fn init_freetype() void {
     err = ft.NewFace(ft_context, "data/VT323-Regular.ttf", 0, &face);
     if (err != 0) {
         std.debug.warn(
-            "Could not initialize FreeType: {}\n",
-            ft.ErrorString(err),
+            "Could not initialize FreeType: {s}\n",
+            .{ft.ErrorString(err)},
         );
         std.os.exit(1);
     }
@@ -92,8 +92,8 @@ fn deinit_freetype() void {
     const err = ft.DoneFreeType(ft_context);
     if (err != 0) {
         std.debug.warn(
-            "Could not initialize FreeType: {}\n",
-            ft.ErrorString(err),
+            "Could not initialize FreeType: {s}\n",
+            .{ft.ErrorString(err)},
         );
         std.os.exit(1);
     }
