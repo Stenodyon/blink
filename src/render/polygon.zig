@@ -36,7 +36,6 @@ pub fn init() void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
-    std.debug.warn("Compiling shaders for polygon\n", .{});
     shader = ShaderProgram.new(
         @ptrCast([*c]const [*c]const u8, &[_][]const u8{vertex_shader_src}),
         null,
