@@ -42,9 +42,6 @@ fn compile_shader(shader: c.GLuint, source: [*c]const [*c]const u8) void {
 }
 
 pub const ShaderProgram = struct {
-    vertex_shader: c.GLuint,
-    geometry_shader: ?c.GLuint,
-    fragment_shader: c.GLuint,
     handle: c.GLuint,
 
     pub fn new(
@@ -53,37 +50,36 @@ pub const ShaderProgram = struct {
         fragment_shader_src: [*c]const [*c]const u8,
     ) ShaderProgram {
         var shader_program = ShaderProgram{
-            .vertex_shader = undefined,
-            .geometry_shader = null,
-            .fragment_shader = undefined,
             .handle = undefined,
         };
-        shader_program.vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
-        compile_shader(shader_program.vertex_shader, vertex_shader_src);
+        const vertex_shader = c.glCreateShader(c.GL_VERTEX_SHADER);
+        compile_shader(vertex_shader, vertex_shader_src);
 
-        shader_program.fragment_shader = c.glCreateShader(c.GL_FRAGMENT_SHADER);
-        compile_shader(shader_program.fragment_shader, fragment_shader_src);
+        const fragment_shader = c.glCreateShader(c.GL_FRAGMENT_SHADER);
+        compile_shader(fragment_shader, fragment_shader_src);
 
+        var geometry_shader: ?c.GLuint = null;
         if (geometry_shader_src) |geom_shader_source| {
-            shader_program.geometry_shader = c.glCreateShader(c.GL_GEOMETRY_SHADER);
-            compile_shader(shader_program.geometry_shader.?, geom_shader_source);
+            geometry_shader = c.glCreateShader(c.GL_GEOMETRY_SHADER);
+            compile_shader(geometry_shader.?, geom_shader_source);
         }
 
         shader_program.handle = c.glCreateProgram();
-        c.glAttachShader(shader_program.handle, shader_program.vertex_shader);
-        if (shader_program.geometry_shader) |geom_handle|
-            c.glAttachShader(shader_program.handle, geom_handle);
-        c.glAttachShader(shader_program.handle, shader_program.fragment_shader);
+        c.glAttachShader(shader_program.handle, vertex_shader);
+        if (geometry_shader) |geom_shader|
+            c.glAttachShader(shader_program.handle, geom_shader);
+        c.glAttachShader(shader_program.handle, fragment_shader);
+
+        c.glDeleteShader(fragment_shader);
+        if (geometry_shader) |geom_shader|
+            c.glDeleteShader(geom_shader);
+        c.glDeleteShader(vertex_shader);
 
         return shader_program;
     }
 
     pub fn deinit(self: *ShaderProgram) void {
         c.glDeleteProgram(self.handle);
-        c.glDeleteShader(self.fragment_shader);
-        if (self.geometry_shader) |geom_shader|
-            c.glDeleteShader(geom_shader);
-        c.glDeleteShader(self.vertex_shader);
     }
 
     pub fn link(self: *ShaderProgram) void {
