@@ -1,6 +1,7 @@
 const std = @import("std");
 const json = std.json;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 const ArrayList = std.ArrayList;
 const StringHashMap = std.StringHashMap;
 
@@ -17,6 +18,7 @@ pub const TextureAtlas = struct {
     cell_height: usize,
     textures: ArrayList(Rectf),
     index: StringHashMap(usize),
+    index_storage: ArenaAllocator,
 
     pub fn load(
         allocator: *Allocator,
@@ -32,6 +34,7 @@ pub const TextureAtlas = struct {
             .cell_height = cell_height,
             .textures = ArrayList(Rectf).init(allocator),
             .index = StringHashMap(usize).init(allocator),
+            .index_storage = ArenaAllocator.init(allocator),
         };
 
         const texture_path = try std.mem.concat(
@@ -103,7 +106,12 @@ pub const TextureAtlas = struct {
         var root = tree.root;
         var iter = root.Object.iterator();
         while (iter.next()) |entry| {
-            _ = try atlas.index.put(entry.key, atlas.index.count());
+            const key = try std.mem.dupe(
+                &atlas.index_storage.allocator,
+                u8,
+                entry.key,
+            );
+            _ = try atlas.index.put(key, atlas.index.count());
 
             var x = @intToFloat(f32, entry.value.Array.at(0).Integer);
             var y = @intToFloat(f32, entry.value.Array.at(1).Integer);
@@ -125,6 +133,7 @@ pub const TextureAtlas = struct {
     }
 
     pub fn deinit(self: *TextureAtlas) void {
+        self.index_storage.deinit();
         c.glDeleteTextures(1, &self.handle);
         self.textures.deinit();
         self.index.deinit();
