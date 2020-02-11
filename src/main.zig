@@ -36,7 +36,7 @@ fn init_sdl() void {
         @enumToInt(sdl.GL_CONTEXT_PROFILE_CORE),
     );
     _ = sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3);
-    _ = sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2);
+    _ = sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3);
     _ = sdl.GL_SetAttribute(sdl.GL_STENCIL_SIZE, 8);
 
     window = sdl.CreateWindow(
