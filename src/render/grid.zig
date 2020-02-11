@@ -27,7 +27,6 @@ const vertex_shader_src =
 
 const fragment_shader_src =
     \\#version 330 core
-    \\#extension GL_OES_standard_derivatives : enable
     \\
     \\in vec2 pixel_pos;
     \\
