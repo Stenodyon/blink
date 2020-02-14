@@ -1,5 +1,9 @@
 ## TODO list
 
+- [ ] Performance improvements
+    - [ ] Research profiling
+    - [ ] Optimize placing/deleting large amounts of entities
+        That should improve loading saves.
 - [ ] Allow toggling lasers
 - [ ] Improve controls
 - [X] Save/Load
@@ -14,12 +18,7 @@
 - [X] Two-sided mirrors
 - [ ] Undo/Redo
 - [ ] Rendering improvements
-    - [ ] replace `glBufferData` with `glBufferSubData` when possible
-        From the OpenGL reference:
-        « When replacing the entire data store, consider using glBufferSubData
-        rather than completely recreating the data store with glBufferData.
-        This avoids the cost of reallocating the data store. »
-
+    - [ ] Map VBOs instead of using `glBufferData`
     - [ ] Alternate two VBOs when streaming data (like for entities)
         From the OpenGL reference:
         « Consider using multiple buffer objects to avoid stalling the rendering
@@ -32,8 +31,8 @@
     - [ ] Main menu
     - [ ] Load & save menus
     - [ ] In-game interface
+    - [ ] Labels & markers
 - [ ] Components (re-usable laser circuits)
     - [ ] Load & save components
 - [ ] Pause & Step
 - [ ] Change UPS at runtime
-- [ ] Labels & markers
