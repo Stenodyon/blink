@@ -1,4 +1,5 @@
-const std_build = @import("std").build;
+const std = @import("std");
+const std_build = std.build;
 const Builder = std_build.Builder;
 const LibExeObjStep = std_build.LibExeObjStep;
 const builtin = @import("builtin");
@@ -51,11 +52,10 @@ fn build_linux(b: *Builder) *LibExeObjStep {
 fn build_windows(b: *Builder) *LibExeObjStep {
     var exe = build_common(b);
 
-    exe.setTarget(
-        builtin.Arch.x86_64,
-        builtin.Os.windows,
-        builtin.Abi.gnu,
-    );
+    exe.setTarget(std.zig.CrossTarget{
+        .cpu_arch = builtin.Arch.x86_64,
+        .os_tag = builtin.Os.Tag.windows,
+    });
     exe.addIncludeDir("/usr/include");
 
     exe.addObjectFile("deps/windows/lib/libSDL2main.a");
