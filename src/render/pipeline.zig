@@ -41,7 +41,7 @@ pub fn Pipeline(comptime config: var) type {
         shader: ShaderProgram = undefined,
         uniformLocations: [uniforms.len]c.GLint = undefined,
 
-        pub inline fn init() Self {
+        pub fn init() Self {
             var self = Self{};
 
             c.glGenVertexArrays(1, &self.vao);
@@ -100,7 +100,7 @@ pub fn Pipeline(comptime config: var) type {
             return self;
         }
 
-        pub inline fn deinit(self: *Self) void {
+        pub fn deinit(self: *Self) void {
             self.shader.deinit();
             c.glDeleteBuffers(1, &self.vbo);
             c.glDeleteVertexArrays(1, &self.vao);
