@@ -40,6 +40,18 @@ pub const AttributeSpecif = struct {
     name: []const u8,
     kind: AttributeKind,
     count: usize,
+
+    pub fn from(
+        name: []const u8,
+        kind: AttributeKind,
+        count: usize,
+    ) AttributeSpecif {
+        return .{
+            .name = name,
+            .kind = kind,
+            .count = count,
+        };
+    }
 };
 
 pub const UniformKind = enum {
@@ -57,9 +69,16 @@ pub const UniformKind = enum {
 pub const UniformSpecif = struct {
     name: []const u8,
     kind: UniformKind,
+
+    pub fn from(name: []const u8, kind: UniformKind) UniformSpecif {
+        return UniformSpecif{
+            .name = name,
+            .kind = kind,
+        };
+    }
 };
 
-const PipelineConfig = struct {
+pub const PipelineConfig = struct {
     const Self = @This();
 
     vertexShader: [*:0]const u8,
@@ -77,7 +96,7 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
         vao: c.GLuint = undefined,
         vbo: c.GLuint = undefined,
         shader: ShaderProgram = undefined,
-        uniformLocations: [uniforms.len]c.GLint = undefined,
+        uniformLocations: [config.uniforms.len]c.GLint = undefined,
 
         pub fn init() Self {
             var self = Self{};
