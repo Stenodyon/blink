@@ -3,36 +3,74 @@ const std = @import("std");
 const c = @import("../c.zig");
 const ShaderProgram = @import("shader.zig").ShaderProgram;
 
-pub fn PipelineConfig(
-    comptime AttributeConfig: type,
-    comptime UniformConfig: type,
-) type {
-    return struct {
-        const Self = @This();
-        pub const Attributes = AttributeConfig;
-        pub const Uniforms = UniformConfig;
+pub const AttributeKind = enum {
+    Byte,
+    UByte,
+    Short,
+    UShort,
+    Int,
+    UInt,
+    Float,
+    Double,
 
-        vertexShader: [*:0]const u8,
-        geometryShader: ?[*:0]const u8 = null,
-        fragmentShader: [*:0]const u8,
-    };
-}
-
-pub fn Pipeline(comptime config: var) type {
-    if (!@hasDecl(@TypeOf(config), "Attributes") or
-        !@hasDecl(@TypeOf(config), "Uniforms"))
-    {
-        @compileError("config must be of type PipelineConfig");
-    }
-    const Attributes = @TypeOf(config).Attributes;
-    const Uniforms = @TypeOf(config).Uniforms;
-
-    if (@TypeOf(config) != PipelineConfig(Attributes, Uniforms)) {
-        @compileError("config must be of type PipelineConfig");
+    pub fn size(self: AttributeKind) usize {
+        return switch (self) {
+            .Byte, .UByte => 1,
+            .Short, .UShort => 2,
+            .Int, .UInt, .Float => 4,
+            .Double => 8,
+        };
     }
 
-    const attributes = std.meta.fields(Attributes);
-    const uniforms = std.meta.fields(Uniforms);
+    pub fn glType(self: AttributeSpecif) c.GLuint {
+        return switch (self) {
+            .Byte => c.GL_BYTE,
+            .UByte => c.GL_UNSIGNED_BYTE,
+            .Short => c.GL_SHORT,
+            .UShort => c.GL_UNSIGNED_SHORT,
+            .Int => c.GL_INT,
+            .UInt => c.GL_UNSIGNED_INT,
+            .Float => c.GL_FLOAT,
+            .Double => c.GL_DOUBLE,
+        };
+    }
+};
+
+pub const AttributeSpecif = struct {
+    name: []const u8,
+    kind: AttributeKind,
+    count: usize,
+};
+
+pub const UniformKind = enum {
+    Int,
+    UInt,
+    Float,
+    Vec2,
+    Vec3,
+    Vec4,
+    Matrix2,
+    Matrix3,
+    Matrix4,
+};
+
+pub const UniformSpecif = struct {
+    name: []const u8,
+    kind: UniformKind,
+};
+
+const PipelineConfig = struct {
+    const Self = @This();
+
+    vertexShader: [*:0]const u8,
+    geometryShader: ?[*:0]const u8 = null,
+    fragmentShader: [*:0]const u8,
+
+    attributes: []AttributeSpecif,
+    uniforms: []UniformSpecif,
+};
+
+pub fn Pipeline(comptime config: PipelineConfig) type {
     return struct {
         const Self = @This();
 
@@ -63,38 +101,30 @@ pub fn Pipeline(comptime config: var) type {
             shader.link();
             shader.set_active();
 
-            for (uniforms) |field, i| {
-                self.uniformLocations[i] = shader.uniform_location(field.name);
+            for (config.uniforms) |uniform, i| {
+                self.uniformLocations[i] = shader.uniform_location(uniform.name);
             }
 
             const stride: c.GLsizei = comptime blk: {
                 var s: c.GLsizei = 0;
-                for (attributes) |field, i| {
-                    s += @sizeOf(field.field_type);
+                for (attributes) |attribute| {
+                    s += @sizeOf(attribute.kind.size());
                 }
                 break :blk s;
             };
 
-            var offset: usize = 0;
-            for (attributes) |field, i| {
-                const attributeSize = switch (@typeInfo(field.field_type)) {
-                    .Array => |array| array.len,
-                    else => 1,
-                };
-                const attributeType = switch (@typeInfo(field.field_type)) {
-                    .Array => |array| glType(array.child),
-                    else => glType(field.field_type),
-                };
-                c.glEnableVertexAttribArray(i);
+            comptime var offset: usize = 0;
+            inline for (attributes) |attribute, location| {
+                c.glEnableVertexAttribArray(location);
                 c.glVertexAttribPointer(
-                    i,
-                    attributeSize,
-                    attributeType,
+                    location,
+                    attribute.count,
+                    comptime attribute.kind.glType(),
                     c.GL_FALSE,
                     stride,
                     @intToPtr(?*const c_void, offset),
                 );
-                offset += @sizeOf(field.field_type);
+                offset += attribute.count + attribute.kind.size();
             }
 
             return self;
