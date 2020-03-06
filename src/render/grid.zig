@@ -1,15 +1,9 @@
 const std = @import("std");
 
 const c = @import("../c.zig");
-const ShaderProgram = @import("shader.zig").ShaderProgram;
 const State = @import("../state.zig").State;
-const vec = @import("../vec.zig");
-const Vec2i = vec.Vec2i;
-const Vec2f = vec.Vec2f;
-usingnamespace @import("pipeline.zig");
-
 const display = @import("../display.zig");
-const GRID_SIZE = display.GRID_SIZE;
+usingnamespace @import("pipeline.zig");
 
 const GridConfig = PipelineConfig{
     .vertexShader = @embedFile("grid_vertex.glsl"),
