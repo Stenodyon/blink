@@ -100,6 +100,7 @@ pub fn deinit() void {
     pipeline.deinit();
 }
 
+/// Returns the UV coordinates for the given entity
 fn get_entity_texture(entity: *const Entity) Rectf {
     const texture_id = switch (entity.*) {
         .Block => id.block,
@@ -153,6 +154,7 @@ pub fn queue_entity(
     try queued_entities.append(queued);
 }
 
+/// Collect all visible entities for drawing
 pub fn collect(state: *const State) !void {
     const viewport_size = state.viewport.div(2).add(Vec2f.new(1, 1));
     const min_pos = state.viewpos.sub(viewport_size).floor();
