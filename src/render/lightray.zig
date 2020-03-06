@@ -2,19 +2,15 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
-const ShaderProgram = @import("shader.zig").ShaderProgram;
 const c = @import("../c.zig");
 const entities = @import("../entities.zig");
 const Direction = entities.Direction;
 const LightRay = @import("../lightray.zig").LightRay;
 const State = @import("../state.zig").State;
 const pVec2f = @import("utils.zig").pVec2f;
-usingnamespace @import("pipeline.zig");
-
-usingnamespace @import("../vec.zig");
-
 const display = @import("../display.zig");
-const GRID_SIZE = display.GRID_SIZE;
+usingnamespace @import("pipeline.zig");
+usingnamespace @import("../vec.zig");
 
 const LightrayConfig = PipelineConfig{
     .vertexShader = @embedFile("lightray_vertex.glsl"),
