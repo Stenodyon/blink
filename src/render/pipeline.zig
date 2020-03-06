@@ -22,7 +22,7 @@ pub const AttributeKind = enum {
         };
     }
 
-    pub fn glType(self: AttributeSpecif) c.GLuint {
+    pub fn glType(self: AttributeKind) c.GLuint {
         return switch (self) {
             .Byte => c.GL_BYTE,
             .UByte => c.GL_UNSIGNED_BYTE,
@@ -37,12 +37,12 @@ pub const AttributeKind = enum {
 };
 
 pub const AttributeSpecif = struct {
-    name: []const u8,
+    name: [:0]const u8,
     kind: AttributeKind,
     count: usize,
 
     pub fn from(
-        name: []const u8,
+        name: [:0]const u8,
         kind: AttributeKind,
         count: usize,
     ) AttributeSpecif {
@@ -64,13 +64,27 @@ pub const UniformKind = enum {
     Matrix2,
     Matrix3,
     Matrix4,
+
+    pub fn argType(comptime self: UniformKind) type {
+        return switch (self) {
+            .Int => i32,
+            .UInt => u32,
+            .Float => f32,
+            .Vec2 => *[2]f32,
+            .Vec3 => *[3]f32,
+            .Vec4 => *[4]f32,
+            .Matrix2 => *[2 * 2]f32,
+            .Matrix3 => *[3 * 3]f32,
+            .Matrix4 => *[4 * 4]f32,
+        };
+    }
 };
 
 pub const UniformSpecif = struct {
-    name: []const u8,
+    name: [:0]const u8,
     kind: UniformKind,
 
-    pub fn from(name: []const u8, kind: UniformKind) UniformSpecif {
+    pub fn from(name: [:0]const u8, kind: UniformKind) UniformSpecif {
         return UniformSpecif{
             .name = name,
             .kind = kind,
@@ -107,9 +121,9 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
             c.glGenBuffers(1, &self.vbo);
             c.glBindBuffer(c.GL_ARRAY_BUFFER, self.vbo);
 
-            var geomShader = null;
-            if (config.geomShader) |shader| {
-                geomShader = [_][*:0]const u8{shader};
+            var geomShader: ?[]const [*:0]const u8 = null;
+            if (config.geometryShader) |shader| {
+                geomShader = &[_][*:0]const u8{shader};
             }
 
             self.shader = ShaderProgram.new(
@@ -117,33 +131,33 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
                 geomShader,
                 &[_][*:0]const u8{config.fragmentShader},
             );
-            shader.link();
-            shader.set_active();
+            self.shader.link();
+            self.shader.set_active();
 
             for (config.uniforms) |uniform, i| {
-                self.uniformLocations[i] = shader.uniform_location(uniform.name);
+                self.uniformLocations[i] = self.shader.uniform_location(uniform.name);
             }
 
             const stride: c.GLsizei = comptime blk: {
-                var s: c.GLsizei = 0;
-                for (attributes) |attribute| {
-                    s += @sizeOf(attribute.kind.size());
+                var s: usize = 0;
+                for (config.attributes) |attribute| {
+                    s += attribute.kind.size();
                 }
                 break :blk s;
             };
 
             comptime var offset: usize = 0;
-            inline for (attributes) |attribute, location| {
+            inline for (config.attributes) |attribute, location| {
                 c.glEnableVertexAttribArray(location);
                 c.glVertexAttribPointer(
                     location,
                     attribute.count,
                     comptime attribute.kind.glType(),
                     c.GL_FALSE,
-                    stride,
+                    @intCast(c.GLsizei, stride),
                     @intToPtr(?*const c_void, offset),
                 );
-                offset += attribute.count + attribute.kind.size();
+                offset += comptime (attribute.count + attribute.kind.size());
             }
 
             return self;
@@ -156,30 +170,44 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
         }
 
         fn uniformIndex(comptime name: []const u8) usize {
-            inline for (uniforms) |field, i| {
-                if (comptime std.mem.eql(u8, name, field.name)) {
+            inline for (config.uniforms) |uniform, i| {
+                if (comptime std.mem.eql(u8, name, uniform.name)) {
                     return i;
                 }
             }
             unreachable;
         }
 
-        fn uniformType(comptime name: []const u8) type {
-            inline for (uniforms) |field| {
-                if (comptime std.mem.eql(u8, name, field.name)) {
-                    return field.field_type;
-                }
+        pub fn setUniform(
+            self: *Self,
+            comptime name: []const u8,
+            value: var,
+        ) void {
+            const index = comptime uniformIndex(name);
+            const uniform = config.uniforms[index];
+            const uniformArgType = uniform.kind.argType();
+
+            const location = self.uniformLocations[index];
+
+            if (@TypeOf(value) != uniformArgType)
+                @compileError("Uniform \"" ++ uniform.name ++ "\" requires a " ++ @typeName(uniformArgType) ++ " but got " ++ @typeName(@TypeOf(value)));
+
+            switch (uniform.kind) {
+                .Int => c.glUniform1i(location, value),
+                .UInt => c.glUniform1ui(location, value),
+                .Float => c.glUniform1f(location, value),
+                .Vec2 => c.glUniform2fv(location, 1, value),
+                .Vec3 => c.glUniform3fv(location, 1, value),
+                .Vec4 => c.glUniform4fv(location, 1, value),
+                .Matrix2 => c.glUniformMatrix2fv(location, 1, c.GL_TRUE, value),
+                .Matrix3 => c.glUniformMatrix3fv(location, 1, c.GL_TRUE, value),
+                .Matrix4 => c.glUniformMatrix4fv(location, 1, c.GL_TRUE, value),
             }
-            unreachable;
         }
 
-        pub fn setUniform(self: *Self, comptime name: []const u8, value: var) void {
-            const index = comptime uniformIndex(name);
-            const t = comptime uniformType(name);
-            if (@TypeOf(value) != t)
-                @compileError("Uniform " ++ name ++ " has type " ++ @typeName(t) ++ " but got " ++ @typeName(@TypeOf(value)));
-            const location = self.uniformLocations[index];
-            // TODO: OpenGL call
+        pub fn setActive(self: *Self) void {
+            c.glBindVertexArray(self.vao);
+            self.shader.set_active();
         }
     };
 }
