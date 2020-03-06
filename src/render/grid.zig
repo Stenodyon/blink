@@ -16,10 +16,17 @@ const GridConfig = PipelineConfig{
     .fragmentShader = @embedFile("grid_fragment.glsl"),
 
     .attributes = &[_]AttributeSpecif{
-        AttributeSpecif.from("position", .Float, 2),
+        .{
+            .name = "position",
+            .kind = .Float,
+            .count = 2,
+        },
     },
     .uniforms = &[_]UniformSpecif{
-        UniformSpecif.from("projection", .Matrix4),
+        .{
+            .name = "projection",
+            .kind = .Matrix4,
+        },
     },
 };
 

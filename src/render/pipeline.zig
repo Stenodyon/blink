@@ -40,18 +40,6 @@ pub const AttributeSpecif = struct {
     name: [:0]const u8,
     kind: AttributeKind,
     count: usize,
-
-    pub fn from(
-        name: [:0]const u8,
-        kind: AttributeKind,
-        count: usize,
-    ) AttributeSpecif {
-        return .{
-            .name = name,
-            .kind = kind,
-            .count = count,
-        };
-    }
 };
 
 pub const UniformKind = enum {
@@ -83,13 +71,6 @@ pub const UniformKind = enum {
 pub const UniformSpecif = struct {
     name: [:0]const u8,
     kind: UniformKind,
-
-    pub fn from(name: [:0]const u8, kind: UniformKind) UniformSpecif {
-        return UniformSpecif{
-            .name = name,
-            .kind = kind,
-        };
-    }
 };
 
 pub const PipelineConfig = struct {
