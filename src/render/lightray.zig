@@ -40,14 +40,14 @@ pub fn init(allocator: *Allocator) void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
-    const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
-    const geometry = [_][*c]const u8{geometry_shader_src[0..].ptr};
-    const fragment = [_][*c]const u8{fragment_shader_src[0..].ptr};
+    const vertex = [_][*:0]const u8{vertex_shader_src};
+    const geometry = [_][*:0]const u8{geometry_shader_src};
+    const fragment = [_][*:0]const u8{fragment_shader_src};
 
     shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &vertex),
-        @ptrCast([*c]const [*c]const u8, &geometry),
-        @ptrCast([*c]const [*c]const u8, &fragment),
+        &vertex,
+        &geometry,
+        &fragment,
     );
     c.glBindFragDataLocation(shader.handle, 0, "outColor");
     shader.link();

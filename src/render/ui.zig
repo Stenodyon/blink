@@ -53,12 +53,12 @@ pub fn init(allocator: *Allocator) !void {
     c.glGenBuffers(1, &vbo);
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
-    const vertex = [_][*c]const u8{vertex_shader_src[0..].ptr};
-    const fragment = [_][*c]const u8{fragment_shader_src[0..].ptr};
+    const vertex = [_][*:0]const u8{vertex_shader_src};
+    const fragment = [_][*:0]const u8{fragment_shader_src};
     shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &vertex),
+        &vertex,
         null,
-        @ptrCast([*c]const [*c]const u8, &fragment),
+        &fragment,
     );
     shader.link();
     shader.set_active();

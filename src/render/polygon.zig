@@ -37,9 +37,9 @@ pub fn init() void {
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
 
     shader = ShaderProgram.new(
-        @ptrCast([*c]const [*c]const u8, &[_][]const u8{vertex_shader_src}),
+        &[_][*:0]const u8{vertex_shader_src},
         null,
-        @ptrCast([*c]const [*c]const u8, &[_][]const u8{fragment_shader_src}),
+        &[_][*:0]const u8{fragment_shader_src},
     );
     shader.link();
     shader.set_active();

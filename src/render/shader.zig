@@ -35,8 +35,13 @@ fn check_program(program: c.GLuint) void {
     }
 }
 
-fn compile_shader(shader: c.GLuint, source: [*c]const [*c]const u8) void {
-    c.glShaderSource(shader, 1, source, null);
+fn compile_shader(shader: c.GLuint, source: []const [*:0]const u8) void {
+    c.glShaderSource(
+        shader,
+        @intCast(c_int, source.len),
+        @ptrCast([*c]const [*c]const u8, source.ptr),
+        null,
+    );
     c.glCompileShader(shader);
     check_shader(shader);
 }
@@ -45,9 +50,9 @@ pub const ShaderProgram = struct {
     handle: c.GLuint,
 
     pub fn new(
-        vertex_shader_src: [*c]const [*c]const u8,
-        geometry_shader_src: [*c]const [*c]const u8,
-        fragment_shader_src: [*c]const [*c]const u8,
+        vertex_shader_src: []const [*:0]const u8,
+        geometry_shader_src: ?[]const [*:0]const u8,
+        fragment_shader_src: []const [*:0]const u8,
     ) ShaderProgram {
         var shader_program = ShaderProgram{
             .handle = undefined,
