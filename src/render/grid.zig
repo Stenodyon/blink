@@ -43,8 +43,6 @@ pub fn init() void {
         null,
         c.GL_STREAM_DRAW,
     );
-
-    //c.glBindFragDataLocation(shader.handle, 0, "outColor");
 }
 
 pub fn deinit() void {
@@ -57,9 +55,7 @@ pub fn render(state: *const State) void {
 
     pipeline.setUniform("projection", &display.world_matrix);
 
-    c.glPolygonMode(c.GL_FRONT_AND_BACK, c.GL_LINE);
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6);
-    c.glPolygonMode(c.GL_FRONT_AND_BACK, c.GL_FILL);
 }
 
 fn update_vertices(state: *const State) void {
@@ -68,13 +64,19 @@ fn update_vertices(state: *const State) void {
     const y = state.viewpos.y;
     const width = state.viewport.x / 2;
     const height = state.viewport.y / 2;
+
+    // 0 - 1
+    // | / |
+    // 2 - 3
+
     const vertices = [_]f32{
-        x - width, y - height,
-        x + width, y - height,
-        x - width, y + height,
-        x - width, y + height,
-        x + width, y - height,
-        x + width, y + height,
+        x - width, y - height, // 0
+        x + width, y - height, // 1
+        x - width, y + height, // 2
+
+        x - width, y + height, // 2
+        x + width, y - height, // 1
+        x + width, y + height, // 3
     };
 
     const rawPtr = @alignCast(@alignOf(f32), c.glMapBuffer(

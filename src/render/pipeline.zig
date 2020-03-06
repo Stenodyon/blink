@@ -122,7 +122,7 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
             const stride: c.GLsizei = comptime blk: {
                 var s: usize = 0;
                 for (config.attributes) |attribute| {
-                    s += attribute.kind.size();
+                    s += attribute.kind.size() * attribute.count;
                 }
                 break :blk s;
             };
