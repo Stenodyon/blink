@@ -3,8 +3,6 @@ const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
 const TextureAtlas = @import("atlas.zig").TextureAtlas;
-const ShaderProgram = @import("shader.zig").ShaderProgram;
-
 const c = @import("../c.zig");
 const entities = @import("../entities.zig");
 const Entity = entities.Entity;

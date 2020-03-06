@@ -231,6 +231,7 @@ fn render_ui(state: *const State) !void {
     if (state.copy_buffer.count() == 0)
         try render_ghost(state);
 
+    // UI rendering tests:
     //{
     //    var test_pos = [4]f32{ -0.5, -0.5, 0, 1 };
     //    var test_size = [4]f32{ 1, -0.25, 0, 0 };
