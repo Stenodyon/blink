@@ -131,15 +131,7 @@ fn get_entity_texture(entity: *const Entity) Rectf {
     }
 }
 
-pub inline fn queue_entity(
-    state: *const State,
-    grid_pos: Vec2i,
-    entity: *const Entity,
-) !void {
-    try queue_entity_float(state, grid_pos, entity);
-}
-
-pub fn queue_entity_float(
+pub fn queue_entity(
     state: *const State,
     grid_pos: Vec2i,
     entity: *const Entity,

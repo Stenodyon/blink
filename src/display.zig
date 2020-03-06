@@ -224,7 +224,7 @@ fn render_ui(state: *const State) !void {
         const pos = entry.key.add(screen2world(
             mouse_pos.to_float(f32),
         ).floor());
-        try entity_renderer.queue_entity_float(state, pos, &entry.value);
+        try entity_renderer.queue_entity(state, pos, &entry.value);
     }
     try entity_renderer.draw(0.5);
 
