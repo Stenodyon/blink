@@ -12,22 +12,49 @@ const Direction = entities.Direction;
 const State = @import("../state.zig").State;
 const pVec2f = @import("utils.zig").pVec2f;
 const display = @import("../display.zig");
-
 usingnamespace @import("../vec.zig");
+usingnamespace @import("pipeline.zig");
 
 const GRID_SIZE = display.GRID_SIZE;
 
-const vertex_shader_src = @embedFile("entity_vertex.glsl");
-const geometry_shader_src = @embedFile("entity_geometry.glsl");
-const fragment_shader_src = @embedFile("entity_fragment.glsl");
+const EntityConfig = PipelineConfig{
+    .vertexShader = @embedFile("entity_vertex.glsl"),
+    .geometryShader = @embedFile("entity_geometry.glsl"),
+    .fragmentShader = @embedFile("entity_fragment.glsl"),
 
-var vao: c.GLuint = undefined;
-var vbo: c.GLuint = undefined;
-var projection_location: c.GLint = undefined;
-var transparency_location: c.GLint = undefined;
+    .attributes = &[_]AttributeSpecif{
+        .{
+            .name = "position",
+            .kind = .Float,
+            .count = 2,
+        },
+        .{
+            .name = "texture_uv",
+            .kind = .Float,
+            .count = 2,
+        },
+        .{
+            .name = "rotation",
+            .kind = .Float,
+            .count = 1,
+        },
+    },
+    .uniforms = &[_]UniformSpecif{
+        .{
+            .name = "projection",
+            .kind = .Matrix4,
+        },
+        .{
+            .name = "transparency",
+            .kind = .Float,
+        },
+    },
+};
 
+const EntityPipeline = Pipeline(EntityConfig);
+
+var pipeline: EntityPipeline = undefined;
 var atlas: TextureAtlas = undefined;
-pub var shader: ShaderProgram = undefined;
 
 var id: struct {
     error_texture: usize,
@@ -53,58 +80,7 @@ var queued_entities: ArrayList(BufferData) = undefined;
 
 pub fn init(allocator: *Allocator) !void {
     queued_entities = ArrayList(BufferData).init(allocator);
-
-    c.glGenVertexArrays(1, &vao);
-    c.glBindVertexArray(vao);
-
-    c.glGenBuffers(1, &vbo);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-
-    const vertex = [_][*:0]const u8{vertex_shader_src};
-    const geometry = [_][*:0]const u8{geometry_shader_src};
-    const fragment = [_][*:0]const u8{fragment_shader_src};
-
-    shader = ShaderProgram.new(
-        &vertex,
-        &geometry,
-        &fragment,
-    );
-    c.glBindFragDataLocation(shader.handle, 0, "outColor");
-    shader.link();
-    shader.set_active();
-    projection_location = shader.uniform_location("projection");
-    transparency_location = shader.uniform_location("transparency");
-
-    const pos_attrib = 0;
-    const uv_attrib = 1;
-    const rotation = 2;
-    c.glEnableVertexAttribArray(pos_attrib);
-    c.glEnableVertexAttribArray(uv_attrib);
-    c.glEnableVertexAttribArray(rotation);
-    c.glVertexAttribPointer(
-        pos_attrib,
-        2,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(?*const c_void, 0),
-    );
-    c.glVertexAttribPointer(
-        uv_attrib,
-        2,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
-    );
-    c.glVertexAttribPointer(
-        rotation,
-        1,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        5 * @sizeOf(f32),
-        @intToPtr(*const c_void, 4 * @sizeOf(f32)),
-    );
+    pipeline = EntityPipeline.init();
 
     atlas = try TextureAtlas.load(allocator, "data/entity_atlas", 16, 16);
     id.error_texture = atlas.id_of("error").?;
@@ -122,11 +98,8 @@ pub fn init(allocator: *Allocator) !void {
 
 pub fn deinit() void {
     atlas.deinit();
-    shader.deinit();
     queued_entities.deinit();
-
-    c.glDeleteBuffers(1, &vbo);
-    c.glDeleteVertexArrays(1, &vao);
+    pipeline.deinit();
 }
 
 fn get_entity_texture(entity: *const Entity) Rectf {
@@ -207,8 +180,10 @@ pub fn collect(state: *const State) !void {
 }
 
 pub fn draw(transparency: f32) !void {
+    pipeline.setActive();
+
     const entity_data = queued_entities.toSlice();
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, pipeline.vbo);
     c.glBufferData(
         c.GL_ARRAY_BUFFER,
         @sizeOf(BufferData) * @intCast(c_long, entity_data.len),
@@ -216,16 +191,9 @@ pub fn draw(transparency: f32) !void {
         c.GL_STREAM_DRAW,
     );
 
-    c.glBindVertexArray(vao);
-    shader.set_active();
     atlas.bind();
-    c.glUniformMatrix4fv(
-        projection_location,
-        1,
-        c.GL_TRUE,
-        &display.world_matrix,
-    );
-    c.glUniform1f(transparency_location, transparency);
+    pipeline.setUniform("projection", &display.world_matrix);
+    pipeline.setUniform("transparency", transparency);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, entity_data.len));
     try queued_entities.resize(0);
 }
