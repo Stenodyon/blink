@@ -9,88 +9,61 @@ const Direction = entities.Direction;
 const LightRay = @import("../lightray.zig").LightRay;
 const State = @import("../state.zig").State;
 const pVec2f = @import("utils.zig").pVec2f;
+usingnamespace @import("pipeline.zig");
 
 usingnamespace @import("../vec.zig");
 
 const display = @import("../display.zig");
 const GRID_SIZE = display.GRID_SIZE;
 
-const vertex_shader_src = @embedFile("lightray_vertex.glsl");
-const geometry_shader_src = @embedFile("lightray_geometry.glsl");
-const fragment_shader_src = @embedFile("lightray_fragment.glsl");
+const LightrayConfig = PipelineConfig{
+    .vertexShader = @embedFile("lightray_vertex.glsl"),
+    .geometryShader = @embedFile("lightray_geometry.glsl"),
+    .fragmentShader = @embedFile("lightray_fragment.glsl"),
+
+    .attributes = &[_]AttributeSpecif{
+        .{
+            .name = "position",
+            .kind = .Float,
+            .count = 2,
+        },
+        .{
+            .name = "length",
+            .kind = .Float,
+            .count = 1,
+        },
+        .{
+            .name = "rotation",
+            .kind = .Float,
+            .count = 1,
+        },
+    },
+    .uniforms = &[_]UniformSpecif{
+        .{
+            .name = "projection",
+            .kind = .Matrix4,
+        },
+    },
+};
+
+const LightrayPipeline = Pipeline(LightrayConfig);
+
+var pipeline: LightrayPipeline = undefined;
 
 const BufferData = packed struct {
     pos: pVec2f,
     length: f32,
     rotation: f32,
 };
-
-var vao: c.GLuint = undefined;
-var vbo: c.GLuint = undefined;
-var shader: ShaderProgram = undefined;
-var projection_location: c.GLint = undefined;
 var queued_rays: ArrayList(BufferData) = undefined;
 
 pub fn init(allocator: *Allocator) void {
     queued_rays = ArrayList(BufferData).init(allocator);
-
-    c.glGenVertexArrays(1, &vao);
-    c.glBindVertexArray(vao);
-
-    c.glGenBuffers(1, &vbo);
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
-
-    const vertex = [_][*:0]const u8{vertex_shader_src};
-    const geometry = [_][*:0]const u8{geometry_shader_src};
-    const fragment = [_][*:0]const u8{fragment_shader_src};
-
-    shader = ShaderProgram.new(
-        &vertex,
-        &geometry,
-        &fragment,
-    );
-    c.glBindFragDataLocation(shader.handle, 0, "outColor");
-    shader.link();
-    shader.set_active();
-    projection_location = shader.uniform_location("projection");
-
-    // 2B pos | 1B length | 1B rotation
-    const pos_attrib = 0;
-    const length_attrib = 1;
-    const rotation_attrib = 2;
-    c.glEnableVertexAttribArray(pos_attrib);
-    c.glEnableVertexAttribArray(length_attrib);
-    c.glEnableVertexAttribArray(rotation_attrib);
-    c.glVertexAttribPointer(
-        pos_attrib,
-        2,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        4 * @sizeOf(f32),
-        @intToPtr(?*const c_void, 0),
-    );
-    c.glVertexAttribPointer(
-        length_attrib,
-        1,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        4 * @sizeOf(f32),
-        @intToPtr(*const c_void, 2 * @sizeOf(f32)),
-    );
-    c.glVertexAttribPointer(
-        rotation_attrib,
-        1,
-        c.GL_FLOAT,
-        c.GL_FALSE,
-        4 * @sizeOf(f32),
-        @intToPtr(*const c_void, 3 * @sizeOf(f32)),
-    );
+    pipeline = LightrayPipeline.init();
 }
 
 pub fn deinit() void {
-    shader.deinit();
-    c.glDeleteBuffers(1, &vbo);
-    c.glDeleteVertexArrays(1, &vao);
+    pipeline.deinit();
     queued_rays.deinit();
 }
 
@@ -147,8 +120,10 @@ pub fn render(state: *const State) !void {
     }
 
     // Draw
+    pipeline.setActive();
+
     const ray_data = queued_rays.toSlice();
-    c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
+    c.glBindBuffer(c.GL_ARRAY_BUFFER, pipeline.vbo);
     c.glBufferData(
         c.GL_ARRAY_BUFFER,
         @sizeOf(BufferData) * @intCast(c_long, ray_data.len),
@@ -156,14 +131,7 @@ pub fn render(state: *const State) !void {
         c.GL_STREAM_DRAW,
     );
 
-    c.glBindVertexArray(vao);
-    shader.set_active();
-    c.glUniformMatrix4fv(
-        projection_location,
-        1,
-        c.GL_TRUE,
-        &display.world_matrix,
-    );
+    pipeline.setUniform("projection", &display.world_matrix);
     c.glDrawArrays(c.GL_POINTS, 0, @intCast(c_int, ray_data.len));
     try queued_rays.resize(0);
 }

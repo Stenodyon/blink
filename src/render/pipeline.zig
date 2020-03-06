@@ -138,7 +138,7 @@ pub fn Pipeline(comptime config: PipelineConfig) type {
                     @intCast(c.GLsizei, stride),
                     @intToPtr(?*const c_void, offset),
                 );
-                offset += comptime (attribute.count + attribute.kind.size());
+                offset += comptime (attribute.count * attribute.kind.size());
             }
 
             return self;
