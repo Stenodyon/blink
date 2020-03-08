@@ -62,6 +62,9 @@ pub const Widget = struct {
         }
     }
 
+    // TODO: filter events (allow widgets to filter events before them being
+    // sent to children and allow children to capture events that won't be
+    // captured by parents).
     pub fn handleEvent(self: *Widget, event: *Event) void {
         for (self.node.children) |child| {
             const childWidget = @fieldParentPtr(Widget, "node", child);
