@@ -28,6 +28,12 @@
         that rendering must drain from the pipeline before the data store can
         be updated. »
 - [ ] UI
+    - [ ] Layout system
+        - [X] Linear layout system
+        - [ ] Find how to modify the layout system to accomodate some widgets
+                like scrollable panes.
+    - [ ] UI Components
+    - [ ] Menu system
     - [ ] Main menu
     - [ ] Load & save menus
     - [ ] In-game interface
