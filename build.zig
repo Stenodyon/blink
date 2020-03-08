@@ -22,6 +22,8 @@ pub fn build(b: *Builder) void {
     package_script.step.dependOn(&exe_windows.step);
     package_step.dependOn(&package_script.step);
 
+    build_tests(b);
+
     b.installArtifact(exe_linux);
 }
 
@@ -65,4 +67,12 @@ fn build_windows(b: *Builder) *LibExeObjStep {
     //TODO: add freetype2
 
     return exe;
+}
+
+fn build_tests(b: *Builder) void {
+    const test_step = b.step("test", "Run tests");
+
+    const layout_tests = b.addTest("src/render/ui/layout.zig");
+    layout_tests.setMainPkgPath("../");
+    test_step.dependOn(&layout_tests.step);
 }
