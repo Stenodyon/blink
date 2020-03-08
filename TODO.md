@@ -17,7 +17,7 @@
 - [ ] UI
     - [ ] Layout system
         - [X] Linear layout system
-        - [ ] Margin and padding
+        - [X] Margin and padding
         - [ ] Find how to modify the layout system to accomodate some widgets
                 like scrollable panes.
     - [ ] UI Components

@@ -13,7 +13,7 @@ inline fn abs(x: var) @TypeOf(x) {
     }
 }
 
-fn Vec2(comptime ValType: type) type {
+pub fn Vec2(comptime ValType: type) type {
     return struct {
         x: ValType,
         y: ValType,
@@ -231,7 +231,7 @@ fn Vec2(comptime ValType: type) type {
 pub const Vec2i = Vec2(i32);
 pub const Vec2f = Vec2(f32);
 
-fn Rect(comptime T: type) type {
+pub fn Rect(comptime T: type) type {
     return struct {
         const Self = @This();
         pos: Vec2(T),
