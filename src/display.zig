@@ -37,8 +37,7 @@ pub var window_height: i32 = 720;
 const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
-var ui_allocator: ArenaAllocator = undefined;
-var ui_root: *Widget = undefined;
+var root_layout: ui.Layout = undefined;
 
 // World -> OpenGL
 pub var world_matrix: [16]f32 = undefined;
@@ -140,52 +139,53 @@ pub fn init(allocator: *Allocator) !void {
 }
 
 fn makeUI(allocator: *Allocator) !void {
-    ui_allocator = ArenaAllocator.init(allocator);
-    errdefer ui_allocator.deinit();
-
-    var arena = &ui_allocator.allocator;
-
-    const frame = try arena.create(ui.FrameWidget);
-    frame.* = ui.FrameWidget.new();
-
-    const hfillers = try arena.alloc(ui.FillerWidget, 2);
-    hfillers[0] = ui.FillerWidget.new(1);
-    hfillers[1] = ui.FillerWidget.new(2);
-
-    const hbox = try arena.create(ui.HBox);
-    hbox.* = ui.HBox.new();
-    hbox.widget.node.weight = 3;
-
-    try hbox.setChildren(
-        arena,
-        &[_]*Widget{
-            &hfillers[0].widget,
-            &frame.widget,
-            &hfillers[1].widget,
-        },
-    );
-
-    const vfillers = try arena.alloc(ui.FillerWidget, 2);
-    vfillers[0] = ui.FillerWidget.new(1);
-    vfillers[1] = ui.FillerWidget.new(1);
-
-    const vbox = try arena.create(ui.VBox);
-    vbox.* = ui.VBox.new();
-
-    try vbox.setChildren(
-        arena,
-        &[_]*Widget{
-            &vfillers[0].widget,
-            &hbox.widget,
-            &vfillers[1].widget,
-        },
-    );
-
-    ui_root = &vbox.widget;
+    root_layout = try ui.Layout.fromJSON(allocator, "data/test_layout.json");
+    //    ui_allocator = ArenaAllocator.init(allocator);
+    //    errdefer ui_allocator.deinit();
+    //
+    //    var arena = &ui_allocator.allocator;
+    //
+    //    const frame = try arena.create(ui.FrameWidget);
+    //    frame.* = ui.FrameWidget.new();
+    //
+    //    const hfillers = try arena.alloc(ui.FillerWidget, 2);
+    //    hfillers[0] = ui.FillerWidget.new(1);
+    //    hfillers[1] = ui.FillerWidget.new(2);
+    //
+    //    const hbox = try arena.create(ui.HBox);
+    //    hbox.* = ui.HBox.new();
+    //    hbox.widget.node.weight = 3;
+    //
+    //    try hbox.setChildren(
+    //        arena,
+    //        &[_]*Widget{
+    //            &hfillers[0].widget,
+    //            &frame.widget,
+    //            &hfillers[1].widget,
+    //        },
+    //    );
+    //
+    //    const vfillers = try arena.alloc(ui.FillerWidget, 2);
+    //    vfillers[0] = ui.FillerWidget.new(1);
+    //    vfillers[1] = ui.FillerWidget.new(1);
+    //
+    //    const vbox = try arena.create(ui.VBox);
+    //    vbox.* = ui.VBox.new();
+    //
+    //    try vbox.setChildren(
+    //        arena,
+    //        &[_]*Widget{
+    //            &vfillers[0].widget,
+    //            &hbox.widget,
+    //            &vfillers[1].widget,
+    //        },
+    //    );
+    //
+    //    ui_root = &vbox.widget;
 }
 
 pub fn deinit() void {
-    ui_allocator.deinit();
+    root_layout.deinit();
     ui.deinit();
     lightray_renderer.deinit();
     entity_renderer.deinit();
@@ -300,13 +300,13 @@ fn render_ui(state: *const State) !void {
     //        &ui.id.frame,
     //    );
     //}
-    ui_root.computeLayout(Recti.box(
+    root_layout.root.computeLayout(Recti.box(
         0,
         0,
         window_width,
         window_height,
     ));
-    try ui_root.render();
+    try root_layout.root.render();
     try ui.draw_queued(0.0, &screen_matrix);
 }
 

@@ -1,0 +1,16 @@
+{
+    "type": "VBox",
+    "children": [
+        {"type": "FillerWidget"},
+        {
+            "type": "HBox",
+            "weight": 3,
+            "children": [
+                {"type": "FillerWidget"},
+                {"type": "FrameWidget"},
+                {"type": "FillerWidget", "weight": 2}
+            ]
+        },
+        {"type": "FillerWidget"}
+    ]
+}

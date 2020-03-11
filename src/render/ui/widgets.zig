@@ -61,6 +61,16 @@ pub const Widget = struct {
 pub const FillerWidget = struct {
     widget: Widget,
 
+    pub fn newDefault() FillerWidget {
+        return .{
+            .widget = .{
+                .node = .{},
+                .renderFn = render,
+                .handleEventFn = handleEvents,
+            },
+        };
+    }
+
     pub fn new(weight: i32) FillerWidget {
         return .{
             .widget = .{
