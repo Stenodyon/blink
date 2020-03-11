@@ -140,48 +140,6 @@ pub fn init(allocator: *Allocator) !void {
 
 fn makeUI(allocator: *Allocator) !void {
     root_layout = try ui.Layout.fromJSON(allocator, "data/test_layout.json");
-    //    ui_allocator = ArenaAllocator.init(allocator);
-    //    errdefer ui_allocator.deinit();
-    //
-    //    var arena = &ui_allocator.allocator;
-    //
-    //    const frame = try arena.create(ui.FrameWidget);
-    //    frame.* = ui.FrameWidget.new();
-    //
-    //    const hfillers = try arena.alloc(ui.FillerWidget, 2);
-    //    hfillers[0] = ui.FillerWidget.new(1);
-    //    hfillers[1] = ui.FillerWidget.new(2);
-    //
-    //    const hbox = try arena.create(ui.HBox);
-    //    hbox.* = ui.HBox.new();
-    //    hbox.widget.node.weight = 3;
-    //
-    //    try hbox.setChildren(
-    //        arena,
-    //        &[_]*Widget{
-    //            &hfillers[0].widget,
-    //            &frame.widget,
-    //            &hfillers[1].widget,
-    //        },
-    //    );
-    //
-    //    const vfillers = try arena.alloc(ui.FillerWidget, 2);
-    //    vfillers[0] = ui.FillerWidget.new(1);
-    //    vfillers[1] = ui.FillerWidget.new(1);
-    //
-    //    const vbox = try arena.create(ui.VBox);
-    //    vbox.* = ui.VBox.new();
-    //
-    //    try vbox.setChildren(
-    //        arena,
-    //        &[_]*Widget{
-    //            &vfillers[0].widget,
-    //            &hbox.widget,
-    //            &vfillers[1].widget,
-    //        },
-    //    );
-    //
-    //    ui_root = &vbox.widget;
 }
 
 pub fn deinit() void {

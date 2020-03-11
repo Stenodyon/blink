@@ -10,8 +10,8 @@ pub const Widget = struct {
     const Error = error{OutOfMemory};
 
     node: layout.Node,
-    renderFn: fn (*Widget) Error!void,
-    handleEventFn: fn (*Widget, *Event) void,
+    renderFn: fn (*Widget) Error!void = noRender,
+    handleEventFn: fn (*Widget, *Event) void = noHandleEvent,
 
     pub fn setChildren(
         self: *Widget,
@@ -56,6 +56,9 @@ pub const Widget = struct {
 
         self.handleEventFn(self, event);
     }
+
+    fn noRender(self: *Widget) Error!void {}
+    fn noHandleEvent(self: *Widget, event: *Event) void {}
 };
 
 pub const FillerWidget = struct {
@@ -65,8 +68,6 @@ pub const FillerWidget = struct {
         return .{
             .widget = .{
                 .node = .{},
-                .renderFn = render,
-                .handleEventFn = handleEvents,
             },
         };
     }
@@ -82,9 +83,6 @@ pub const FillerWidget = struct {
             },
         };
     }
-
-    fn render(self_widget: *Widget) !void {}
-    fn handleEvents(self_widget: *Widget, event: *Event) void {}
 };
 
 const Orientation = enum {
@@ -107,8 +105,6 @@ fn LinearLayout(comptime orientation: Orientation) type {
                             .Vertical => .Column,
                         },
                     },
-                    .renderFn = render,
-                    .handleEventFn = handleEvents,
                 },
             };
         }
@@ -120,9 +116,6 @@ fn LinearLayout(comptime orientation: Orientation) type {
         ) !void {
             try self.widget.setChildren(allocator, children);
         }
-
-        fn render(self_widget: *Widget) !void {}
-        fn handleEvents(self_widget: *Widget, event: *Event) void {}
     };
 }
 
@@ -137,7 +130,6 @@ pub const FrameWidget = struct {
             .widget = .{
                 .node = .{},
                 .renderFn = render,
-                .handleEventFn = handleEvents,
             },
         };
     }
@@ -147,9 +139,5 @@ pub const FrameWidget = struct {
             self_widget.node.loc.to_float(f32),
             renderer.id.background,
         );
-    }
-
-    fn handleEvents(self_widget: *Widget, event: *Event) void {
-        //
     }
 };
