@@ -9,24 +9,24 @@ pub const Order = enum {
 };
 
 pub const Node = struct {
-    loc: Rect(usize) = undefined,
-    weight: usize = 1,
+    loc: Recti = undefined,
+    weight: i32 = 1,
 
-    marginTop: usize = 0,
-    marginBottom: usize = 0,
-    marginLeft: usize = 0,
-    marginRight: usize = 0,
-    paddingTop: usize = 0,
-    paddingBottom: usize = 0,
-    paddingLeft: usize = 0,
-    paddingRight: usize = 0,
+    marginTop: i32 = 0,
+    marginBottom: i32 = 0,
+    marginLeft: i32 = 0,
+    marginRight: i32 = 0,
+    paddingTop: i32 = 0,
+    paddingBottom: i32 = 0,
+    paddingLeft: i32 = 0,
+    paddingRight: i32 = 0,
 
     childrenOrder: Order = .Row,
     children: []*Node = &[_]*Node{},
 };
 
-pub fn compute(node: *Node, window: Rect(usize)) void {
-    node.loc = Rect(usize).box(
+pub fn compute(node: *Node, window: Recti) void {
+    node.loc = Recti.box(
         window.pos.x + node.marginLeft,
         window.pos.y + node.marginTop,
         window.size.x - node.marginLeft - node.marginRight,
@@ -34,21 +34,21 @@ pub fn compute(node: *Node, window: Rect(usize)) void {
     );
 
     const totalWeight = blk: {
-        var total: usize = 0;
+        var total: i32 = 0;
         for (node.children) |child| {
             total += child.weight;
         }
         break :blk total;
     };
 
-    const paddedWindow = Rect(usize).box(
+    const paddedWindow = Recti.box(
         node.loc.pos.x + node.paddingLeft,
         node.loc.pos.y + node.paddingTop,
         node.loc.size.x - node.paddingLeft - node.paddingRight,
         node.loc.size.y - node.paddingTop - node.paddingBottom,
     );
 
-    var offset: usize = 0;
+    var offset: i32 = 0;
     for (node.children) |child| {
         var newWindow = paddedWindow;
 
@@ -76,12 +76,12 @@ pub fn compute(node: *Node, window: Rect(usize)) void {
 
 test "filling window" {
     var root = Node{};
-    compute(&root, Rect(usize).box(50, 100, 250, 800));
+    compute(&root, Recti.box(50, 100, 250, 800));
 
-    testing.expectEqual(@as(usize, 50), root.loc.pos.x);
-    testing.expectEqual(@as(usize, 100), root.loc.pos.y);
-    testing.expectEqual(@as(usize, 250), root.loc.size.x);
-    testing.expectEqual(@as(usize, 800), root.loc.size.y);
+    testing.expectEqual(@as(i32, 50), root.loc.pos.x);
+    testing.expectEqual(@as(i32, 100), root.loc.pos.y);
+    testing.expectEqual(@as(i32, 250), root.loc.size.x);
+    testing.expectEqual(@as(i32, 800), root.loc.size.y);
 }
 
 test "row half and half" {
@@ -91,17 +91,17 @@ test "row half and half" {
         .childrenOrder = .Row,
         .children = &[_]*Node{ &child1, &child2 },
     };
-    compute(&root, Rect(usize).box(0, 0, 200, 100));
+    compute(&root, Recti.box(0, 0, 200, 100));
 
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.y);
-    testing.expectEqual(@as(usize, 100), child1.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child1.loc.size.y);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.y);
+    testing.expectEqual(@as(i32, 100), child1.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child1.loc.size.y);
 
-    testing.expectEqual(@as(usize, 100), child2.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child2.loc.pos.y);
-    testing.expectEqual(@as(usize, 100), child2.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child2.loc.size.y);
+    testing.expectEqual(@as(i32, 100), child2.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child2.loc.pos.y);
+    testing.expectEqual(@as(i32, 100), child2.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child2.loc.size.y);
 }
 
 test "column half and half" {
@@ -111,17 +111,17 @@ test "column half and half" {
         .childrenOrder = .Column,
         .children = &[_]*Node{ &child1, &child2 },
     };
-    compute(&root, Rect(usize).box(0, 0, 100, 200));
+    compute(&root, Recti.box(0, 0, 100, 200));
 
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.y);
-    testing.expectEqual(@as(usize, 100), child1.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child1.loc.size.y);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.y);
+    testing.expectEqual(@as(i32, 100), child1.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child1.loc.size.y);
 
-    testing.expectEqual(@as(usize, 0), child2.loc.pos.x);
-    testing.expectEqual(@as(usize, 100), child2.loc.pos.y);
-    testing.expectEqual(@as(usize, 100), child2.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child2.loc.size.y);
+    testing.expectEqual(@as(i32, 0), child2.loc.pos.x);
+    testing.expectEqual(@as(i32, 100), child2.loc.pos.y);
+    testing.expectEqual(@as(i32, 100), child2.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child2.loc.size.y);
 }
 
 test "weights" {
@@ -132,22 +132,22 @@ test "weights" {
         .childrenOrder = .Row,
         .children = &[_]*Node{ &child1, &child2, &child3 },
     };
-    compute(&root, Rect(usize).box(0, 0, 200, 100));
+    compute(&root, Recti.box(0, 0, 200, 100));
 
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child1.loc.pos.y);
-    testing.expectEqual(@as(usize, 50), child1.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child1.loc.size.y);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child1.loc.pos.y);
+    testing.expectEqual(@as(i32, 50), child1.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child1.loc.size.y);
 
-    testing.expectEqual(@as(usize, 50), child2.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child2.loc.pos.y);
-    testing.expectEqual(@as(usize, 50), child2.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child2.loc.size.y);
+    testing.expectEqual(@as(i32, 50), child2.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child2.loc.pos.y);
+    testing.expectEqual(@as(i32, 50), child2.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child2.loc.size.y);
 
-    testing.expectEqual(@as(usize, 100), child3.loc.pos.x);
-    testing.expectEqual(@as(usize, 0), child3.loc.pos.y);
-    testing.expectEqual(@as(usize, 100), child3.loc.size.x);
-    testing.expectEqual(@as(usize, 100), child3.loc.size.y);
+    testing.expectEqual(@as(i32, 100), child3.loc.pos.x);
+    testing.expectEqual(@as(i32, 0), child3.loc.pos.y);
+    testing.expectEqual(@as(i32, 100), child3.loc.size.x);
+    testing.expectEqual(@as(i32, 100), child3.loc.size.y);
 }
 
 test "filling window margin" {
@@ -157,12 +157,12 @@ test "filling window margin" {
         .marginLeft = 4,
         .marginRight = 25,
     };
-    compute(&root, Rect(usize).box(50, 100, 250, 800));
+    compute(&root, Recti.box(50, 100, 250, 800));
 
-    testing.expectEqual(@as(usize, 54), root.loc.pos.x);
-    testing.expectEqual(@as(usize, 112), root.loc.pos.y);
-    testing.expectEqual(@as(usize, 221), root.loc.size.x);
-    testing.expectEqual(@as(usize, 766), root.loc.size.y);
+    testing.expectEqual(@as(i32, 54), root.loc.pos.x);
+    testing.expectEqual(@as(i32, 112), root.loc.pos.y);
+    testing.expectEqual(@as(i32, 221), root.loc.size.x);
+    testing.expectEqual(@as(i32, 766), root.loc.size.y);
 }
 
 test "row half and half padding" {
@@ -177,15 +177,15 @@ test "row half and half padding" {
         .childrenOrder = .Row,
         .children = &[_]*Node{ &child1, &child2 },
     };
-    compute(&root, Rect(usize).box(0, 0, 225, 100));
+    compute(&root, Recti.box(0, 0, 225, 100));
 
-    testing.expectEqual(@as(usize, 25), child1.loc.pos.x);
-    testing.expectEqual(@as(usize, 12), child1.loc.pos.y);
-    testing.expectEqual(@as(usize, 75), child1.loc.size.x);
-    testing.expectEqual(@as(usize, 66), child1.loc.size.y);
+    testing.expectEqual(@as(i32, 25), child1.loc.pos.x);
+    testing.expectEqual(@as(i32, 12), child1.loc.pos.y);
+    testing.expectEqual(@as(i32, 75), child1.loc.size.x);
+    testing.expectEqual(@as(i32, 66), child1.loc.size.y);
 
-    testing.expectEqual(@as(usize, 100), child2.loc.pos.x);
-    testing.expectEqual(@as(usize, 12), child2.loc.pos.y);
-    testing.expectEqual(@as(usize, 75), child2.loc.size.x);
-    testing.expectEqual(@as(usize, 66), child2.loc.size.y);
+    testing.expectEqual(@as(i32, 100), child2.loc.pos.x);
+    testing.expectEqual(@as(i32, 12), child2.loc.pos.y);
+    testing.expectEqual(@as(i32, 75), child2.loc.size.x);
+    testing.expectEqual(@as(i32, 66), child2.loc.size.y);
 }

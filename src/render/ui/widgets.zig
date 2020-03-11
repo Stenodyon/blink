@@ -3,12 +3,14 @@ const Allocator = std.mem.Allocator;
 
 const layout = @import("layout.zig");
 const Event = @import("events.zig").Event;
+const renderer = @import("renderer.zig");
 usingnamespace @import("../../vec.zig");
 
 pub const Widget = struct {
-    node: layout.Node,
+    const Error = error{OutOfMemory};
 
-    renderFn: fn (*Widget) void,
+    node: layout.Node,
+    renderFn: fn (*Widget) Error!void,
     handleEventFn: fn (*Widget, *Event) void,
 
     pub fn setChildren(
@@ -16,22 +18,30 @@ pub const Widget = struct {
         allocator: *Allocator,
         children: []*Widget,
     ) !void {
-        try allocator.alloc(Node, children.len);
+        self.node.children = try allocator.alloc(*layout.Node, children.len);
         for (children) |child, i| {
             self.node.children[i] = &child.node;
         }
     }
 
-    pub fn computeLayout(self: *Widget, window: Rect(usize)) void {
+    pub fn deinit(self: *const Widget, allocator: *Allocator) void {
+        for (self.node.children) |child| {
+            const child_widget = @fieldParentPtr(Widget, "node", child);
+            child_widget.deinit();
+        }
+        allocator.free(self.node.children);
+    }
+
+    pub fn computeLayout(self: *Widget, window: Recti) void {
         layout.compute(&self.node, window);
     }
 
-    pub fn render(self: *Widget) void {
-        self.renderFn(self);
+    pub fn render(self: *Widget) Error!void {
+        try self.renderFn(self);
 
         for (self.node.children) |child| {
             const childWidget = @fieldParentPtr(Widget, "node", child);
-            childWidget.render();
+            try childWidget.render();
         }
     }
 
@@ -45,5 +55,91 @@ pub const Widget = struct {
         }
 
         self.handleEventFn(self, event);
+    }
+};
+
+pub const FillerWidget = struct {
+    widget: Widget,
+
+    pub fn new(weight: i32) FillerWidget {
+        return .{
+            .widget = .{
+                .node = .{
+                    .weight = weight,
+                },
+                .renderFn = render,
+                .handleEventFn = handleEvents,
+            },
+        };
+    }
+
+    fn render(self_widget: *Widget) !void {}
+    fn handleEvents(self_widget: *Widget, event: *Event) void {}
+};
+
+const Orientation = enum {
+    Horizontal,
+    Vertical,
+};
+
+fn LinearLayout(comptime orientation: Orientation) type {
+    return struct {
+        const Self = @This();
+
+        widget: Widget,
+
+        pub fn new() Self {
+            return .{
+                .widget = .{
+                    .node = .{
+                        .childrenOrder = switch (orientation) {
+                            .Horizontal => .Row,
+                            .Vertical => .Column,
+                        },
+                    },
+                    .renderFn = render,
+                    .handleEventFn = handleEvents,
+                },
+            };
+        }
+
+        pub fn setChildren(
+            self: *Self,
+            allocator: *Allocator,
+            children: []*Widget,
+        ) !void {
+            try self.widget.setChildren(allocator, children);
+        }
+
+        fn render(self_widget: *Widget) !void {}
+        fn handleEvents(self_widget: *Widget, event: *Event) void {}
+    };
+}
+
+pub const HBox = LinearLayout(.Horizontal);
+pub const VBox = LinearLayout(.Vertical);
+
+pub const FrameWidget = struct {
+    widget: Widget,
+
+    pub fn new() FrameWidget {
+        return .{
+            .widget = .{
+                .node = .{},
+                .renderFn = render,
+                .handleEventFn = handleEvents,
+            },
+        };
+    }
+
+    fn render(self_widget: *Widget) !void {
+        try renderer.queue_element(
+            self_widget.node.loc.to_float(f32),
+            renderer.id.background,
+        );
+    }
+
+    fn handleEvents(self_widget: *Widget, event: *Event) void {
+        //
     }
 };

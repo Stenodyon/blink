@@ -41,6 +41,7 @@ const Frame = struct {
 pub var id: struct {
     error_texture: usize,
     selection: usize,
+    background: usize,
     frame: Frame,
 } = undefined;
 
@@ -90,6 +91,7 @@ pub fn init(allocator: *Allocator) !void {
 
     id.error_texture = atlas.id_of("error").?;
     id.selection = atlas.id_of("selection").?;
+    id.background = atlas.id_of("background").?;
     id.frame.body = atlas.id_of("frame_body").?;
     id.frame.top = atlas.id_of("frame_top").?;
     id.frame.bottom = atlas.id_of("frame_bottom").?;
@@ -154,7 +156,6 @@ fn collect_data(location: Rectf, texture_id: usize, buffer: []BufferData) void {
 }
 
 pub fn queue_element(
-    state: *const State,
     location: Rectf,
     texture_id: usize,
 ) !void {
@@ -324,7 +325,7 @@ pub fn draw_frame(dest: Rectf, border_width: f32, frame: *const Frame) void {
     c.glDrawArrays(c.GL_TRIANGLES, 0, 6 * 9);
 }
 
-pub fn draw_queued(transparency: f32) !void {
+pub fn draw_queued(transparency: f32, projection: *[16]f32) !void {
     const element_data = queued_elements.toSlice();
     c.glBindBuffer(c.GL_ARRAY_BUFFER, vbo);
     c.glBufferData(
@@ -341,7 +342,7 @@ pub fn draw_queued(transparency: f32) !void {
         projection_location,
         1,
         c.GL_TRUE,
-        &display.world_matrix,
+        projection,
     );
     const trans_uniform_loc = shader.uniform_location("transparency");
     c.glUniform1f(trans_uniform_loc, transparency);

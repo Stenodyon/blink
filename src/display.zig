@@ -2,6 +2,7 @@ const std = @import("std");
 const panic = std.debug.panic;
 const math = std.math;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 const Buffer = std.Buffer;
 
 const sdl = @import("sdl.zig");
@@ -13,7 +14,8 @@ const entity_renderer = @import("render/entity.zig");
 const lightray_renderer = @import("render/lightray.zig");
 const grid_renderer = @import("render/grid.zig");
 const polygon_renderer = @import("render/polygon.zig");
-const ui_renderer = @import("render/ui.zig");
+const ui = @import("render/ui.zig");
+const Widget = ui.Widget;
 const State = @import("state.zig").State;
 const utils = @import("utils.zig");
 const Entity = @import("entities.zig").Entity;
@@ -34,6 +36,9 @@ pub var window_height: i32 = 720;
 
 const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
+
+var ui_allocator: ArenaAllocator = undefined;
+var ui_root: *Widget = undefined;
 
 // World -> OpenGL
 pub var world_matrix: [16]f32 = undefined;
@@ -115,7 +120,8 @@ pub fn init(allocator: *Allocator) !void {
     grid_renderer.init();
     try entity_renderer.init(allocator);
     lightray_renderer.init(allocator);
-    try ui_renderer.init(allocator);
+    try ui.init(allocator);
+    try makeUI(allocator);
 
     update_projection_matrix(Vec2f.new(0, 0), Vec2f.new(1, 1));
     update_screen_matrix(Vec2i.new(window_width, window_height).to_float(f32));
@@ -133,8 +139,54 @@ pub fn init(allocator: *Allocator) !void {
     //std.debug.warn("Textures loaded\n");
 }
 
+fn makeUI(allocator: *Allocator) !void {
+    ui_allocator = ArenaAllocator.init(allocator);
+    errdefer ui_allocator.deinit();
+
+    var arena = &ui_allocator.allocator;
+
+    const frame = try arena.create(ui.FrameWidget);
+    frame.* = ui.FrameWidget.new();
+
+    const hfillers = try arena.alloc(ui.FillerWidget, 2);
+    hfillers[0] = ui.FillerWidget.new(1);
+    hfillers[1] = ui.FillerWidget.new(2);
+
+    const hbox = try arena.create(ui.HBox);
+    hbox.* = ui.HBox.new();
+    hbox.widget.node.weight = 3;
+
+    try hbox.setChildren(
+        arena,
+        &[_]*Widget{
+            &hfillers[0].widget,
+            &frame.widget,
+            &hfillers[1].widget,
+        },
+    );
+
+    const vfillers = try arena.alloc(ui.FillerWidget, 2);
+    vfillers[0] = ui.FillerWidget.new(1);
+    vfillers[1] = ui.FillerWidget.new(1);
+
+    const vbox = try arena.create(ui.VBox);
+    vbox.* = ui.VBox.new();
+
+    try vbox.setChildren(
+        arena,
+        &[_]*Widget{
+            &vfillers[0].widget,
+            &hbox.widget,
+            &vfillers[1].widget,
+        },
+    );
+
+    ui_root = &vbox.widget;
+}
+
 pub fn deinit() void {
-    ui_renderer.deinit();
+    ui_allocator.deinit();
+    ui.deinit();
     lightray_renderer.deinit();
     entity_renderer.deinit();
     grid_renderer.deinit();
@@ -197,10 +249,10 @@ fn render_ui(state: *const State) !void {
                 const pos = Vec2i.new(x, y);
                 if (!state.entities.contains(pos))
                     continue;
-                try ui_renderer.queue_element(state, Rectf{
+                try ui.queue_element(Rectf{
                     .pos = pos.to_float(f32),
                     .size = Vec2f.new(1, 1),
-                }, ui_renderer.id.selection);
+                }, ui.id.selection);
             }
         }
     }
@@ -209,12 +261,12 @@ fn render_ui(state: *const State) !void {
     var entity_iterator = state.selected_entities.iterator();
     while (entity_iterator.next()) |entry| {
         const pos = entry.key.to_float(f32);
-        try ui_renderer.queue_element(state, Rectf{
+        try ui.queue_element(Rectf{
             .pos = pos,
             .size = Vec2f.new(1, 1),
-        }, ui_renderer.id.selection);
+        }, ui.id.selection);
     }
-    try ui_renderer.draw_queued(0.0);
+    try ui.draw_queued(0.0, &world_matrix);
 
     // Copy buffer
     var copy_buffer_iter = state.copy_buffer.iterator();
@@ -237,7 +289,7 @@ fn render_ui(state: *const State) !void {
     //    var test_size = [4]f32{ 1, -0.25, 0, 0 };
     //    matrix.apply(&inv_screen_matrix, &test_pos);
     //    matrix.apply(&inv_screen_matrix, &test_size);
-    //    ui_renderer.draw_frame(
+    //    ui.draw_frame(
     //        Rectf.box(
     //            test_pos[0],
     //            test_pos[1],
@@ -245,9 +297,17 @@ fn render_ui(state: *const State) !void {
     //            test_size[1],
     //        ),
     //        8,
-    //        &ui_renderer.id.frame,
+    //        &ui.id.frame,
     //    );
     //}
+    ui_root.computeLayout(Recti.box(
+        0,
+        0,
+        window_width,
+        window_height,
+    ));
+    try ui_root.render();
+    try ui.draw_queued(0.0, &screen_matrix);
 }
 
 pub fn on_window_event(state: *State, event: *const sdl.WindowEvent) void {

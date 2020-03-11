@@ -251,6 +251,13 @@ pub fn Rect(comptime T: type) type {
             };
         }
 
+        pub inline fn to_float(self: Self, comptime FT: type) Rect(FT) {
+            return Rect(FT).new(
+                self.pos.to_float(FT),
+                self.size.to_float(FT),
+            );
+        }
+
         pub fn translate(self: *Self, vec: Vec2(T)) Self {
             self.pos.addi(vec);
             return self;
