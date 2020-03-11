@@ -4,6 +4,7 @@ const ArrayList = std.ArrayList;
 const sdl = @import("sdl.zig");
 const display = @import("display.zig");
 const utils = @import("utils.zig");
+const ui = @import("render/ui.zig");
 
 usingnamespace @import("vec.zig");
 usingnamespace @import("save_load.zig");
@@ -24,6 +25,16 @@ pub const InputState = enum {
 };
 
 pub fn on_mouse_motion(state: *State, x: i32, y: i32, x_rel: i32, y_rel: i32) !void {
+    const uiEvent = ui.Event{
+        .MouseMovement = .{
+            .newX = x,
+            .newY = y,
+            .prevX = x + x_rel,
+            .prevY = y + y_rel,
+        },
+    };
+    display.root_layout.root.handleEvent(&uiEvent);
+
     const mouse = Vec2i.new(x, y);
 
     if (last_cell) |cell| {

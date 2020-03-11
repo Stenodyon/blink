@@ -12,15 +12,15 @@ pub const Event = union(enum) {
     MouseExit,
 
     pub const MouseClickEvent = struct {
-        x: usize,
-        y: usize,
+        x: i32,
+        y: i32,
         button: MouseButton,
     };
 
     pub const MouseMovementEvent = struct {
-        newX: usize,
-        newY: usize,
-        prevX: usize,
-        prevY: usize,
+        newX: i32,
+        newY: i32,
+        prevX: i32,
+        prevY: i32,
     };
 };

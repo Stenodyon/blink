@@ -37,7 +37,7 @@ pub var window_height: i32 = 720;
 const font_name = "data/VT323-Regular.ttf";
 var font: ttf.Font = undefined;
 
-var root_layout: ui.Layout = undefined;
+pub var root_layout: ui.Layout = undefined;
 
 // World -> OpenGL
 pub var world_matrix: [16]f32 = undefined;

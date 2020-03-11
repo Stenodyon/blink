@@ -2,6 +2,8 @@
     "error": [0, 0, 16, 16],
     "selection": [16, 0, 16, 16],
     "background": [32, 0, 16, 16],
+    "background_hover": [48, 0, 16, 16],
+    "background_clicked": [64, 0, 16, 16],
 
     "frame_body": [1, 17, 14, 14],
     "frame_top": [1, 16, 14, 1],

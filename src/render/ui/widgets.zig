@@ -11,7 +11,9 @@ pub const Widget = struct {
 
     node: layout.Node,
     renderFn: fn (*Widget) Error!void = noRender,
-    handleEventFn: fn (*Widget, *Event) void = noHandleEvent,
+    handleEventFn: fn (*Widget, *const Event) void = noHandleEvent,
+
+    mouseHovering: bool = false,
 
     pub fn setChildren(
         self: *Widget,
@@ -48,17 +50,50 @@ pub const Widget = struct {
     // TODO: filter events (allow widgets to filter events before them being
     // sent to children and allow children to capture events that won't be
     // captured by parents).
-    pub fn handleEvent(self: *Widget, event: *Event) void {
+    pub fn handleEvent(self: *Widget, event: *const Event) void {
+        switch (event.*) {
+            .MouseEnter => {
+                self.mouseHovering = true;
+                return;
+            },
+            .MouseExit => {
+                self.mouseHovering = false;
+                return;
+            },
+            else => {},
+        }
+
         for (self.node.children) |child| {
-            const childWidget = @fieldParentPtr(Widget, "node", child);
+            var childWidget = @fieldParentPtr(Widget, "node", child);
             childWidget.handleEvent(event);
+
+            switch (event.*) {
+                .MouseMovement => |movement| {
+                    const mouseInside = childWidget.node.loc.contains(
+                        Vec2i.new(
+                            movement.newX,
+                            movement.newY,
+                        ),
+                    );
+
+                    if (!childWidget.mouseHovering and mouseInside) {
+                        const enterEvent: Event = .MouseEnter;
+                        childWidget.handleEventFn(childWidget, &enterEvent);
+                    }
+                    if (childWidget.mouseHovering and !mouseInside) {
+                        const exitEvent: Event = .MouseExit;
+                        childWidget.handleEventFn(childWidget, &exitEvent);
+                    }
+                },
+                else => {},
+            }
         }
 
         self.handleEventFn(self, event);
     }
 
     fn noRender(self: *Widget) Error!void {}
-    fn noHandleEvent(self: *Widget, event: *Event) void {}
+    fn noHandleEvent(self: *Widget, event: *const Event) void {}
 };
 
 pub const FillerWidget = struct {
@@ -137,7 +172,10 @@ pub const FrameWidget = struct {
     fn render(self_widget: *Widget) !void {
         try renderer.queue_element(
             self_widget.node.loc.to_float(f32),
-            renderer.id.background,
+            if (self_widget.mouseHovering)
+                renderer.id.background_hover
+            else
+                renderer.id.background,
         );
     }
 };

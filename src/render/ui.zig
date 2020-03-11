@@ -1,6 +1,7 @@
 pub usingnamespace @import("ui/renderer.zig");
 pub usingnamespace @import("ui/layout.zig");
 pub usingnamespace @import("ui/widgets.zig");
+pub usingnamespace @import("ui/events.zig");
 
 const std = @import("std");
 const json = std.json;

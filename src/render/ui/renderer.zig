@@ -42,6 +42,8 @@ pub var id: struct {
     error_texture: usize,
     selection: usize,
     background: usize,
+    background_hover: usize,
+    background_clicked: usize,
     frame: Frame,
 } = undefined;
 
@@ -92,6 +94,8 @@ pub fn init(allocator: *Allocator) !void {
     id.error_texture = atlas.id_of("error").?;
     id.selection = atlas.id_of("selection").?;
     id.background = atlas.id_of("background").?;
+    id.background_hover = atlas.id_of("background_hover").?;
+    id.background_clicked = atlas.id_of("background_clicked").?;
     id.frame.body = atlas.id_of("frame_body").?;
     id.frame.top = atlas.id_of("frame_top").?;
     id.frame.bottom = atlas.id_of("frame_bottom").?;
