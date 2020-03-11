@@ -2,35 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const layout = @import("layout.zig");
+const Event = @import("events.zig").Event;
 usingnamespace @import("../../vec.zig");
-
-// TODO: move that and Event to its own file
-pub const MouseButton = enum {
-    Left,
-    Right,
-    Middle,
-    // TODO: More?
-};
-
-pub const Event = union(enum) {
-    MouseClick: MouseClickEvent,
-    MouseMovement: MouseMovementEvent,
-    MouseEnter,
-    MouseExit,
-
-    pub const MouseClickEvent = struct {
-        x: usize,
-        y: usize,
-        button: MouseButton,
-    };
-
-    pub const MouseMovementEvent = struct {
-        newX: usize,
-        newY: usize,
-        prevX: usize,
-        prevY: usize,
-    };
-};
 
 pub const Widget = struct {
     node: layout.Node,
