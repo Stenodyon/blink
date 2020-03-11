@@ -7,6 +7,18 @@ const json = std.json;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
+const NODE_PROPERTIES = [_][]const u8{
+    "weight",
+    "marginLeft",
+    "marginRight",
+    "marginTop",
+    "marginBottom",
+    "paddingLeft",
+    "paddingRight",
+    "paddingTop",
+    "paddingBottom",
+};
+
 pub const Layout = struct {
     arena: ArenaAllocator,
     root: *Widget,
@@ -61,8 +73,14 @@ pub const Layout = struct {
                 }
             };
 
-            if (jsonObject.get("weight")) |weightEntry| {
-                widget.node.weight = @intCast(i32, weightEntry.value.Integer);
+            inline for (NODE_PROPERTIES) |property| {
+                if (jsonObject.get(property)) |propEntry| {
+                    const value = @intCast(
+                        @TypeOf(@field(&widget.node, property)),
+                        propEntry.value.Integer,
+                    );
+                    @field(&widget.node, property) = value;
+                }
             }
 
             if (jsonObject.get("children")) |childrenEntry| {
