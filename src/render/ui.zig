@@ -69,6 +69,10 @@ pub const Layout = struct {
                     const vbox = try arena.create(VBox);
                     vbox.* = VBox.new();
                     break :blk &vbox.widget;
+                } else if (std.mem.eql(u8, "Button", widgetType)) {
+                    const button = try arena.create(Button);
+                    button.* = Button.new();
+                    break :blk &button.widget;
                 } else {
                     std.debug.panic("Invalid widget: \"{}\"\n", .{widgetType});
                 }

@@ -7,7 +7,24 @@
             "weight": 3,
             "children": [
                 {"type": "FillerWidget"},
-                {"type": "FrameWidget"},
+                {
+                    "type": "FrameWidget",
+
+                    "paddingTop": 20,
+                    "paddingBotton": 20,
+                    "paddingLeft": 20,
+                    "paddingRight": 20,
+
+                    "children": [
+                        {
+                            "type": "VBox",
+                            "children": [
+                                {"type": "Button"},
+                                {"type": "FillerWidget", "weight": 5}
+                            ]
+                        }
+                    ]
+                },
                 {"type": "FillerWidget", "weight": 2}
             ]
         },

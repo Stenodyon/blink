@@ -172,6 +172,26 @@ pub const FrameWidget = struct {
     fn render(self_widget: *Widget) !void {
         try renderer.queue_element(
             self_widget.node.loc.to_float(f32),
+            renderer.id.background,
+        );
+    }
+};
+
+pub const Button = struct {
+    widget: Widget,
+
+    pub fn new() Button {
+        return .{
+            .widget = .{
+                .node = .{},
+                .renderFn = render,
+            },
+        };
+    }
+
+    fn render(self_widget: *Widget) !void {
+        try renderer.queue_element(
+            self_widget.node.loc.to_float(f32),
             if (self_widget.mouseHovering)
                 renderer.id.background_hover
             else
