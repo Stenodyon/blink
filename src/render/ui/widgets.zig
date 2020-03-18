@@ -78,11 +78,11 @@ pub const Widget = struct {
 
                     if (!childWidget.mouseHovering and mouseInside) {
                         const enterEvent: Event = .MouseEnter;
-                        childWidget.handleEventFn(childWidget, &enterEvent);
+                        childWidget.handleEvent(&enterEvent);
                     }
                     if (childWidget.mouseHovering and !mouseInside) {
                         const exitEvent: Event = .MouseExit;
-                        childWidget.handleEventFn(childWidget, &exitEvent);
+                        childWidget.handleEvent(&exitEvent);
                     }
                 },
                 else => {},
